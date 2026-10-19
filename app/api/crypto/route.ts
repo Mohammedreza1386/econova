@@ -147,6 +147,7 @@ export async function GET() {
       usdToman: usdToman ?? null,
       items,
       currencies: currencyItems,
+      goldAndCoins,
     });
   } catch {
     return Response.json(
