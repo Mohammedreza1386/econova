@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Econova | داشبورد اقتصادی</title>
+<style>
+:root{color-scheme:dark;--bg:#08111f;--panel:#101d30;--line:#24334a;--cyan:#67e8f9;--muted:#9aabc2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#f1f5f9;font-family:Tahoma,Arial,sans-serif}
+header{padding:20px 6%;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.logo{font-size:25px;font-weight:900;color:var(--cyan);direction:ltr}
+nav{display:flex;gap:20px;flex-wrap:wrap}
+a{color:#cbd5e1;text-decoration:none}
+.hero{padding:75px 6% 55px;max-width:1100px;margin:auto}
+.tag{color:var(--cyan);font-size:12px;letter-spacing:3px;direction:ltr}
+h1{font-size:clamp(32px,6vw,58px);line-height:1.5;margin:16px 0}
+h1 span{color:var(--cyan)}
+p{line-height:2;color:var(--muted)}
+.btn{display:inline-block;background:var(--cyan);color:#08111f;padding:13px 22px;border-radius:10px;font-weight:bold;margin-top:15px}
+section.content{padding:25px 6% 55px;max-width:1200px;margin:auto}
+.heading{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+h2{font-size:25px}
+.note{font-size:11px;color:#fbbf24}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:15px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+.card small{color:var(--muted)}
+.price{font-size:27px;font-weight:bold;margin:18px 0}
+.up{color:#6ee7b7}.down{color:#fda4af}
+.news{background:linear-gradient(135deg,#102c43,#101d30);border:1px solid var(--line);border-radius:18px;padding:25px}
+footer{text-align:center;padding:25px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">ECO<span style="color:white">NOVA</span></div>
+  <nav><a href="#markets">بازارها</a><a href="#news">اخبار اقتصادی</a><a href="#about">درباره ما</a></nav>
+</header>
+<main>
+  <div class="hero">
+    <div class="tag">ECONOMIC INTELLIGENCE</div>
+    <h1>نبض بازارها،<br><span>در یک نگاه</span></h1>
+    <p>داشبوردی برای پیگیری بازارهای مالی، بررسی روندها و دسترسی به اطلاعات اقتصادی.</p>
+    <a class="btn" href="#markets">مشاهده بازارها ←</a>
+  </div>
+  <section class="content" id="markets">
+    <div class="heading"><h2>نمای کلی بازار</h2><span class="note">داده‌های نمونه — قیمت زنده نیست</span></div>
+    <div class="grid">
+      <article class="card"><small>بیت‌کوین · BTC</small><div class="price">$67,420</div><span class="up">▲ ۲٫۴٪</span></article>
+      <article class="card"><small>طلای جهانی · XAU</small><div class="price">$2,735</div><span class="up">▲ ۰٫۸٪</span></article>
+      <article class="card"><small>یورو / دلار · EUR/USD</small><div class="price">1.0842</div><span class="down">▼ ۰٫۳٪</span></article>
+      <article class="card"><small>نفت خام · WTI</small><div class="price">$71.80</div><span class="up">▲ ۱٫۱٪</span></article>
+    </div>
+  </section>
+  <section class="content" id="news">
+    <div class="news">
+      <div class="tag">ECONOMIC BRIEFING</div>
+      <h2>اخبار و تحلیل‌های اقتصادی</h2>
+      <p>این بخش برای نمایش اخبار اقتصادی آماده است. در نسخه فعلی هنوز به منبع خبری زنده متصل نیست.</p>
+    </div>
+  </section>
+</main>
+<footer id="about">© Econova — نسخه اولیه نمایشی</footer>
+</body>
+</html>
