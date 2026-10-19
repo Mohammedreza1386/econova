@@ -113,6 +113,34 @@ export async function GET() {
       });
     }
 
+    const goldAndCoinWanted = [
+      { category: "gold", symbol: "GOLD_18K_IRR", code: "GOLD18", name: "طلای ۱۸ عیار (هر گرم)" },
+      { category: "gold", symbol: "GOLD_18K_740_IRR", code: "GOLD740", name: "طلای ۱۸ عیار ۷۴۰ (هر گرم)" },
+      { category: "gold", symbol: "GOLD_MESGHAL_IRR", code: "MESGHAL", name: "مثقال طلا" },
+      { category: "coin", symbol: "COIN_EMAMI_IRR", code: "EMAMI", name: "سکه امامی" },
+      { category: "coin", symbol: "COIN_BAHAR_IRR", code: "BAHAR", name: "سکه بهار آزادی" },
+      { category: "coin", symbol: "COIN_HALF_IRR", code: "HALF", name: "نیم سکه" },
+      { category: "coin", symbol: "COIN_QUARTER_IRR", code: "QUARTER", name: "ربع سکه" },
+      { category: "coin", symbol: "COIN_GRAMI_IRR", code: "GRAMI", name: "سکه گرمی" },
+    ];
+
+    const goldAndCoins = goldAndCoinWanted.map((wanted) => {
+      const sourceItems = groups[wanted.category] ?? [];
+      const item = sourceItems.find(
+        (entry: any) =>
+          entry.symbol === wanted.symbol &&
+          !entry.stale &&
+          entry.price > 0
+      );
+
+      return {
+        code: wanted.code,
+        name: wanted.name,
+        toman: item?.price ?? null,
+        updatedAt: item?.timestamp ?? null,
+      };
+    }).filter((item) => item.toman !== null);
+    
     return Response.json({
       source: "Iran Market Data",
       updatedAt: json?.data?.generated_at ?? null,
