@@ -19,9 +19,17 @@ type Currency = {
   updatedAt: string | null;
 };
 
+type GoldCoin = {
+  code: string;
+  name: string;
+  toman: number | null;
+  updatedAt: string | null;
+};
+
 type ApiData = {
   items: Coin[];
   currencies: Currency[];
+  goldAndCoins: GoldCoin[];
   updatedAt: string | null;
   error?: string;
 };
