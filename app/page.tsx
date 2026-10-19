@@ -191,6 +191,40 @@ export default function Home() {
         </p>
       </section>
 
+<section className="wrap currency-section" id="currencies">
+  <div className="head">
+    <div>
+      <p className="eyebrow">CURRENCY MARKET</p>
+      <h2>قیمت ارزهای رایج</h2>
+    </div>
+    <span className="muted">قیمت به تومان</span>
+  </div>
+
+  {!data?.currencies?.length && !loading && (
+    <p>قیمت ارزها در حال حاضر در دسترس نیست.</p>
+  )}
+
+  {data?.currencies && data.currencies.length > 0 && (
+    <div className="grid">
+      {data.currencies.map((currency) => (
+        <article className="card" key={currency.code}>
+          <div className="name">{currency.name}</div>
+          <div className="symbol">{currency.code}</div>
+          <div className="toman">
+            {currency.toman !== null
+              ? number(currency.toman, 2) + " تومان"
+              : "قیمت موجود نیست"}
+          </div>
+        </article>
+      ))}
+    </div>
+  )}
+
+  <p className="muted" style={{ marginTop: 20, lineHeight: 2 }}>
+    منبع قیمت‌ها: Iran Market Data
+  </p>
+</section>
+      
       <section className="wrap" id="news">
         <div className="panel">
           <p className="eyebrow">ECONOMIC BRIEFING</p>
