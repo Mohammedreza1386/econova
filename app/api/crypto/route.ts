@@ -141,6 +141,34 @@ export async function GET() {
       };
     }).filter((item) => item.toman !== null);
     
+    const trendWanted = [
+      { category: "crypto", symbol: "BTC_IRR", code: "BTC", name: "بیت‌کوین" },
+      { category: "currency", symbol: "USD_IRR_FREE", code: "USD", name: "دلار آمریکا" },
+      { category: "gold", symbol: "GOLD_18K_IRR", code: "GOLD18", name: "طلای ۱۸ عیار" },
+      { category: "coin", symbol: "COIN_EMAMI_IRR", code: "EMAMI", name: "سکه امامی" },
+    ];
+
+    const marketTrend = trendWanted.map((wanted) => {
+      const sourceItems = groups[wanted.category] ?? [];
+      const item = sourceItems.find(
+        (entry: any) =>
+          entry.symbol === wanted.symbol &&
+          !entry.stale &&
+          entry.price > 0
+      );
+
+      return {
+        code: wanted.code,
+        name: wanted.name,
+        price: item?.price ?? null,
+        high: item?.high ?? null,
+        low: item?.low ?? null,
+        previousClose: item?.prev_close ?? null,
+        changePct: item?.change_pct ?? null,
+        updatedAt: item?.timestamp ?? null,
+      };
+    }).filter((item) => item.price !== null);
+    
     return Response.json({
       source: "Iran Market Data",
       updatedAt: json?.data?.generated_at ?? null,
