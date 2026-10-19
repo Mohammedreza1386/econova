@@ -12,8 +12,16 @@ type Coin = {
   updatedAt: string | null;
 };
 
+type Currency = {
+  code: string;
+  name: string;
+  toman: number | null;
+  updatedAt: string | null;
+};
+
 type ApiData = {
   items: Coin[];
+  currencies: Currency[];
   updatedAt: string | null;
   error?: string;
 };
