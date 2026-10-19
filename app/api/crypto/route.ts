@@ -176,6 +176,7 @@ export async function GET() {
       items,
       currencies: currencyItems,
       goldAndCoins,
+      marketTrend,
     });
   } catch {
     return Response.json(
