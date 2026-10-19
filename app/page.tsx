@@ -97,6 +97,7 @@ export default function Home() {
     .price { font-size: 22px; font-weight: bold; overflow-wrap: anywhere; margin-top: 20px; }
     .toman { color: #a5f3fc; font-size: 16px; margin-top: 12px; overflow-wrap: anywhere; }
     .change { font-size: 13px; margin-top: 14px; }
+    .currency-section { padding-bottom: 60px; }
     .up { color: #6ee7b7; } .down { color: #fda4af; }
     .panel { border: 1px solid #263448; border-radius: 16px; background: #101c2d; padding: 24px; margin-bottom: 50px; }
     footer { border-top: 1px solid #233044; color: #8494aa; text-align: center; padding: 25px 12px; font-size: 12px; line-height: 2; }
