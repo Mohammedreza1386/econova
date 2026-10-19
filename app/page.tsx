@@ -228,11 +228,25 @@ export default function Home() {
               }}
             >
               <strong>{item.name}</strong>
-              <span>
-                {item.changePct !== null
-                  ? `${item.changePct > 0 ? "+" : ""}${item.changePct}%`
-                  : "درصد تغییر ناموجود"}
-              </span>
+              
+<span
+  style={{
+    color:
+      item.changePct === null
+        ? "#94a3b8"
+        : item.changePct > 0
+          ? "#22c55e"
+          : item.changePct < 0
+            ? "#ef4444"
+            : "#94a3b8",
+    fontWeight: 700,
+  }}
+>
+  {item.changePct !== null
+    ? `${item.changePct > 0 ? "+" : ""}${item.changePct}%`
+    : "درصد تغییر ناموجود"}
+</span>
+
             </div>
 
             <div className="muted" style={{ marginTop: 8 }}>
