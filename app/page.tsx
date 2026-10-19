@@ -201,6 +201,82 @@ export default function Home() {
           </div>
         )}
 
+  {data?.marketTrend && data.marketTrend.length > 0 && (
+    <div className="card" style={{ marginTop: 20 }}>
+      <h2>نمودار تغییرات و روند بازار</h2>
+      <p className="muted">
+        محدوده قیمت روز و درصد تغییر نسبت به قیمت پایانی قبلی
+      </p>
+
+      {data.marketTrend.map((item) => {
+        const low = item.low ?? item.price;
+        const high = item.high ?? item.price;
+        const range = high - low;
+        const position =
+          range > 0
+            ? Math.max(0, Math.min(100, ((item.price - low) / range) * 100))
+            : 50;
+
+        return (
+          <div key={item.code} style={{ marginTop: 22 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              <strong>{item.name}</strong>
+              <span>
+                {item.changePct !== null
+                  ? `${item.changePct > 0 ? "+" : ""}${item.changePct}%`
+                  : "درصد تغییر ناموجود"}
+              </span>
+            </div>
+
+            <div className="muted" style={{ marginTop: 8 }}>
+              قیمت فعلی: {number(item.price, 0)} تومان
+            </div>
+
+            <div
+              style={{
+                height: 10,
+                background: "#263447",
+                borderRadius: 10,
+                marginTop: 12,
+                overflow: "hidden",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  width: `${position}%`,
+                  height: "100%",
+                  background: "#22d3ee",
+                  borderRadius: 10,
+                }}
+              />
+            </div>
+
+            <div
+              className="muted"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginTop: 6,
+                fontSize: 12,
+              }}
+            >
+              <span>کمینه: {number(low, 0)}</span>
+              <span>بیشینه: {number(high, 0)}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  )}
+        
         <p className="muted" style={{ marginTop: 20, lineHeight: 2 }}>
           منبع داده:{" "}
           <a href="https://iran-market.github.io/" target="_blank" rel="noreferrer">
