@@ -233,6 +233,40 @@ export default function Home() {
   </p>
 </section>
       
+<section className="wrap section" id="gold">
+  <div className="head">
+    <div>
+      <p className="eyebrow">GOLD & COIN MARKET</p>
+      <h2>قیمت طلا و سکه</h2>
+    </div>
+    <span className="muted">قیمت به تومان</span>
+  </div>
+
+  {!loading && !data?.goldAndCoins?.length && (
+    <p>قیمت طلا و سکه فعلاً در دسترس نیست.</p>
+  )}
+
+  {data?.goldAndCoins && data.goldAndCoins.length > 0 && (
+    <div className="grid">
+      {data.goldAndCoins.map((item) => (
+        <article className="card" key={item.code}>
+          <div className="name">{item.name}</div>
+          <div className="symbol">{item.code}</div>
+          <div className="toman">
+            {item.toman !== null
+              ? number(item.toman, 0) + " تومان"
+              : "قیمت موجود نیست"}
+          </div>
+        </article>
+      ))}
+    </div>
+  )}
+
+  <p className="muted" style={{ marginTop: 20, lineHeight: 2 }}>
+    منبع داده: Iran Market Data. قیمت‌ها ممکن است با تأخیر باشند.
+  </p>
+</section>
+      
       <section className="wrap" id="news">
         <div className="panel">
           <p className="eyebrow">ECONOMIC BRIEFING</p>
