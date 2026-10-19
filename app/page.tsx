@@ -26,11 +26,23 @@ type GoldCoin = {
   updatedAt: string | null;
 };
 
+type MarketTrend = {
+  code: string;
+  name: string;
+  price: number;
+  high: number | null;
+  low: number | null;
+  previousClose: number | null;
+  changePct: number | null;
+  updatedAt: string | null;
+};
+
 type ApiData = {
   items: Coin[];
   currencies: Currency[];
   goldAndCoins: GoldCoin[];
   updatedAt: string | null;
+  marketTrend?: MarketTrend[];
   error?: string;
 };
 
