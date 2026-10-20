@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js": "^2.0.0"
 
-import "./billionaires.css";
-
 type Billionaire = {
   id: string | number;
   rank: number;
