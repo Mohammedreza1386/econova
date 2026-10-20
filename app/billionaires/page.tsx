@@ -179,4 +179,4 @@ const cardStyle = {
   lineHeight: 1.8,
   overflowWrap: "anywhere" as const,
 };
-                
+          
