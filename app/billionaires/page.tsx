@@ -1,126 +1,188 @@
-
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??
+  "https://zusbebjskchgehdjvpsm.supabase.co";
+
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 type Billionaire = {
-  id?: string | number;
   rank: number;
   name: string;
   company?: string | null;
   country?: string | null;
-  net_worth_billions: number;
-  daily_change_pct?: number | null;
+  net_worth_billions: number | string;
+  daily_change_pct?: number | string | null;
   updated_at?: string | null;
   source_url?: string | null;
   source_checked_at?: string | null;
   image_url?: string | null;
 };
 
-const SUPABASE_URL = "https://zusbebjskchgehdjvpsm.supabase.co";
-const SUPABASE_KEY =
-  "sb_publishable_WGMEA7-K8FAResrVCL8GJQ_6KCxrvmK";
+type BillionaireNews = {
+  billionaire_rank: number;
+  title: string;
+  content: string;
+  updated_at?: string;
+};
 
-function money(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+const EMPTY_NEWS: BillionaireNews[] = [1, 2, 3, 4, 5].map((rank) => ({
+  billionaire_rank: rank,
+  title: "",
+  content: "",
+}));
+
+const formatWealth = (value: number) =>
+  "$" +
+  new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 1,
-  }).format(value * 1_000_000_000);
-}
+  }).format(value) +
+  "B";
 
-function initials(name: string) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] || "")
-    .join("");
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "زمان ثبت نامشخص";
+const formatDate = (value?: string | null) => {
+  if (!value) return "نامشخص";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "زمان ثبت نامشخص";
-
+  if (Number.isNaN(date.getTime())) return "نامشخص";
   return date.toLocaleString("fa-IR", {
-    dateStyle: "short",
+    dateStyle: "medium",
     timeStyle: "short",
   });
-}
-
-function changeClass(value?: number | null) {
-  if (!value || value === 0) return "change-neutral";
-  return value > 0 ? "change-positive" : "change-negative";
-}
-
-function changeText(value?: number | null) {
-  const number = Number(value || 0);
-  const sign = number > 0 ? "+" : "";
-  return `${sign}${number.toFixed(2)}%`;
-}
+};
 
 export default function BillionairesPage() {
   const [people, setPeople] = useState<Billionaire[]>([]);
+  const [news, setNews] = useState<BillionaireNews[]>(EMPTY_NEWS);
+  const [photos, setPhotos] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [pageError, setPageError] = useState("");
   const [animatedTotal, setAnimatedTotal] = useState(0);
-  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+
+  const [accessToken, setAccessToken] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginBusy, setLoginBusy] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
+  const [editingRank, setEditingRank] = useState<number | null>(null);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftContent, setDraftContent] = useState("");
+  const [savingNews, setSavingNews] = useState(false);
+  const [newsMessage, setNewsMessage] = useState("");
+
+  const apiHeaders = useMemo(
+    () => ({
+      apikey: SUPABASE_KEY,
+      "Content-Type": "application/json",
+    }),
+    []
+  );
+
+  const topFive = useMemo(
+    () => people.filter((person) => person.rank >= 1 && person.rank <= 5)
+      .sort((a, b) => a.rank - b.rank),
+    [people]
+  );
+
+  const topThirty = useMemo(
+    () => [...people].sort((a, b) => a.rank - b.rank).slice(0, 30),
+    [people]
+  );
+
+  const topTenTotal = useMemo(
+    () =>
+      people
+        .filter((person) => person.rank <= 10)
+        .reduce(
+          (total, person) => total + Number(person.net_worth_billions || 0),
+          0
+        ),
+    [people]
+  );
+
+  const getNews = useCallback(async () => {
+    if (!SUPABASE_KEY) return;
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/billionaire_news?select=billionaire_rank,title,content,updated_at&order=billionaire_rank.asc`,
+        { headers: apiHeaders, cache: "no-store" }
+      );
+
+      if (!response.ok) throw new Error("خواندن خبرها موفق نبود.");
+
+      const rows = (await response.json()) as BillionaireNews[];
+      setNews(
+        EMPTY_NEWS.map(
+          (empty) =>
+            rows.find(
+              (item) => item.billionaire_rank === empty.billionaire_rank
+            ) ?? empty
+        )
+      );
+    } catch {
+      setNews(EMPTY_NEWS);
+      setNewsMessage("خبرها بارگذاری نشدند؛ اتصال Supabase را بررسی کن.");
+    }
+  }, [apiHeaders]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setAccessToken(window.localStorage.getItem("econova_admin_token") ?? "");
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadPeople() {
       setLoading(true);
-      setError("");
+      setPageError("");
 
       try {
+        if (!SUPABASE_KEY) {
+          throw new Error(
+            "کلید عمومی Supabase تنظیم نشده است. متغیر NEXT_PUBLIC_SUPABASE_ANON_KEY را در تنظیمات پروژه وارد کن."
+          );
+        }
+
         const response = await fetch(
           `${SUPABASE_URL}/rest/v1/billionaires?select=rank,name,company,country,net_worth_billions,daily_change_pct,updated_at,source_url,source_checked_at&order=rank.asc&limit=30`,
-          {
-            headers: {
-              apikey: SUPABASE_KEY,
-              Authorization: `Bearer ${SUPABASE_KEY}`,
-            },
-            cache: "no-store",
-          }
+          { headers: apiHeaders, cache: "no-store" }
         );
 
         if (!response.ok) {
-          throw new Error(
-            `دریافت اطلاعات ناموفق بود (${response.status}).`
-          );
+          throw new Error("دریافت فهرست ثروتمندان از Supabase ناموفق بود.");
         }
 
         const rows = (await response.json()) as Billionaire[];
+        if (!cancelled) setPeople(rows);
 
-        if (!Array.isArray(rows)) {
-          throw new Error("ساختار اطلاعات دریافتی معتبر نیست.");
-        }
+        const newsResponse = await fetch(
+          `${SUPABASE_URL}/rest/v1/billionaire_news?select=billionaire_rank,title,content,updated_at&order=billionaire_rank.asc`,
+          { headers: apiHeaders, cache: "no-store" }
+        );
 
-        if (!cancelled) {
-          setPeople(
-            rows
-              .map((person) => ({
-                ...person,
-                rank: Number(person.rank),
-                net_worth_billions: Number(
-                  person.net_worth_billions || 0
-                ),
-                daily_change_pct: Number(
-                  person.daily_change_pct || 0
-                ),
-              }))
-              .sort((a, b) => a.rank - b.rank)
-              .slice(0, 30)
-          );
+        if (newsResponse.ok) {
+          const newsRows = (await newsResponse.json()) as BillionaireNews[];
+          if (!cancelled) {
+            setNews(
+              EMPTY_NEWS.map(
+                (empty) =>
+                  newsRows.find(
+                    (item) =>
+                      item.billionaire_rank === empty.billionaire_rank
+                  ) ?? empty
+              )
+            );
+          }
         }
-      } catch (err) {
+      } catch (error) {
         if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "خطا در دریافت اطلاعات ثروتمندان."
+          setPageError(
+            error instanceof Error ? error.message : "خطای نامشخص رخ داد."
           );
         }
       } finally {
@@ -129,941 +191,1292 @@ export default function BillionairesPage() {
     }
 
     void loadPeople();
-
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  const topFive = useMemo(
-    () => [...people].sort((a, b) => a.rank - b.rank).slice(0, 5),
-    [people]
-  );
-
-  const topTen = useMemo(
-    () =>
-      [...people]
-        .filter((person) => person.rank <= 10)
-        .sort((a, b) => a.rank - b.rank),
-    [people]
-  );
-
-  const topTenTotal = useMemo(
-    () =>
-      topTen.reduce(
-        (total, person) => total + person.net_worth_billions,
-        0
-      ),
-    [topTen]
-  );
+  }, [apiHeaders]);
 
   useEffect(() => {
-    let animationId = 0;
-    let startTime: number | null = null;
-    const duration = 2200;
+    if (topFive.length === 0) return;
 
-    setAnimatedTotal(0);
-
-    if (topTenTotal <= 0) return;
-
-    const animate = (time: number) => {
-      if (startTime === null) startTime = time;
-
-      const progress = Math.min(
-        (time - startTime) / duration,
-        1
-      );
-      const eased = 1 - Math.pow(1 - progress, 4);
-
-      setAnimatedTotal(topTenTotal * eased);
-
-      if (progress < 1) {
-        animationId = requestAnimationFrame(animate);
-      }
-    };
-
-    animationId = requestAnimationFrame(animate);
-
-    return () => cancelAnimationFrame(animationId);
-  }, [topTenTotal]);
-
-  useEffect(() => {
     let cancelled = false;
+    const names = topFive.map((person) => person.name).filter(Boolean);
 
     async function loadPhotos() {
-      const results = await Promise.all(
-        people.map(async (person) => {
-          if (person.image_url) {
-            return [person.name, person.image_url] as const;
-          }
-
+      const entries = await Promise.all(
+        names.map(async (name) => {
           try {
             const url =
-              "https://en.wikipedia.org/w/api.php" +
-              "?action=query&generator=search" +
-              "&gsrnamespace=0&gsrlimit=1" +
-              "&prop=pageimages&piprop=thumbnail" +
-              "&pithumbsize=320&format=json&origin=*" +
-              "&gsrsearch=" +
-              encodeURIComponent(person.name);
+              "https://en.wikipedia.org/w/api.php?action=query&generator=search" +
+              `&gsrsearch=${encodeURIComponent(name)}` +
+              "&gsrnamespace=0&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=300&format=json&origin=*";
 
             const response = await fetch(url);
-
-            if (!response.ok) {
-              return [person.name, ""] as const;
-            }
+            if (!response.ok) return [name, ""] as const;
 
             const data = await response.json();
-            const pages = Object.values(
-              data.query?.pages ?? {}
-            ) as Array<{
-              thumbnail?: { source?: string };
-            }>;
+            const page = Object.values(
+              data?.query?.pages ?? {}
+            )[0] as { thumbnail?: { source?: string } } | undefined;
 
-            return [
-              person.name,
-              pages[0]?.thumbnail?.source ?? "",
-            ] as const;
+            return [name, page?.thumbnail?.source ?? ""] as const;
           } catch {
-            return [person.name, ""] as const;
+            return [name, ""] as const;
           }
         })
       );
 
       if (!cancelled) {
-        setPhotoUrls(Object.fromEntries(results));
+        setPhotos((previous) => ({
+          ...previous,
+          ...Object.fromEntries(entries.filter((entry) => entry[1])),
+        }));
       }
     }
 
-    if (people.length) void loadPhotos();
-
+    void loadPhotos();
     return () => {
       cancelled = true;
     };
-  }, [people]);
+  }, [topFive]);
 
-  return (
-    <main className="econova-page">
-      <div className="econova-container">
+  useEffect(() => {
+    const target = topTenTotal;
+    const duration = 1200;
+    const start = performance.now();
+    let frame = 0;
+
+    const animate = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setAnimatedTotal(target * eased);
+      if (progress < 1) frame = requestAnimationFrame(animate);
+    };
+
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [topTenTotal]);
+
+  async function handleAdminLogin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoginBusy(true);
+    setLoginError("");
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+        {
+          method: "POST",
+          headers: apiHeaders,
+          body: JSON.stringify({
+            email: adminEmail,
+            password: adminPassword,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.access_token) {
+        throw new Error("ورود انجام نشد؛ ایمیل و رمز را بررسی کن.");
+      }
+
+      const role = result.user?.app_metadata?.role;
+      if (role !== "admin") {
+        throw new Error(
+          "این حساب نقش مدیر ندارد. ابتدا app_metadata نقش admin را برای حساب مدیر تنظیم کن."
+        );
+      }
+
+      window.localStorage.setItem("econova_admin_token", result.access_token);
+      setAccessToken(result.access_token);
+      setAdminPassword("");
+      setLoginOpen(false);
+      setLoginError("");
+      setNewsMessage("ورود مدیر با موفقیت انجام شد.");
+    } catch (error) {
+      setLoginError(
+        error instanceof Error ? error.message : "ورود ناموفق بود."
+      );
+    } finally {
+      setLoginBusy(false);
+    }
+  }
+
+  function handleLogout() {
+    window.localStorage.removeItem("econova_admin_token");
+    setAccessToken("");
+    setEditingRank(null);
+    setNewsMessage("از حساب مدیر خارج شدی.");
+  }
+
+  function beginEdit(item: Billionaire) {
+    const current = news.find((entry) => entry.billionaire_rank === item.rank);
+    setEditingRank(item.rank);
+    setDraftTitle(current?.title ?? "");
+    setDraftContent(current?.content ?? "");
+    setNewsMessage("");
+  }
+
+  async function saveNews(rank: number) {
+    if (!accessToken) {
+      setNewsMessage("برای ذخیره خبر باید وارد حساب مدیر شوی.");
+      return;
+    }
+
+    setSavingNews(true);
+    setNewsMessage("");
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/billionaire_news?on_conflict=billionaire_rank`,
+        {
+          method: "POST",
+          headers: {
+            ...apiHeaders,
+            Authorization: `Bearer ${accessToken}`,
+            Prefer: "resolution=merge-duplicates,return=representation",
+          },
+          body: JSON.stringify({
+            billionaire_rank: rank,
+            title: draftTitle.trim(),
+            content: draftContent.trim(),
+            updated_at: new Date().toISOString(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const details = await response.text();
+        throw new Error(
+          details.includes("403") || details.includes("42501")
+            ? "اجازه ذخیره نداری؛ نقش مدیر و سیاست‌های RLS را بررسی کن."
+            : "ذخیره خبر ناموفق بود. اتصال و تنظیمات Supabase را بررسی کن."
+        );
+      }
+
+      const updated: BillionaireNews = {
+        billionaire_rank: rank,
+        title: draftTitle.trim(),
+        content: draftContent.trim(),
+        updated_at: new Date().toISOString(),
+      };
+
+      setNews((previous) => [
+        ...previous.filter((item) => item.billionaire_rank !== rank),
+        updated,
+      ].sort((a, b) => a.billionaire_rank - b.billionaire_rank));
+
+      setEditingRank(null);
+      setNewsMessage(`خبر نفر رتبه ${rank} ذخیره شد.`);
+    } catch (error) {
+      setNewsMessage(
+        error instanceof Error ? error.message : "ذخیره خبر ناموفق بود."
+      );
+    } finally {
+      setSavingNews(false);
+    }
+  }
+
+  return (    <>
+      <main className="econova-page" dir="rtl">
         <header className="page-header">
-          <p className="eyebrow">ECONOVA · GLOBAL WEALTH</p>
-          <h1>ثروتمندترین افراد جهان</h1>
-          <p className="subtitle">
-            بررسی ثروت، رتبه و تغییرات ثبت‌شدهٔ ثروتمندان جهان
-          </p>
+          <a className="brand" href="/">ECONOVA<span>.</span></a>
+          <div className="header-label">شاخص ثروت جهان</div>
         </header>
 
-        <section className="total-card">
-          <p className="total-label">
-            مجموع ثروت ۱۰ نفر اول جهان
+        <section className="hero">
+          <div className="eyebrow">GLOBAL WEALTH TRACKER</div>
+          <h1>ثروتمندترین افراد <span>جهان</span></h1>
+          <p>
+            رتبه‌بندی ثروتمندان جهان، ارزش دارایی‌ها و آخرین خبرهای اختصاصی
+            هرکدام از پنج نفر برتر.
           </p>
-
-          <div className="total-value" dir="ltr">
-            {money(animatedTotal)}
-          </div>
-
-          <div className="total-progress">
-            <span
-              style={{
-                width: `${
-                  topTenTotal > 0
-                    ? (animatedTotal / topTenTotal) * 100
-                    : 0
-                }%`,
-              }}
-            />
-          </div>
-
-          <p className="total-note">
-            <span dir="ltr">{topTen.length}</span> نفر محاسبه‌شده
-            {" · "}
-            ارقام بر اساس اطلاعات ثبت‌شده در دیتابیس
-          </p>
-        </section>
-
-        <section className="wealth-ticker" aria-label="خلاصه ثروت">
-          <div className="ticker-track">
-            {[0, 1].map((copy) => (
-              <div className="ticker-group" key={copy}>
-                <span>مجموع ثروت ۱۰ نفر اول: {money(topTenTotal)}</span>
-                <span>تعداد رکوردهای دریافت‌شده: {people.length}</span>
-                <span>رتبه‌بندی ثروتمندان جهان · ECONOVA</span>
-              </div>
-            ))}
+          <div className="hero-stats">
+            <div className="stat-box">
+              <span>مجموع ثروت ۱۰ نفر اول</span>
+              <strong>{formatWealth(animatedTotal)}</strong>
+            </div>
+            <div className="stat-box">
+              <span>افراد نمایش‌داده‌شده</span>
+              <strong>{topThirty.length} نفر</strong>
+            </div>
           </div>
         </section>
 
-        {loading && (
-          <div className="status-message">
-            <span className="loading-dot" />
-            در حال دریافت اطلاعات ثروتمندان...
+        {pageError && (
+          <div className="notice error-notice">
+            {pageError}
           </div>
         )}
 
-        {!loading && error && (
-          <div className="error-message">
-            <h2>دریافت اطلاعات با مشکل روبه‌رو شد</h2>
-            <p>{error}</p>
-            <p>
-              اتصال دیتابیس، دسترسی خواندن جدول و نام ستون‌ها را
-              بررسی کن.
-            </p>
+        <section className="section-block">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow">THE TOP FIVE</div>
+              <h2>پنج ثروتمند برتر</h2>
+              <p>برای هر شخص، بخش خبر جداگانه در نظر گرفته شده است.</p>
+            </div>
+            <span className="gold-chip">TOP 5</span>
           </div>
-        )}
 
-        {!loading && !error && people.length === 0 && (
-          <div className="empty-message">
-            هنوز اطلاعاتی برای نمایش در دیتابیس وجود ندارد.
-          </div>
-        )}
+          {loading ? (
+            <div className="loading-panel">در حال دریافت اطلاعات ثروتمندان…</div>
+          ) : topFive.length === 0 ? (
+            <div className="loading-panel">
+              اطلاعاتی برای نمایش پیدا نشد. اتصال جدول billionaires را بررسی کن.
+            </div>
+          ) : (
+            <div className="top-list">
+              {topFive.map((person) => {
+                const personNews = news.find(
+                  (item) => item.billionaire_rank === person.rank
+                );
+                const isEditing = editingRank === person.rank;
+                const imageUrl =
+                  person.image_url || photos[person.name] || "";
 
-        {!loading && !error && people.length > 0 && (
-          <>
-            <section className="top-section">
-              <div className="section-heading">
-                <div className="section-number">01</div>
-                <div>
-                  <h2>۵ ثروتمند برتر جهان</h2>
-                  <p>فهرست عمودی همراه با عکس و ارزش دارایی</p>
-                </div>
-              </div>
-
-              <div className="top-list">
-                {topFive.map((person) => {
-                  const photo =
-                    photoUrls[person.name] || person.image_url || "";
-
-                  const estimatedChange =
-                    person.net_worth_billions *
-                    Number(person.daily_change_pct || 0) /
-                    100;
-
-                  return (
-                    <article
-                      className="person-card"
-                      key={`${person.rank}-${person.name}`}
-                    >
-                      <span className="person-rank">
-                        #{person.rank}
-                      </span>
+                return (
+                  <article className="person-card" key={person.rank}>
+                    <div className="person-main">
+                      <div className="rank-badge">
+                        {String(person.rank).padStart(2, "0")}
+                      </div>
 
                       <div className="person-photo">
-                        <span className="photo-fallback">
-                          {initials(person.name)}
-                        </span>
-
-                        {photo && (
-                          <img
-                            src={photo}
-                            alt={`عکس ${person.name}`}
-                            loading="lazy"
-                            referrerPolicy="no-referrer"
-                            onError={(event) => {
-                              event.currentTarget.style.display = "none";
-                            }}
-                          />
+                        {imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={imageUrl} alt={person.name} />
+                        ) : (
+                          <div className="photo-placeholder">
+                            {person.name?.trim().charAt(0) || "?"}
+                          </div>
                         )}
                       </div>
 
                       <div className="person-info">
-                        <p className="person-label">WORLD RANKING</p>
                         <h3>{person.name}</h3>
                         <p className="person-company">
                           {person.company || "شرکت ثبت نشده"}
                         </p>
                         <p className="person-country">
-                          {person.country || "کشور ثبت نشده"}
+                          {person.country || "کشور نامشخص"}
                         </p>
                       </div>
 
                       <div className="person-wealth">
-                        <p>ارزش دارایی ثبت‌شده</p>
-                        <strong>{money(person.net_worth_billions)}</strong>
-                        <span
-                          className={changeClass(person.daily_change_pct)}
-                        >
-                          {changeText(person.daily_change_pct)}
-                        </span>
-                        <p className="estimated-change">
-                          تغییر دلاری تخمینی:{" "}
-                          <b dir="ltr">
-                            {money(estimatedChange)}
-                          </b>
-                        </p>
+                        <span>ثروت تخمینی</span>
+                        <strong>
+                          {formatWealth(Number(person.net_worth_billions || 0))}
+                        </strong>
+                        {person.daily_change_pct !== null &&
+                          person.daily_change_pct !== undefined && (
+                            <small
+                              className={
+                                Number(person.daily_change_pct) >= 0
+                                  ? "change-positive"
+                                  : "change-negative"
+                              }
+                            >
+                              {Number(person.daily_change_pct) > 0 ? "+" : ""}
+                              {Number(person.daily_change_pct)}%
+                            </small>
+                          )}
+                      </div>
+                    </div>
+
+                    <section className="person-news">
+                      <div className="news-heading">
+                        <div>
+                          <span className="news-kicker">NEWS / #{person.rank}</span>
+                          <h4>خبر اختصاصی {person.name}</h4>
+                        </div>
+
+                        {accessToken && !isEditing && (
+                          <button
+                            className="outline-button"
+                            onClick={() => beginEdit(person)}
+                          >
+                            ویرایش خبر
+                          </button>
+                        )}
                       </div>
 
-                      <p className="person-updated">
-                        آخرین ثبت: {formatDate(person.updated_at)}
-                      </p>
-                    </article>
-                  );
-                })}
-              </div>
-            </section>
+                      {isEditing ? (
+                        <div className="news-editor">
+                          <label>
+                            عنوان خبر
+                            <input
+                              value={draftTitle}
+                              onChange={(event) =>
+                                setDraftTitle(event.target.value)
+                              }
+                              maxLength={180}
+                              placeholder="عنوان خبر این شخص را بنویس…"
+                            />
+                          </label>
 
-            <section className="table-section">
-              <div className="table-heading">
-                <div>
-                  <h2>۳۰ ثروتمند برتر جهان</h2>
-                  <p>
-                    تعداد رکوردهای نمایش‌داده‌شده: {people.length}
-                  </p>
-                </div>
+                          <label>
+                            متن خبر
+                            <textarea
+                              value={draftContent}
+                              onChange={(event) =>
+                                setDraftContent(event.target.value)
+                              }
+                              rows={5}
+                              maxLength={12000}
+                              placeholder="متن خبر را اینجا بنویس…"
+                            />
+                          </label>
 
-                <span className="live-indicator">
-                  <span />
-                  داده‌های دیتابیس
-                </span>
-              </div>
-
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>رتبه</th>
-                      <th>عکس</th>
-                      <th>نام</th>
-                      <th>شرکت</th>
-                      <th>کشور</th>
-                      <th>ثروت</th>
-                      <th>تغییر روزانه</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {people.map((person) => {
-                      const photo =
-                        photoUrls[person.name] ||
-                        person.image_url ||
-                        "";
-
-                      return (
-                        <tr key={`${person.rank}-${person.name}`}>
-                          <td>
-                            <span className="rank-badge">
-                              {person.rank}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="table-photo">
-                              <span>{initials(person.name)}</span>
-                              {photo && (
-                                <img
-                                  src={photo}
-                                  alt={`عکس ${person.name}`}
-                                  loading="lazy"
-                                  referrerPolicy="no-referrer"
-                                  onError={(event) => {
-                                    event.currentTarget.style.display =
-                                      "none";
-                                  }}
-                                />
+                          <div className="editor-actions">
+                            <button
+                              className="primary-button"
+                              disabled={savingNews}
+                              onClick={() => void saveNews(person.rank)}
+                            >
+                              {savingNews ? "در حال ذخیره…" : "ذخیره خبر"}
+                            </button>
+                            <button
+                              className="quiet-button"
+                              disabled={savingNews}
+                              onClick={() => setEditingRank(null)}
+                            >
+                              انصراف
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="news-content">
+                          {personNews?.title || personNews?.content ? (
+                            <>
+                              {personNews.title && (
+                                <h5>{personNews.title}</h5>
+                              )}
+                              {personNews.content ? (
+                                <p className="news-body">
+                                  {personNews.content}
+                                </p>
+                              ) : (
+                                <p className="empty-news">
+                                  هنوز متنی برای این خبر ثبت نشده است.
+                                </p>
+                              )}
+                              {personNews.updated_at && (
+                                <small className="news-date">
+                                  آخرین ویرایش: {formatDate(personNews.updated_at)}
+                                </small>
+                              )}
+                            </>
+                          ) : (
+                            <div className="empty-news">
+                              هنوز خبری برای این شخص منتشر نشده است.
+                              {accessToken && (
+                                <button
+                                  className="text-button"
+                                  onClick={() => beginEdit(person)}
+                                >
+                                  اولین خبر را اضافه کن
+                                </button>
                               )}
                             </div>
-                          </td>
-                          <td className="table-name">{person.name}</td>
-                          <td>{person.company || "—"}</td>
-                          <td>{person.country || "—"}</td>
-                          <td className="table-wealth" dir="ltr">
-                            {money(person.net_worth_billions)}
-                          </td>
-                          <td
-                            className={changeClass(person.daily_change_pct)}
-                            dir="ltr"
-                          >
-                            {changeText(person.daily_change_pct)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-      
-            <footer className="page-footer">
-              <p>
-                منبع مرجع اطلاعات:{" "}
-                <a
-                  href="https://www.forbes.com/real-time-billionaires/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Forbes Real-Time Billionaires
-                </a>
-              </p>
-              <p>
-                اطلاعات این صفحه از دیتابیس دریافت می‌شود؛ نمایش آن
-                به‌معنای به‌روزرسانی لحظه‌ای نیست.
-              </p>
-              <p>
-                تغییر دلاری تخمینی است و از درصد تغییر ثبت‌شده محاسبه
-                می‌شود.
-              </p>
-            </footer>
-          </>
-        )}
-      </div>
+                          )}
+                        </div>
+                      )}
+                    </section>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
 
-      <style jsx global>{`
+        <section className="section-block">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow">RANKING / 01—30</div>
+              <h2>فهرست ۳۰ ثروتمند برتر</h2>
+              <p>فهرست فشرده با رتبه، نام، کشور و ثروت تخمینی.</p>
+            </div>
+            <span className="gold-chip">{topThirty.length} نفر</span>
+          </div>
+
+          <div className="table-wrap">
+            <table className="billionaires-table">
+              <thead>
+                <tr>
+                  <th>رتبه</th>
+                  <th>نام</th>
+                  <th>شرکت</th>
+                  <th>کشور</th>
+                  <th>ثروت</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topThirty.map((person) => (
+                  <tr key={person.rank}>
+                    <td>
+                      <span className="table-rank">
+                        {String(person.rank).padStart(2, "0")}
+                      </span>
+                    </td>
+                    <td className="table-name">{person.name}</td>
+                    <td>{person.company || "—"}</td>
+                    <td>{person.country || "—"}</td>
+                    <td className="table-wealth">
+                      {formatWealth(Number(person.net_worth_billions || 0))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <footer className="page-footer">
+          <span>ECONOVA</span>
+          <span>اطلاعات دارایی‌ها ممکن است با تأخیر به‌روزرسانی شوند.</span>
+          <button
+            className="admin-link"
+            onClick={() => {
+              setLoginOpen((open) => !open);
+              setLoginError("");
+            }}
+          >
+            {accessToken ? "مدیریت خبرها" : "ورود مدیر"}
+          </button>
+        </footer>
+
+        {newsMessage && (
+          <div className="status-message" role="status">
+            {newsMessage}
+          </div>
+        )}
+
+        {loginOpen && (
+          <div className="modal-backdrop" onClick={() => setLoginOpen(false)}>
+            <section
+              className="admin-modal"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                className="modal-close"
+                aria-label="بستن"
+                onClick={() => setLoginOpen(false)}
+              >
+                ×
+              </button>
+
+              {accessToken ? (
+                <>
+                  <div className="eyebrow">ADMIN SESSION</div>
+                  <h3>مدیریت خبرها</h3>
+                  <p>وارد حساب مدیر شده‌ای و می‌توانی خبرهای پنج نفر اول را ویرایش کنی.</p>
+                  <button className="primary-button full-button" onClick={handleLogout}>
+                    خروج از حساب مدیر
+                  </button>
+                </>
+              ) : (
+                <form onSubmit={handleAdminLogin}>
+                  <div className="eyebrow">SECURE ACCESS</div>
+                  <h3>ورود مدیر</h3>
+                  <p>برای ویرایش و ذخیره خبرها، با حساب مدیر وارد شو.</p>
+
+                  <label>
+                    ایمیل
+                    <input
+                      type="email"
+                      value={adminEmail}
+                      onChange={(event) => setAdminEmail(event.target.value)}
+                      autoComplete="username"
+                      required
+                    />
+                  </label>
+
+                  <label>
+                    رمز عبور
+                    <input
+                      type="password"
+                      value={adminPassword}
+                      onChange={(event) => setAdminPassword(event.target.value)}
+                      autoComplete="current-password"
+                      required
+                    />
+                  </label>
+
+                  {loginError && (
+                    <p className="form-error">{loginError}</p>
+                  )}
+
+                  <button
+                    className="primary-button full-button"
+                    type="submit"
+                    disabled={loginBusy}
+                  >
+                    {loginBusy ? "در حال ورود…" : "ورود امن"}
+                  </button>
+                </form>
+              )}
+            </section>
+          </div>
+        )}
+      </main>
+          <style jsx global>{`
+        :root {
+          color-scheme: dark;
+          --eco-bg: #080b12;
+          --eco-panel: #111722;
+          --eco-panel2: #161e2b;
+          --eco-gold: #e5c76b;
+          --eco-gold2: #b89543;
+          --eco-text: #f4f5f8;
+          --eco-muted: #98a3b5;
+          --eco-border: rgba(229, 199, 107, 0.18);
+        }
+
         * {
           box-sizing: border-box;
         }
 
         body {
           margin: 0;
-          background: #07111f;
+          background: var(--eco-bg);
+          color: var(--eco-text);
+          font-family: Tahoma, Arial, sans-serif;
+        }
+
+        button,
+        input,
+        textarea {
+          font: inherit;
+        }
+
+        button {
+          cursor: pointer;
+        }
+
+        button:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
         }
 
         .econova-page {
           min-height: 100vh;
-          padding: 28px 14px 44px;
-          color: #f8fafc;
-          direction: rtl;
-          font-family: Arial, sans-serif;
+          padding: 0 20px 36px;
           background:
-            radial-gradient(ellipse at 50% 0%, #123b3a 0%, transparent 45%),
-            linear-gradient(145deg, #07111f, #101d32 55%, #07111f);
-        }
-
-        .econova-container {
-          max-width: 1120px;
-          margin: 0 auto;
+            radial-gradient(ellipse at 80% 0%, rgba(178, 140, 50, 0.11), transparent 34%),
+            var(--eco-bg);
         }
 
         .page-header {
-          margin-bottom: 26px;
-          text-align: center;
-        }
-
-        .eyebrow {
-          color: #34d399;
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 2px;
-          direction: ltr;
-        }
-
-        .page-header h1 {
-          margin: 10px 0;
-          font-size: clamp(26px, 5vw, 42px);
-          line-height: 1.5;
-          font-weight: 800;
-        }
-
-        .subtitle {
-          color: #94a3b8;
-          font-size: 13px;
-          line-height: 1.9;
-        }
-
-        .total-card {
-          margin-bottom: 18px;
-          padding: 22px 16px;
-          text-align: center;
-          border: 1px solid #10b98155;
-          border-radius: 20px;
-          background: linear-gradient(135deg, #064e3b80, #0f172aee);
-          box-shadow: 0 18px 45px #00000025;
-        }
-
-        .total-label {
-          margin: 0;
-          color: #6ee7b7;
-          font-size: 14px;
-        }
-
-        .total-value {
-          margin: 10px 0;
-          color: #ecfdf5;
-          font-size: clamp(24px, 4.5vw, 38px);
-          font-weight: 900;
-          overflow-wrap: anywhere;
-          font-variant-numeric: tabular-nums;
-        }
-
-        .total-progress {
-          max-width: 500px;
-          height: 6px;
-          margin: 14px auto;
-          overflow: hidden;
-          border-radius: 20px;
-          background: #ffffff12;
-        }
-
-        .total-progress span {
-          display: block;
-          height: 100%;
-          border-radius: inherit;
-          background: linear-gradient(90deg, #10b981, #a7f3d0);
-          transition: width 0.06s linear;
-        }
-
-        .total-note {
-          margin: 0;
-          color: #94a3b8;
-          font-size: 11px;
-          line-height: 1.9;
-        }
-
-        .wealth-ticker {
-          margin: 0 0 28px;
-          overflow: hidden;
-          border: 1px solid #10b98140;
-          border-radius: 10px;
-          background: #064e3b40;
-        }
-
-        .ticker-track {
-          display: flex;
-          width: max-content;
-          animation: econova-marquee 32s linear infinite;
-          will-change: transform;
-        }
-
-        .ticker-group {
-          display: flex;
-          flex-shrink: 0;
-          align-items: center;
-        }
-
-        .ticker-track span {
-          flex-shrink: 0;
-          padding: 9px 16px;
-          color: #a7f3d0;
-          font-size: 11px;
-          font-weight: 700;
-          white-space: nowrap;
-        }
-
-        .wealth-ticker:hover .ticker-track {
-          animation-play-state: paused;
-        }
-
-        @keyframes econova-marquee {
-          from {
-            transform: translateX(0);
-          }
-          to {
-            transform: translateX(50%);
-          }
-        }
-
-        .section-heading,
-        .table-heading {
+          max-width: 1120px;
+          min-height: 76px;
+          margin: auto;
           display: flex;
           align-items: center;
           justify-content: space-between;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .brand {
+          color: #fff;
+          font-family: Arial, sans-serif;
+          font-size: 23px;
+          font-weight: 900;
+          letter-spacing: 1px;
+          text-decoration: none;
+        }
+
+        .brand span {
+          color: var(--eco-gold);
+        }
+
+        .header-label {
+          color: var(--eco-muted);
+          font-size: 12px;
+        }
+
+        .hero,
+        .section-block,
+        .page-footer {
+          max-width: 1120px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+
+        .hero {
+          padding: 56px 0 34px;
+        }
+
+        .eyebrow {
+          margin-bottom: 10px;
+          color: var(--eco-gold);
+          font-family: Arial, sans-serif;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 2px;
+        }
+
+        .hero h1 {
+          margin: 0;
+          font-size: clamp(27px, 5vw, 44px);
+          line-height: 1.5;
+          font-weight: 900;
+        }
+
+        .hero h1 span {
+          color: var(--eco-gold);
+        }
+
+        .hero > p {
+          max-width: 650px;
+          margin: 12px 0 24px;
+          color: var(--eco-muted);
+          font-size: 13px;
+          line-height: 2;
+        }
+
+        .hero-stats {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 12px;
-          margin-bottom: 16px;
+          max-width: 650px;
+        }
+
+        .stat-box {
+          padding: 17px 19px;
+          border: 1px solid var(--eco-border);
+          border-radius: 15px;
+          background: linear-gradient(140deg, #171d29, #0d121c);
+        }
+
+        .stat-box span,
+        .person-wealth span {
+          display: block;
+          color: var(--eco-muted);
+          font-size: 11px;
+        }
+
+        .stat-box strong {
+          display: block;
+          margin-top: 9px;
+          color: var(--eco-gold);
+          font-family: Arial, sans-serif;
+          font-size: clamp(19px, 3vw, 28px);
+          direction: ltr;
+          text-align: right;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .section-block {
+          margin-top: 34px;
         }
 
         .section-heading {
-          justify-content: flex-start;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          margin-bottom: 18px;
         }
 
-        .section-number {
-          display: grid;
-          place-items: center;
-          flex-shrink: 0;
-          width: 40px;
-          height: 40px;
-          border: 1px solid #10b98155;
-          border-radius: 12px;
-          background: #064e3b55;
-          color: #6ee7b7;
-          font-weight: 800;
-        }
-
-        .section-heading h2,
-        .table-heading h2 {
+        .section-heading h2 {
           margin: 0;
-          font-size: 21px;
+          font-size: clamp(19px, 3vw, 25px);
         }
 
-        .section-heading p,
-        .table-heading p {
-          margin: 5px 0 0;
-          color: #94a3b8;
-          font-size: 12px;
-          line-height: 1.8;
+        .section-heading p {
+          margin: 7px 0 0;
+          color: var(--eco-muted);
+          font-size: 11px;
+          line-height: 1.9;
         }
 
-        .top-section {
-          margin-bottom: 34px;
+        .gold-chip {
+          flex-shrink: 0;
+          padding: 7px 11px;
+          border: 1px solid var(--eco-border);
+          border-radius: 9px;
+          color: var(--eco-gold);
+          background: rgba(229, 199, 107, 0.06);
+          font-size: 11px;
+          font-weight: 700;
         }
 
         .top-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          padding: 2px;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 14px;
         }
 
         .person-card {
-          position: relative;
-          display: grid;
-          grid-template-columns: 84px minmax(0, 1fr);
-          align-items: center;
-          gap: 14px;
           min-width: 0;
-          padding: 17px;
-          border: 1px solid #2b405b;
+          padding: 16px;
+          overflow: hidden;
+          border: 1px solid var(--eco-border);
           border-radius: 18px;
-          background: linear-gradient(145deg, #16253b, #0d1728);
-          box-shadow: 0 10px 28px #00000020;
+          background: linear-gradient(145deg, #151c29, #0e131d 80%);
+          box-shadow: 0 8px 28px rgba(0, 0, 0, 0.13);
           transition: border-color 0.2s, transform 0.2s;
         }
 
         .person-card:hover {
-          border-color: #10b981;
+          border-color: rgba(229, 199, 107, 0.42);
           transform: translateY(-2px);
         }
 
-        .person-rank {
-          position: absolute;
-          top: 12px;
-          left: 14px;
-          color: #34d399;
-          font-size: 19px;
-          font-weight: 900;
-          direction: ltr;
+        .person-main {
+          display: grid;
+          grid-template-columns: 38px 76px minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 15px;
+          min-width: 0;
+        }
+
+        .rank-badge {
+          display: grid;
+          place-items: center;
+          width: 36px;
+          height: 36px;
+          border: 1px solid var(--eco-border);
+          border-radius: 11px;
+          color: var(--eco-gold);
+          font-family: Arial, sans-serif;
+          font-size: 13px;
+          font-weight: 800;
         }
 
         .person-photo {
-          position: relative;
-          display: grid;
-          place-items: center;
-          width: 84px;
-          height: 84px;
+          width: 76px;
+          height: 76px;
           overflow: hidden;
-          border: 2px solid #10b98166;
-          border-radius: 18px;
-          background: linear-gradient(135deg, #064e3b, #1e293b);
+          border: 1px solid rgba(229, 199, 107, 0.3);
+          border-radius: 14px;
+          background: #202939;
         }
 
         .person-photo img {
-          position: absolute;
-          inset: 0;
+          display: block;
           width: 100%;
           height: 100%;
           object-fit: cover;
         }
 
-        .photo-fallback {
-          color: #a7f3d0;
-          font-size: 22px;
+        .photo-placeholder {
+          display: grid;
+          width: 100%;
+          height: 100%;
+          place-items: center;
+          color: var(--eco-gold);
+          font-size: 25px;
           font-weight: 800;
         }
 
         .person-info {
-          width: 100%;
           min-width: 0;
-          padding-left: 26px;
-        }
-
-        .person-label {
-          margin: 0 0 5px;
-          color: #34d399;
-          font-size: 9px;
-          font-weight: 800;
-          letter-spacing: 1px;
         }
 
         .person-info h3 {
           margin: 0 0 7px;
-          font-size: 17px;
+          font-size: 16px;
           overflow-wrap: anywhere;
         }
 
         .person-company,
         .person-country {
-          margin: 3px 0 0;
-          color: #cbd5e1;
-          font-size: 12px;
-          line-height: 1.8;
-        }
-
-        .person-country {
-          color: #94a3b8;
+          margin: 4px 0 0;
+          color: var(--eco-muted);
+          font-size: 11px;
+          line-height: 1.7;
         }
 
         .person-wealth {
-          grid-column: 1 / -1;
-          width: 100%;
-          margin-top: 2px;
-          padding-top: 12px;
-          border-top: 1px solid #2b405b;
-          direction: ltr;
+          min-width: 120px;
           text-align: left;
+          direction: ltr;
         }
 
-        .person-wealth p {
-          margin: 0 0 7px;
-          color: #94a3b8;
-          font-size: 11px;
-          line-height: 1.8;
+        .person-wealth span {
+          margin-bottom: 7px;
+          font-size: 10px;
         }
 
         .person-wealth strong {
           display: block;
-          color: #6ee7b7;
-          font-size: 25px;
-          overflow-wrap: anywhere;
-        }
-
-        .person-wealth span {
-          display: block;
-          margin-top: 7px;
-          font-size: 12px;
+          color: var(--eco-gold);
+          font-family: Arial, sans-serif;
+          font-size: 20px;
+          white-space: nowrap;
         }
 
         .person-wealth small {
-          color: #94a3b8;
-          font-size: 10px;
-        }
-
-        .person-wealth .estimated-change {
-          margin-top: 8px;
-          color: #94a3b8;
-          direction: rtl;
-          text-align: right;
-        }
-
-        .estimated-change b {
-          color: #e2e8f0;
-        }
-
-        .person-updated {
-          grid-column: 1 / -1;
-          margin: 0;
-          color: #64748b;
-          font-size: 10px;
-          line-height: 1.8;
-        }
-
-        .change-positive {
-          color: #34d399 !important;
-        }
-
-        .change-negative {
-          color: #fb7185 !important;
-        }
-
-        .change-neutral {
-          color: #94a3b8 !important;
-        }
-
-        .table-section {
-          overflow: hidden;
-          border: 1px solid #24364d;
-          border-radius: 18px;
-          background: #0d1728;
-        }
-
-        .table-heading {
-          margin: 0;
-          padding: 18px;
-          border-bottom: 1px solid #24364d;
-        }
-
-        .live-indicator {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          color: #94a3b8;
-          font-size: 10px;
-          white-space: nowrap;
-        }
-
-        .live-indicator span {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: #34d399;
-        }
-
-        .table-scroll {
-          width: 100%;
-          overflow-x: auto;
-        }
-
-        .table-scroll table {
-          width: 100%;
-          min-width: 760px;
-          border-collapse: collapse;
-          color: #cbd5e1;
-          text-align: right;
-        }
-
-        .table-scroll th,
-        .table-scroll td {
-          padding: 13px;
-          border-bottom: 1px solid #24364d;
-          white-space: nowrap;
-        }
-
-        .table-scroll th {
-          background: #1e3048;
-          color: #6ee7b7;
+          display: inline-block;
+          margin-top: 7px;
+          font-family: Arial, sans-serif;
           font-size: 11px;
         }
 
-        .table-scroll tbody tr:nth-child(even) {
-          background: #142238;
+        .change-positive {
+          color: #6ed8a0;
         }
 
-        .table-scroll tbody tr:hover {
-          background: #20334a;
+        .change-negative {
+          color: #ff8888;
+        }
+
+        .person-news {
+          margin-top: 16px;
+          padding: 15px;
+          border: 1px solid rgba(255, 255, 255, 0.065);
+          border-radius: 13px;
+          background: rgba(4, 8, 15, 0.45);
+        }
+
+        .news-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .news-kicker {
+          color: var(--eco-gold2);
+          font-family: Arial, sans-serif;
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 1px;
+        }
+
+        .news-heading h4 {
+          margin: 5px 0 0;
+          font-size: 13px;
+        }
+
+        .news-content {
+          margin-top: 12px;
+        }
+
+        .news-content h5 {
+          margin: 0 0 8px;
+          color: #f4d98b;
+          font-size: 14px;
+          line-height: 1.9;
+        }
+
+        .news-body {
+          margin: 0;
+          color: #d0d5df;
+          font-size: 12px;
+          line-height: 2.1;
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        }
+
+        .empty-news {
+          margin: 10px 0 0;
+          color: var(--eco-muted);
+          font-size: 11px;
+          line-height: 1.9;
+        }
+
+        .news-date {
+          display: block;
+          margin-top: 12px;
+          color: #8792a3;
+          font-size: 10px;
+        }
+
+        .news-editor {
+          display: grid;
+          gap: 12px;
+          margin-top: 16px;
+        }
+
+        .news-editor label,
+        .admin-modal label {
+          display: grid;
+          gap: 7px;
+          color: #c8d0dd;
+          font-size: 11px;
+        }
+
+        .news-editor input,
+        .news-editor textarea,
+        .admin-modal input {
+          width: 100%;
+          min-width: 0;
+          padding: 11px 12px;
+          border: 1px solid #30394a;
+          border-radius: 9px;
+          outline: none;
+          color: #f7f8fa;
+          background: #0b1019;
+          font-size: 12px;
+          line-height: 1.8;
+        }
+
+        .news-editor textarea {
+          resize: vertical;
+        }
+
+        .news-editor input:focus,
+        .news-editor textarea:focus,
+        .admin-modal input:focus {
+          border-color: var(--eco-gold2);
+        }
+
+        .editor-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 9px;
+        }
+
+        .primary-button,
+        .outline-button,
+        .quiet-button {
+          padding: 10px 14px;
+          border-radius: 9px;
+          font-size: 11px;
+          font-weight: 700;
+          transition: opacity 0.2s, background 0.2s;
+        }
+
+        .primary-button {
+          border: 1px solid var(--eco-gold);
+          color: #14110a;
+          background: var(--eco-gold);
+        }
+
+        .primary-button:hover {
+          background: #f2d984;
+        }
+
+        .outline-button {
+          border: 1px solid var(--eco-border);
+          color: var(--eco-gold);
+          background: transparent;
+        }
+
+        .outline-button:hover {
+          background: rgba(229, 199, 107, 0.08);
+        }
+
+        .quiet-button {
+          border: 1px solid #30394a;
+          color: #c2cad6;
+          background: transparent;
+        }
+
+        .text-button {
+          display: block;
+          margin-top: 7px;
+          padding: 0;
+          border: 0;
+          color: var(--eco-gold);
+          background: transparent;
+          font-size: 11px;
+        }
+
+        .table-wrap {
+          overflow-x: auto;
+          border: 1px solid var(--eco-border);
+          border-radius: 15px;
+          background: #0e141e;
+        }
+
+        .billionaires-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 11px;
+          text-align: right;
+        }
+
+        .billionaires-table th {
+          padding: 12px 10px;
+          color: var(--eco-gold);
+          background: #171e2a;
+          font-size: 10px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .billionaires-table td {
+          padding: 10px;
+          border-top: 1px solid rgba(255, 255, 255, 0.055);
+          color: #c6cedb;
+          font-size: 10px;
+          line-height: 1.7;
+        }
+
+        .billionaires-table tbody tr:hover {
+          background: rgba(229, 199, 107, 0.035);
+        }
+
+        .table-rank {
+          color: var(--eco-gold);
+          font-family: Arial, sans-serif;
+          font-size: 10px;
+          font-weight: 800;
         }
 
         .table-name {
-          color: #f8fafc;
+          color: #f4f5f8 !important;
           font-weight: 700;
         }
 
         .table-wealth {
-          color: #6ee7b7;
-          font-weight: 700;
-        }
-
-        .rank-badge {
-          display: inline-grid;
-          place-items: center;
-          min-width: 28px;
-          height: 28px;
-          padding: 0 6px;
-          border-radius: 8px;
-          background: #064e3b70;
-          color: #6ee7b7;
-          font-weight: 800;
-        }
-
-        .table-photo {
-          position: relative;
-          display: grid;
-          place-items: center;
-          width: 38px;
-          height: 38px;
-          overflow: hidden;
-          border-radius: 50%;
-          background: #064e3b;
-          color: #a7f3d0;
-          font-size: 11px;
-          font-weight: 800;
-        }
-
-        .table-photo img {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
+          color: var(--eco-gold) !important;
+          direction: ltr;
+          text-align: right;
+          white-space: nowrap;
+          font-family: Arial, sans-serif;
         }
 
         .page-footer {
-          margin-top: 24px;
-          color: #94a3b8;
-          font-size: 11px;
-          line-height: 2;
-          text-align: center;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          margin-top: 42px;
+          padding-top: 20px;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          color: var(--eco-muted);
+          font-size: 10px;
         }
 
-        .page-footer a {
-          color: #34d399;
-          text-decoration: underline;
+        .page-footer > span:first-child {
+          color: var(--eco-gold);
+          font-family: Arial, sans-serif;
+          font-size: 14px;
+          font-weight: 900;
         }
 
-        .status-message,
-        .empty-message,
-        .error-message {
-          margin: 20px 0;
-          padding: 20px;
-          border: 1px solid #2b405b;
-          border-radius: 15px;
-          background: #0d1728;
-          color: #cbd5e1;
-          text-align: center;
+        .admin-link {
+          padding: 8px 10px;
+          border: 1px solid var(--eco-border);
+          border-radius: 8px;
+          color: var(--eco-gold);
+          background: transparent;
+          font-size: 10px;
+        }
+
+        .notice,
+        .loading-panel,
+        .status-message {
+          max-width: 1120px;
+          margin: 16px auto;
+          padding: 13px 15px;
+          border: 1px solid var(--eco-border);
+          border-radius: 11px;
+          color: #d7dce5;
+          background: var(--eco-panel);
+          font-size: 12px;
           line-height: 1.9;
         }
 
+        .error-notice {
+          border-color: rgba(255, 120, 120, 0.3);
+          color: #ffb6b6;
+        }
+
         .status-message {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
+          position: fixed;
+          z-index: 100;
+          right: 20px;
+          bottom: 18px;
+          left: 20px;
+          max-width: 520px;
+          margin: auto;
+          border-color: rgba(229, 199, 107, 0.4);
+          background: #171e2a;
+          box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
         }
 
-        .loading-dot {
-          width: 8px;
-          height: 8px;
-          flex-shrink: 0;
-          border-radius: 50%;
-          background: #34d399;
-          animation: econova-pulse 1s infinite alternate;
+        .modal-backdrop {
+          position: fixed;
+          z-index: 200;
+          inset: 0;
+          display: grid;
+          place-items: center;
+          padding: 18px;
+          background: rgba(0, 0, 0, 0.72);
+          backdrop-filter: blur(6px);
         }
 
-        .error-message {
-          border-color: #f8717155;
-          color: #fca5a5;
+        .admin-modal {
+          position: relative;
+          width: 100%;
+          max-width: 420px;
+          max-height: 90vh;
+          overflow-y: auto;
+          padding: 26px;
+          border: 1px solid var(--eco-border);
+          border-radius: 18px;
+          background: #111722;
+          box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
         }
 
-        .error-message h2 {
-          margin-top: 0;
+        .admin-modal h3 {
+          margin: 0 0 10px;
+          font-size: 22px;
         }
 
-        @keyframes econova-pulse {
-          from {
-            opacity: 0.3;
-            transform: scale(0.8);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1.15);
-          }
+        .admin-modal p {
+          color: var(--eco-muted);
+          font-size: 12px;
+          line-height: 2;
         }
 
-        @media (max-width: 600px) {
+        .admin-modal form {
+          display: grid;
+          gap: 15px;
+        }
+
+        .modal-close {
+          position: absolute;
+          top: 10px;
+          left: 12px;
+          width: 32px;
+          height: 32px;
+          border: 0;
+          border-radius: 8px;
+          color: #fff;
+          background: #242d3b;
+          font-size: 23px;
+        }
+
+        .full-button {
+          width: 100%;
+          margin-top: 6px;
+        }
+
+        .form-error {
+          color: #ffaaaa !important;
+        }
+
+        @media (max-width: 650px) {
           .econova-page {
-            padding: 22px 10px 36px;
+            padding-right: 12px;
+            padding-left: 12px;
+          }
+
+          .page-header {
+            min-height: 62px;
+          }
+
+          .brand {
+            font-size: 20px;
+          }
+
+          .hero {
+            padding-top: 36px;
+          }
+
+          .hero-stats {
+            gap: 8px;
+          }
+
+          .stat-box {
+            padding: 13px 11px;
+          }
+
+          .stat-box span {
+            font-size: 10px;
+            line-height: 1.8;
           }
 
           .person-card {
-            grid-template-columns: 70px minmax(0, 1fr);
-            gap: 11px;
-            padding: 13px;
+            padding: 10px;
+            border-radius: 13px;
+          }
+
+          .person-main {
+            grid-template-columns: 27px 54px minmax(0, 1fr);
+            gap: 9px;
+          }
+
+          .rank-badge {
+            width: 27px;
+            height: 29px;
+            border-radius: 8px;
+            font-size: 10px;
           }
 
           .person-photo {
-            width: 70px;
-            height: 70px;
-            border-radius: 15px;
+            width: 54px;
+            height: 54px;
+            border-radius: 10px;
           }
 
           .person-info h3 {
-            font-size: 15px;
+            margin-bottom: 4px;
+            font-size: 12px;
           }
 
-          .person-wealth strong {
-            font-size: 22px;
-          }
-
-          .table-heading {
-            padding: 14px 10px;
-          }
-
-          .section-heading h2,
-          .table-heading h2 {
-            font-size: 18px;
-          }
-
-          .live-indicator {
+          .person-company,
+          .person-country {
+            margin-top: 2px;
             font-size: 9px;
           }
 
-          .ticker-track span {
-            padding: 8px 12px;
+          .person-wealth {
+            grid-column: 2 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+            text-align: right;
+            direction: rtl;
+          }
+
+          .person-wealth span {
+            margin: 0;
+            font-size: 9px;
+          }
+
+          .person-wealth strong {
+            font-size: 16px;
+          }
+
+          .person-wealth small {
+            margin-top: 0;
             font-size: 10px;
+          }
+
+          .person-news {
+            margin-top: 12px;
+            padding: 11px;
+          }
+
+          .news-heading h4 {
+            font-size: 11px;
+          }
+
+          .outline-button,
+          .primary-button,
+          .quiet-button {
+            padding: 9px 10px;
+            font-size: 10px;
+          }
+
+          .billionaires-table {
+            min-width: 470px;
+          }
+
+          .billionaires-table th,
+          .billionaires-table td {
+            padding: 8px 7px;
+            font-size: 9px;
+          }
+
+          .page-footer {
+            align-items: flex-start;
+          }
+
+          .section-heading p {
+            max-width: 250px;
           }
         }
 
@@ -1071,13 +1484,11 @@ export default function BillionairesPage() {
           *,
           *::before,
           *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
             scroll-behavior: auto !important;
+            transition-duration: 0.01ms !important;
           }
         }
       `}</style>
-    </main>
+    </>
   );
 }
