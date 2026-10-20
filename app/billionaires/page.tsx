@@ -766,3 +766,146 @@ export default function BillionairesPage() {
 
         .table-name {
     
+          color: #f8fafc;
+          font-weight: 700;
+        }
+
+        .table-wealth {
+          color: #6ee7b7;
+          font-weight: 700;
+        }
+
+        .rank-badge {
+          display: inline-grid;
+          place-items: center;
+          min-width: 30px;
+          height: 30px;
+          padding: 0 7px;
+          border-radius: 9px;
+          background: #064e3b70;
+          color: #6ee7b7;
+          font-weight: 800;
+        }
+
+        .page-footer {
+          margin-top: 28px;
+          text-align: center;
+          color: #94a3b8;
+          font-size: 12px;
+          line-height: 2;
+        }
+
+        .page-footer a {
+          color: #34d399;
+          text-decoration: underline;
+        }
+
+        .status-message,
+        .empty-message,
+        .error-message {
+          margin: 24px 0;
+          padding: 22px;
+          border: 1px solid #2b405b;
+          border-radius: 16px;
+          background: #0d1728;
+          color: #cbd5e1;
+          text-align: center;
+          line-height: 1.9;
+        }
+
+        .status-message {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+
+        .loading-dot {
+          animation: econova-pulse 1s infinite alternate;
+        }
+
+        .error-message {
+          border-color: #f8717155;
+          color: #fca5a5;
+        }
+
+        .error-message h2 {
+          margin-top: 0;
+        }
+
+        @keyframes econova-pulse {
+          from {
+            opacity: 0.3;
+            transform: scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1.15);
+          }
+        }
+
+        @media (max-width: 700px) {
+          .econova-page {
+            padding: 24px 12px 40px;
+          }
+
+          .person-card {
+            grid-template-columns: 34px 60px minmax(0, 1fr);
+            gap: 12px;
+            padding: 16px 12px;
+          }
+
+          .person-photo {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+          }
+
+          .person-rank {
+            font-size: 19px;
+          }
+
+          .person-info h3 {
+            font-size: 16px;
+          }
+
+          .person-wealth {
+            grid-column: 2 / -1;
+            min-width: 0;
+            padding-top: 12px;
+            border-top: 1px solid #2b405b;
+            text-align: right;
+          }
+
+          .person-wealth strong {
+            font-size: 24px;
+            text-align: right;
+          }
+
+          .person-updated {
+            grid-column: 1 / -1;
+          }
+
+          .section-heading h2,
+          .table-heading h2 {
+            font-size: 19px;
+          }
+
+          .table-heading {
+            padding: 16px 12px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
+      `}</style>
+    </main>
+  );
+}
+
