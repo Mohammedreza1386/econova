@@ -134,10 +134,12 @@ export default function Home() {
             ECO<span style={{ color: "#fff" }}>NOVA</span>
           </a>
           <nav>
-            <a href="#markets">بازارها</a>
-            <a href="#news">اخبار</a>
-            <a href="#about">درباره ما</a>
-          </nav>
+  <a href="#markets">بازارها</a>
+  <a href="#gold">طلا و سکه</a>
+  <a href="/billionaires">میلیاردرها</a>
+  <a href="#news">اخبار</a>
+  <a href="#about">درباره ما</a>
+</nav>
         </div>
       </header>
 
