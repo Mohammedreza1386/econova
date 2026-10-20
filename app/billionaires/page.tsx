@@ -221,6 +221,108 @@ export default function BillionairesPage() {
           </>
         )}
       </div>
+      
+<style jsx global>{`
+  body {
+    margin: 0;
+    background: #07111f;
+  }
+
+  main {
+    box-sizing: border-box;
+    min-height: 100vh;
+  }
+
+  main * {
+    box-sizing: border-box;
+  }
+
+  main header {
+    margin-bottom: 32px;
+  }
+
+  main h1 {
+    color: #f8fafc;
+    font-size: clamp(28px, 5vw, 46px);
+    line-height: 1.5;
+    margin: 8px 0;
+  }
+
+  main h2 {
+    color: #e2e8f0;
+    font-size: 23px;
+    margin: 0 0 18px;
+  }
+
+  main p {
+    line-height: 1.9;
+  }
+
+  main section article {
+    background: linear-gradient(145deg, #16253b, #0d1728) !important;
+    border: 1px solid #2b405b !important;
+    border-radius: 18px !important;
+    padding: 20px !important;
+    box-shadow: 0 10px 28px #00000025;
+    transition: transform .2s, border-color .2s;
+  }
+
+  main section article:hover {
+    transform: translateY(-4px);
+    border-color: #10b981 !important;
+  }
+
+  main table {
+    border-collapse: collapse;
+    width: 100%;
+    color: #e2e8f0;
+  }
+
+  main th {
+    background: #1e3048;
+    color: #6ee7b7;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  main th,
+  main td {
+    padding: 16px;
+    text-align: right;
+    border-bottom: 1px solid #24364d;
+  }
+
+  main tbody tr:nth-child(even) {
+    background: #142238;
+  }
+
+  main tbody tr:hover {
+    background: #20334a;
+  }
+
+  main a {
+    color: #34d399;
+  }
+
+  @media (max-width: 600px) {
+    main {
+      padding: 22px 12px !important;
+    }
+
+    main h1 {
+      font-size: 29px;
+    }
+
+    main h2 {
+      font-size: 20px;
+    }
+
+    main section article {
+      padding: 16px !important;
+    }
+  }
+`}</style>
+      
     </main>
   );
 }
