@@ -7,6 +7,7 @@ type Billionaire = {
   id: number;
   rank: number;
   name: string;
+    image_url?: string | null;
   company: string | null;
   country: string | null;
   net_worth_billions: number;
