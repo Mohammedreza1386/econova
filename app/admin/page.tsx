@@ -100,6 +100,7 @@ export default function AdminPage() {
     }
   }
   
+
 function changeField(
   id: string,
   field: keyof Billionaire,
@@ -108,21 +109,12 @@ function changeField(
   setPeople((current) =>
     current.map((person) =>
       person.id === id
-        ? {
-            ...person,
-            [field]:
-              field === "rank" ||
-              field === "net_worth_billions" ||
-              field === "daily_change_pct"
-                ? value.trim() === "" || value.trim() === "-"
-                  ? value
-                  : Number(value.replace(/^\+/, ""))
-                : value,
-          }
+        ? { ...person, [field]: value }
         : person
     )
   );
 }
+
 
 
   async function savePerson(person: Billionaire) {
