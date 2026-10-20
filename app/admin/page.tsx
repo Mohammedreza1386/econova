@@ -15,7 +15,7 @@ type Billionaire = {
   image_url: string | null;
   bio: string | null;
   net_worth_billions: number;
-  daily_change_pct: number;
+  daily_change_pct: number | string;
 };
 
 export default function AdminPage() {
