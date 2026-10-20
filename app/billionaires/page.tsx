@@ -322,7 +322,6 @@ export default function BillionairesPage() {
     }
   }
 `}</style>
-      
     </main>
   );
 }
