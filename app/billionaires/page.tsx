@@ -29,7 +29,7 @@ export default function BillionairesPage() {
   useEffect(() => {
     async function loadPeople() {
       try {
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const url = "https://zusbebjskchgehdjvpsm.supabase.co";
         const key = "sb_publishable_WGMEA7-K8FAResrVCL8GJQ_6KCxrvmK";;
 
         if (!url || !key) {
