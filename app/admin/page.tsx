@@ -362,6 +362,7 @@ function changeField(
   );
 }
 
+
 function Field({
   label,
   value,
@@ -373,27 +374,60 @@ function Field({
   onChange: (value: string) => void;
   type?: string;
 }) {
+  const isDailyChange = label.includes("تغییر روزانه");
+
   return (
     <label style={{ display: "block", marginTop: "12px" }}>
       <span>{label}</span>
-      <input
-type={type === "number" ? "text" : type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        style={{
-          width: "100%",
-          boxSizing: "border-box",
-          padding: "11px",
-          marginTop: "5px",
-          borderRadius: "9px",
-          border: "1px solid #334155",
-          background: "#0f172a",
-          color: "#f8fafc",
-        }}
-      />
+      <div style={{ display: "flex", gap: "8px", marginTop: "5px" }}>
+        {isDailyChange && (
+          <button
+            type="button"
+            onClick={() => {
+              const number = Number(value) || 0;
+              onChange(String(-Math.abs(number)));
+            }}
+            style={{ padding: "10px 16px" }}
+          >
+            −
+          </button>
+        )}
+
+        <input
+          type="text"
+          inputMode="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            boxSizing: "border-box",
+            padding: "11px",
+            marginTop: "0",
+            borderRadius: "9px",
+            border: "1px solid #334155",
+            background: "#0f172a",
+            color: "#f8fafc",
+          }}
+        />
+
+        {isDailyChange && (
+          <button
+            type="button"
+            onClick={() => {
+              const number = Number(value) || 0;
+              onChange(String(Math.abs(number)));
+            }}
+            style={{ padding: "10px 16px" }}
+          >
+            +
+          </button>
+        )}
+      </div>
     </label>
   );
 }
+
 
 const buttonStyle = {
   padding: "11px 15px",
