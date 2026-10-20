@@ -132,7 +132,7 @@ export default function BillionairesPage() {
                 پنج نفر ثروتمند برتر
               </h2>
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="flex flex-col gap-4">
                 {topFive.map((person) => (
                   <article
                     key={person.id}
