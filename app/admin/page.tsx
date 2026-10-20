@@ -377,7 +377,7 @@ function Field({
     <label style={{ display: "block", marginTop: "12px" }}>
       <span>{label}</span>
       <input
-        type={type}
+type={type === "number" ? "text" : type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         style={{
