@@ -94,7 +94,7 @@ export default function BillionairesPage() {
           </p>
         </header>
 
-        <section className="mb-8 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center">
+        <section style={{marginBottom:32,border:"1px solid #10b98166",borderRadius:20,background:"linear-gradient(135deg,#064e3b66,#0f172a)",padding:24,textAlign:"center",boxShadow:"0 12px 35px #00000030"}}>
           <p className="text-sm text-emerald-300">
             مجموع ثروت ۱۰ نفر اول
           </p>
