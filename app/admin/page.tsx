@@ -100,7 +100,6 @@ export default function AdminPage() {
     }
   }
   
-
 function changeField(
   id: string,
   field: keyof Billionaire,
@@ -114,8 +113,6 @@ function changeField(
     )
   );
 }
-
-
 
   async function savePerson(person: Billionaire) {
     setBusy(true);
