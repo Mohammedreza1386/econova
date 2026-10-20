@@ -1,9 +1,159 @@
 
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Billionaire = {
+  id: number;
+  rank: number;
+  name: string;
+  image_url?: string | null;
+  company: string | null;
+  country: string | null;
+  net_worth_billions: number;
+  daily_change_pct: number | null;
+  updated_at: string | null;
+  source_url: string | null;
+  source_checked_at: string | null;
+};
+
+const SUPABASE_URL =
+  "https://zusbebjskchgehdjvpsm.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_WGMEA7-K8FAResrVCL8GJQ_6KCxrvmK";
+
+const money = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 1,
+  }).format(Number.isFinite(value) ? value : 0);
+
+function photoFor(name: string): string | null {
+  const n = name.toLowerCase();
+
+  const photos: [string[], string][] = [
+    [["elon musk"], "https://commons.wikimedia.org/wiki/Special:FilePath/Elon_Musk_Royal_Society_%28crop2%29.jpg"],
+    [["jeff bezos"], "https://commons.wikimedia.org/wiki/Special:FilePath/Jeff_Bezos_2016.jpg"],
+    [["mark zuckerberg"], "https://commons.wikimedia.org/wiki/Special:FilePath/Mark_Zuckerberg_F8_2018_keynote.jpg"],
+    [["warren buffett"], "https://commons.wikimedia.org/wiki/Special:FilePath/Warren_Buffett_at_the_2015_SelectUSA_Investment_Summit.jpg"],
+    [["larry page"], "https://commons.wikimedia.org/wiki/Special:FilePath/Larry_Page_in_the_European_Parliament%2C_17.06.2009.jpg"],
+    [["sergey brin"], "https://commons.wikimedia.org/wiki/Special:FilePath/Sergey_Brin_Ted_2010.jpg"],
+    [["bernard arnault"], "https://commons.wikimedia.org/wiki/Special:FilePath/Bernard_Arnault.jpg"],
+    [["larry ellison"], "https://commons.wikimedia.org/wiki/Special:FilePath/Larry_Ellison.jpg"],
+  ];
+
+  return (
+    photos.find(([names]) =>
+      names.some((item) => n.includes(item))
+    )?.[1] ?? null
+  );
+}
+
+function initials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0] ?? "")
+    .join("");
+}
+
+export default function BillionairesPage() {
+  const [people, setPeople] = useState<Billionaire[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [animatedTotal, setAnimatedTotal] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPeople() {
+      try {
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/billionaires?select=id,rank,name,company,country,net_worth_billions,daily_change_pct,updated_at,source_url,source_checked_at&order=rank.asc&limit=50`,
+          {
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+            },
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `خطا در دریافت اطلاعات دیتابیس (${response.status})`
+          );
+        }
+
+        const data: Billionaire[] = await response.json();
+
+        if (!cancelled) {
+          setPeople(data);
+          setError("");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "دریافت اطلاعات ناموفق بود."
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadPeople();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const topFive = people
+    .slice()
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, 5);
+
+  const topTen = people
+    .filter((person) => person.rank <= 10)
+    .sort((a, b) => a.rank - b.rank);
+
+  const topTenTotal = topTen.reduce(
+    (total, person) =>
+      total + (Number(person.net_worth_billions) || 0),
+    0
+  );
+
+  useEffect(() => {
+    let frame = 0;
+    let startTime: number | null = null;
+    const duration = 1600;
+
+    setAnimatedTotal(0);
+
+    if (topTenTotal <= 0) return;
+
+    const animate = (timestamp: number) => {
+      if (startTime === null) startTime = timestamp;
+
+      const progress = Math.min(
+        (timestamp - startTime) / duration,
+        1
+      );
+
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setAnimatedTotal(topTenTotal * eased);
+
+      if (progress < 1) {
         frame = requestAnimationFrame(animate);
       }
     };
 
     frame = requestAnimationFrame(animate);
+
     return () => cancelAnimationFrame(frame);
   }, [topTenTotal]);
 
@@ -23,18 +173,7 @@
           <p className="total-value" dir="ltr">
             ${money(animatedTotal)} میلیارد
           </p>
-          <div
-            className="total-progress"
-            role="progressbar"
-            aria-label="نمایش پیشرفت شمارش مجموع ثروت"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={
-              topTenTotal > 0
-                ? Math.min(100, (animatedTotal / topTenTotal) * 100)
-                : 0
-            }
-          >
+          <div className="total-progress">
             <span
               style={{
                 width:
@@ -45,13 +184,12 @@
             />
           </div>
           <p className="total-note">
-            مجموع ثروت ثبت‌شده برای رتبه‌های ۱ تا ۱۰؛ در صورت ناقص بودن دیتابیس،
-            ممکن است همهٔ ده رتبه در محاسبه موجود نباشند.
+            محاسبه‌شده از اطلاعات ثبت‌شده برای رتبه‌های ۱ تا ۱۰
           </p>
         </section>
 
         {!loading && !error && topTen.length > 0 && (
-          <section className="wealth-ticker" aria-label="مجموع ثروت ده نفر اول">
+          <section className="wealth-ticker">
             <div className="ticker-track">
               <span>
                 ECONOVA WEALTH INDEX ✦ مجموع ثروت ۱۰ نفر اول: $
@@ -93,7 +231,7 @@
                 <span className="section-number">01</span>
                 <div>
                   <h2>پنج نفر ثروتمند برتر</h2>
-                  <p>برای مشاهدهٔ کارت‌ها به چپ و راست بکش</p>
+                  <p>برای دیدن کارت‌ها به چپ و راست بکش</p>
                 </div>
               </div>
 
@@ -448,7 +586,6 @@
           margin-bottom: 42px;
         }
 
-        /* کارت‌های پنج نفر اول به‌صورت افقی و قابل ورق‌زدن */
         .top-list {
           display: flex;
           gap: 16px;
@@ -724,14 +861,16 @@
           color: #cbd5e1;
           text-align: center;
           line-height: 1.9;
-    }
-    .status-message {
+        }
+
+        .status-message {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
         }
-    .loading-dot {
+
+        .loading-dot {
           width: 8px;
           height: 8px;
           flex-shrink: 0;
@@ -769,6 +908,7 @@
             flex-basis: min(86vw, 330px);
             padding: 18px;
           }
+
           .table-heading {
             padding: 16px 12px;
           }
