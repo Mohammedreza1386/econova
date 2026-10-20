@@ -80,7 +80,7 @@ export default function BillionairesPage() {
     );
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
+    <main style={{minHeight:"100vh",background:"linear-gradient(135deg,#07111f,#101d32,#07111f)",padding:"32px 16px",color:"#f8fafc",direction:"rtl",fontFamily:"Arial,sans-serif"}}>
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 text-center">
           <p className="mb-2 text-sm font-semibold tracking-widest text-emerald-400">
