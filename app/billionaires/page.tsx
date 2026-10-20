@@ -2194,4 +2194,255 @@ export default function BillionairesPage() {
   outline: 0;
   background: #08130f;
   color: var(--eco-text);
-  font-size: 
+  font-size:     12px;
+}
+
+.eco-admin-form textarea {
+  resize: vertical;
+  line-height: 2;
+}
+
+.eco-admin-form input:focus,
+.eco-admin-form textarea:focus,
+.eco-admin-form select:focus,
+.eco-login-modal input:focus {
+  border-color: rgba(185, 242, 124, 0.6);
+}
+
+.eco-admin-form .eco-button {
+  align-self: flex-start;
+}
+
+.eco-admin-message {
+  margin: 0;
+  color: var(--eco-green);
+  font-size: 11px;
+  line-height: 1.9;
+}
+
+.eco-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.eco-login-modal {
+  width: min(100%, 420px);
+  position: relative;
+  padding: 30px;
+  border: 1px solid var(--eco-border);
+  border-radius: 18px;
+  background: #0d1b17;
+  box-shadow: 0 25px 100px rgba(0, 0, 0, 0.4);
+}
+
+.eco-modal-close {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  width: 33px;
+  height: 33px;
+  border: 1px solid var(--eco-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--eco-muted);
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.eco-login-icon {
+  width: 45px;
+  height: 45px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+  border-radius: 13px;
+  background: var(--eco-green);
+  color: #102017;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.eco-login-modal h2 {
+  margin: 8px 0;
+  font-size: 23px;
+}
+
+.eco-login-modal > p {
+  margin: 0 0 24px;
+  color: var(--eco-muted);
+  font-size: 11px;
+  line-height: 2;
+}
+
+.eco-login-submit {
+  width: 100%;
+  margin-top: 5px;
+}
+
+.eco-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 25px 0;
+  border-top: 1px solid var(--eco-border);
+}
+
+.eco-footer > p {
+  color: var(--eco-muted);
+  font-size: 10px;
+  line-height: 1.8;
+}
+
+.eco-back-top {
+  color: var(--eco-muted);
+  font-size: 11px;
+}
+
+@keyframes eco-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+@keyframes eco-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1000px) {
+  .eco-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .eco-stat-main {
+    grid-column: 1 / -1;
+  }
+
+  .eco-feature-person {
+    grid-template-columns: 210px 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .eco-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 13px 0;
+  }
+
+  .eco-nav {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 8px 0 2px;
+    gap: 22px;
+    white-space: nowrap;
+  }
+
+  .eco-hero {
+    grid-template-columns: 1fr;
+    padding: 44px 0 25px;
+  }
+
+  .eco-hero-art {
+    min-height: 290px;
+  }
+
+  .eco-stats-grid {
+    gap: 10px;
+    margin-bottom: 60px;
+  }
+
+  .eco-section {
+    margin-bottom: 60px;
+  }
+
+  .eco-person-row {
+    grid-template-columns: 24px 43px minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    gap: 9px;
+    min-height: 78px;
+    padding: 10px;
+  }
+
+  .eco-person-row .eco-person-info {
+    grid-column: 3 / 5;
+    grid-row: 1;
+  }
+
+  .eco-person-row .eco-person-worth {
+    grid-column: 3;
+    grid-row: 2;
+    flex-direction: row;
+    gap: 5px;
+  }
+
+  .eco-person-row .eco-change {
+    grid-column: 4;
+    grid-row: 2;
+    justify-self: end;
+  }
+
+  .eco-person-row .eco-row-arrow {
+    display: none;
+  }
+
+  .eco-person-row .eco-person-rank,
+  .eco-person-row .eco-person-photo-wrap {
+    grid-row: 1 / 3;
+  }
+
+  .eco-feature-person {
+    grid-template-columns: 1fr;
+  }
+
+  .eco-table {
+    min-width: 680px;
+  }
+
+  .eco-news-card {
+    grid-template-columns: 55px 1fr;
+    gap: 13px;
+    padding: 15px;
+  }
+
+  .eco-news-avatar img {
+    width: 54px;
+    height: 54px;
+  }
+
+  .eco-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+    `}</style>
+  </main>
+);
+}
