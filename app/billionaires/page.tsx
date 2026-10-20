@@ -218,6 +218,16 @@ export default function BillionairesPage() {
                         </td>
                         <td className="p-4 font-semibold text-emerald-400">
                           ${money(Number(person.net_worth_billions))}
+                          <td
+  className={`p-4 font-semibold ${
+    Number(person.daily_change_pct ?? 0) >= 0
+      ? "text-emerald-400"
+      : "text-red-400"
+  }`}
+>
+  {Number(person.daily_change_pct ?? 0) > 0 ? "+" : ""}
+  {Number(person.daily_change_pct ?? 0).toFixed(2)}%
+</td>
                         </td>
                       </tr>
                     ))}
