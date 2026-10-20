@@ -1,741 +1,1167 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL =
-  "https://zusbebjskchgehdjvpsm.supabase.co";
-  "https://zusbebjskchgehdjvpsm.supabase.co";
-
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+import "./billionaires.css";
 
 type Billionaire = {
+  id: string | number;
   rank: number;
   name: string;
   company?: string | null;
   country?: string | null;
+  image_url?: string | null;
+  bio?: string | null;
   net_worth_billions: number | string;
   daily_change_pct?: number | string | null;
-  updated_at?: string | null;
+  daily_change_date?: string | null;
+  yesterday_net_worth_billions?: number | string | null;
   source_url?: string | null;
-  source_checked_at?: string | null;
-  image_url?: string | null;
+  updated_at?: string | null;
 };
 
 type BillionaireNews = {
-  billionaire_rank: number;
-  title: string;
-  content: string;
-  updated_at?: string;
+  id?: string | number;
+  billionaire_rank?: number;
+  rank?: number;
+  title?: string | null;
+  content?: string | null;
+  body?: string | null;
+  source_url?: string | null;
+  updated_at?: string | null;
+  [key: string]: unknown;
 };
 
-const EMPTY_NEWS: BillionaireNews[] = [1, 2, 3, 4, 5].map((rank) => ({
-  billionaire_rank: rank,
-  title: "",
-  content: "",
-}));
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
-const formatWealth = (value: number) =>
-  "$" +
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+
+const supabase: SupabaseClient | null =
+  SUPABASE_URL && SUPABASE_ANON_KEY
+    ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
+
+const FALLBACK_PHOTOS: Record<string, string> = {
+  "Elon Musk":
+    "https://unavatar.io/x/elonmusk",
+  "Jeff Bezos":
+    "https://unavatar.io/x/JeffBezos",
+  "Larry Page":
+    "https://commons.wikimedia.org/wiki/Special:FilePath/Larry_Page_in_the_European_Parliament%2C_17_July_2009.jpg",
+  "Sergey Brin":
+    "https://unavatar.io/x/sergeybrin",
+  "Mark Zuckerberg":
+    "https://unavatar.io/x/finkd",
+  "Michael Dell":
+    "https://unavatar.io/x/MichaelDell",
+  "Jensen Huang":
+    "https://unavatar.io/x/nvidia",
+  "Larry Ellison":
+    "https://unavatar.io/x/Oracle",
+  "Steve Ballmer":
+    "https://unavatar.io/x/SteveBallmer",
+  "Warren Buffett":
+    "https://unavatar.io/x/WarrenBuffett",
+};
+
+const formatMoney = (value: number) =>
   new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     maximumFractionDigits: 1,
-  }).format(value) +
-  "B";
+  }).format(value);
 
-const formatDate = (value?: string | null) => {
-  if (!value) return "نامشخص";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "نامشخص";
-  return date.toLocaleString("fa-IR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+const formatBillions = (value: number) =>
+  `${new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 1,
+  }).format(value)}B`;
+
+const toNumber = (value: unknown): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 };
+
+const photoFor = (person: Billionaire) =>
+  person.image_url?.trim() ||
+  FALLBACK_PHOTOS[person.name] ||
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    person.name || "Econova"
+  )}&background=102b25&color=d7f8a8&size=256`;
+
+const changeIsPositive = (value: number) => value >= 0;
 
 export default function BillionairesPage() {
   const [people, setPeople] = useState<Billionaire[]>([]);
-  const [news, setNews] = useState<BillionaireNews[]>(EMPTY_NEWS);
-  const [photos, setPhotos] = useState<Record<string, string>>({});
+  const [news, setNews] = useState<BillionaireNews[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pageError, setPageError] = useState("");
-  const [animatedTotal, setAnimatedTotal] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("");
 
-  const [accessToken, setAccessToken] = useState("");
+  const [activeRank, setActiveRank] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAll, setShowAll] = useState(false);
+
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
-  const [loginBusy, setLoginBusy] = useState(false);
-  const [loginError, setLoginError] = useState("");
+  const [adminMessage, setAdminMessage] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const [editingRank, setEditingRank] = useState<number | null>(null);
-  const [draftTitle, setDraftTitle] = useState("");
-  const [draftContent, setDraftContent] = useState("");
-  const [savingNews, setSavingNews] = useState(false);
-  const [newsMessage, setNewsMessage] = useState("");
+  const [editingNewsRank, setEditingNewsRank] = useState(1);
+  const [newsTitle, setNewsTitle] = useState("");
+  const [newsContent, setNewsContent] = useState("");
+  const [newsSource, setNewsSource] = useState("");
 
-  const apiHeaders = useMemo(
-    () => ({
-      apikey: SUPABASE_KEY,
-      "Content-Type": "application/json",
-    }),
-    []
-  );
+  const [animatedTotal, setAnimatedTotal] = useState(0);
 
-  const topFive = useMemo(
-    () => people.filter((person) => person.rank >= 1 && person.rank <= 5)
-      .sort((a, b) => a.rank - b.rank),
-    [people]
-  );
+  const loadData = useCallback(async () => {
+    if (!supabase) {
+      setErrorMessage(
+        "اتصال Supabase تنظیم نشده است. متغیرهای محیطی را بررسی کن."
+      );
+      setLoading(false);
+      return;
+    }
 
-  const topThirty = useMemo(
-    () => [...people].sort((a, b) => a.rank - b.rank).slice(0, 30),
-    [people]
-  );
-
-  const topTenTotal = useMemo(
-    () =>
-      people
-        .filter((person) => person.rank <= 10)
-        .reduce(
-          (total, person) => total + Number(person.net_worth_billions || 0),
-          0
-        ),
-    [people]
-  );
-
-  const getNews = useCallback(async () => {
-    if (!SUPABASE_KEY) return;
+    setLoading(true);
+    setErrorMessage("");
 
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/billionaire_news?select=billionaire_rank,title,content,updated_at&order=billionaire_rank.asc`,
-        { headers: apiHeaders, cache: "no-store" }
-      );
+      const [peopleResult, newsResult] = await Promise.all([
+        supabase
+          .from("billionaires")
+          .select("*")
+          .order("rank", { ascending: true })
+          .limit(30),
 
-      if (!response.ok) throw new Error("خواندن خبرها موفق نبود.");
+        supabase
+          .from("billionaire_news")
+          .select("*")
+          .order("updated_at", { ascending: false }),
+      ]);
 
-      const rows = (await response.json()) as BillionaireNews[];
-      setNews(
-        EMPTY_NEWS.map(
-          (empty) =>
-            rows.find(
-              (item) => item.billionaire_rank === empty.billionaire_rank
-            ) ?? empty
+      if (peopleResult.error) throw peopleResult.error;
+
+      setPeople(
+        ((peopleResult.data ?? []) as Billionaire[]).sort(
+          (a, b) => Number(a.rank) - Number(b.rank)
         )
       );
-    } catch {
-      setNews(EMPTY_NEWS);
-      setNewsMessage("خبرها بارگذاری نشدند؛ اتصال Supabase را بررسی کن.");
-    }
-  }, [apiHeaders]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setAccessToken(window.localStorage.getItem("econova_admin_token") ?? "");
+      if (newsResult.error) {
+        console.warn("News loading issue:", newsResult.error.message);
+        setNews([]);
+      } else {
+        setNews((newsResult.data ?? []) as BillionaireNews[]);
+      }
+
+      setLastUpdated(new Date().toLocaleString("fa-IR"));
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(
+        "دریافت اطلاعات انجام نشد. اتصال اینترنت و تنظیمات Supabase را بررسی کن."
+      );
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadPeople() {
-      setLoading(true);
-      setPageError("");
-
-      try {
-        if (!SUPABASE_KEY) {
-          throw new Error(
-            "کلید عمومی Supabase تنظیم نشده است. متغیر NEXT_PUBLIC_SUPABASE_ANON_KEY را در تنظیمات پروژه وارد کن."
-          );
-        }
-
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/billionaires?select=rank,name,company,country,net_worth_billions,daily_change_pct,updated_at,source_url,source_checked_at&order=rank.asc&limit=30`,
-          { headers: apiHeaders, cache: "no-store" }
-        );
-
-        if (!response.ok) {
-          throw new Error("دریافت فهرست ثروتمندان از Supabase ناموفق بود.");
-        }
-
-        const rows = (await response.json()) as Billionaire[];
-        if (!cancelled) setPeople(rows);
-
-        const newsResponse = await fetch(
-          `${SUPABASE_URL}/rest/v1/billionaire_news?select=billionaire_rank,title,content,updated_at&order=billionaire_rank.asc`,
-          { headers: apiHeaders, cache: "no-store" }
-        );
-
-        if (newsResponse.ok) {
-          const newsRows = (await newsResponse.json()) as BillionaireNews[];
-          if (!cancelled) {
-            setNews(
-              EMPTY_NEWS.map(
-                (empty) =>
-                  newsRows.find(
-                    (item) =>
-                      item.billionaire_rank === empty.billionaire_rank
-                  ) ?? empty
-              )
-            );
-          }
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setPageError(
-            error instanceof Error ? error.message : "خطای نامشخص رخ داد."
-          );
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void loadPeople();
-    return () => {
-      cancelled = true;
-    };
-  }, [apiHeaders]);
+    void loadData();
+  }, [loadData]);
 
   useEffect(() => {
-    if (topFive.length === 0) return;
+    if (!supabase) return;
 
-    let cancelled = false;
-    const names = topFive.map((person) => person.name).filter(Boolean);
+    supabase.auth.getSession().then(({ data }) => {
+      const role = data.session?.user.app_metadata?.role;
+      setIsAdmin(role === "admin");
+    });
 
-    async function loadPhotos() {
-      const entries = await Promise.all(
-        names.map(async (name) => {
-          try {
-            const url =
-              "https://en.wikipedia.org/w/api.php?action=query&generator=search" +
-              `&gsrsearch=${encodeURIComponent(name)}` +
-              "&gsrnamespace=0&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=300&format=json&origin=*";
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAdmin(session?.user.app_metadata?.role === "admin");
+    });
 
-            const response = await fetch(url);
-            if (!response.ok) return [name, ""] as const;
+    return () => subscription.unsubscribe();
+  }, []);
 
-            const data = await response.json();
-            const page = Object.values(
-              data?.query?.pages ?? {}
-            )[0] as { thumbnail?: { source?: string } } | undefined;
+  const sortedPeople = useMemo(
+    () =>
+      [...people].sort(
+        (a, b) => Number(a.rank) - Number(b.rank)
+      ),
+    [people]
+  );
 
-            return [name, page?.thumbnail?.source ?? ""] as const;
-          } catch {
-            return [name, ""] as const;
-          }
-        })
-      );
+  const topFive = useMemo(
+    () => sortedPeople.filter((person) => person.rank <= 5),
+    [sortedPeople]
+  );
 
-      if (!cancelled) {
-        setPhotos((previous) => ({
-          ...previous,
-          ...Object.fromEntries(entries.filter((entry) => entry[1])),
-        }));
-      }
-    }
+  const topTen = useMemo(
+    () => sortedPeople.filter((person) => person.rank <= 10),
+    [sortedPeople]
+  );
 
-    void loadPhotos();
-    return () => {
-      cancelled = true;
-    };
-  }, [topFive]);
+  const topTenTotal = useMemo(
+    () =>
+      topTen.reduce(
+        (sum, person) => sum + toNumber(person.net_worth_billions),
+        0
+      ),
+    [topTen]
+  );
 
   useEffect(() => {
-    const target = topTenTotal;
-    const duration = 1200;
-    const start = performance.now();
     let frame = 0;
+    const start = performance.now();
+    const duration = 1400;
+    const initial = 0;
 
     const animate = (now: number) => {
       const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setAnimatedTotal(target * eased);
-      if (progress < 1) frame = requestAnimationFrame(animate);
+      const eased = 1 - Math.pow(1 - progress, 4);
+
+      setAnimatedTotal(
+        initial + (topTenTotal - initial) * eased
+      );
+
+      if (progress < 1) {
+        frame = requestAnimationFrame(animate);
+      }
     };
 
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
   }, [topTenTotal]);
 
-  async function handleAdminLogin(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoginBusy(true);
-    setLoginError("");
+  const filteredPeople = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
 
-    try {
-      const response = await fetch(
-        `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
-        {
-          method: "POST",
-          headers: apiHeaders,
-          body: JSON.stringify({
-            email: adminEmail,
-            password: adminPassword,
-          }),
-        }
-      );
+    if (!term) return sortedPeople;
 
-      const result = await response.json();
+    return sortedPeople.filter((person) =>
+      [
+        person.name,
+        person.company ?? "",
+        person.country ?? "",
+        String(person.rank),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(term)
+    );
+  }, [sortedPeople, searchTerm]);
 
-      if (!response.ok || !result.access_token) {
-        throw new Error("ورود انجام نشد؛ ایمیل و رمز را بررسی کن.");
-      }
+  const visiblePeople = showAll
+    ? filteredPeople
+    : filteredPeople.slice(0, 10);
 
-      const role = result.user?.app_metadata?.role;
-      if (role !== "admin") {
-        throw new Error(
-          "این حساب نقش مدیر ندارد. ابتدا app_metadata نقش admin را برای حساب مدیر تنظیم کن."
-        );
-      }
+  const newsForRank = (rank: number) =>
+    news.find(
+      (item) =>
+        Number(item.billionaire_rank ?? item.rank) === rank
+    );
 
-      window.localStorage.setItem("econova_admin_token", result.access_token);
-      setAccessToken(result.access_token);
-      setAdminPassword("");
-      setLoginOpen(false);
-      setLoginError("");
-      setNewsMessage("ورود مدیر با موفقیت انجام شد.");
-    } catch (error) {
-      setLoginError(
-        error instanceof Error ? error.message : "ورود ناموفق بود."
-      );
-    } finally {
-      setLoginBusy(false);
-    }
-  }
+  const activePerson =
+    sortedPeople.find((person) => person.rank === activeRank) ??
+    topFive[0];
 
-  function handleLogout() {
-    window.localStorage.removeItem("econova_admin_token");
-    setAccessToken("");
-    setEditingRank(null);
-    setNewsMessage("از حساب مدیر خارج شدی.");
-  }
+  const openNewsEditor = (rank: number) => {
+    const existing = newsForRank(rank);
 
-  function beginEdit(item: Billionaire) {
-    const current = news.find((entry) => entry.billionaire_rank === item.rank);
-    setEditingRank(item.rank);
-    setDraftTitle(current?.title ?? "");
-    setDraftContent(current?.content ?? "");
-    setNewsMessage("");
-  }
+    setEditingNewsRank(rank);
+    setNewsTitle(String(existing?.title ?? ""));
+    setNewsContent(
+      String(existing?.content ?? existing?.body ?? "")
+    );
+    setNewsSource(String(existing?.source_url ?? ""));
+    setAdminMessage("");
+  };
 
-  async function saveNews(rank: number) {
-    if (!accessToken) {
-      setNewsMessage("برای ذخیره خبر باید وارد حساب مدیر شوی.");
+  const loginAdmin = async () => {
+    if (!supabase) {
+      setAdminMessage("اتصال Supabase برقرار نیست.");
       return;
     }
 
-    setSavingNews(true);
-    setNewsMessage("");
+    setSaving(true);
+    setAdminMessage("");
 
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/billionaire_news?on_conflict=billionaire_rank`,
-        {
-          method: "POST",
-          headers: {
-            ...apiHeaders,
-            Authorization: `Bearer ${accessToken}`,
-            Prefer: "resolution=merge-duplicates,return=representation",
-          },
-          body: JSON.stringify({
-            billionaire_rank: rank,
-            title: draftTitle.trim(),
-            content: draftContent.trim(),
-            updated_at: new Date().toISOString(),
-          }),
-        }
-      );
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: adminEmail.trim(),
+        password: adminPassword,
+      });
 
-      if (!response.ok) {
-        const details = await response.text();
-        throw new Error(
-          details.includes("403") || details.includes("42501")
-            ? "اجازه ذخیره نداری؛ نقش مدیر و سیاست‌های RLS را بررسی کن."
-            : "ذخیره خبر ناموفق بود. اتصال و تنظیمات Supabase را بررسی کن."
-        );
+      if (error) throw error;
+
+      if (data.user?.app_metadata?.role !== "admin") {
+        await supabase.auth.signOut();
+        setIsAdmin(false);
+        setAdminMessage("این حساب دسترسی مدیر ندارد.");
+        return;
       }
 
-      const updated: BillionaireNews = {
-        billionaire_rank: rank,
-        title: draftTitle.trim(),
-        content: draftContent.trim(),
+      setIsAdmin(true);
+      setLoginOpen(false);
+      setAdminPassword("");
+      setAdminMessage("ورود مدیر موفق بود.");
+      openNewsEditor(activeRank);
+    } catch (error) {
+      console.error(error);
+      setAdminMessage("ورود ناموفق بود. ایمیل و رمز را بررسی کن.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const logoutAdmin = async () => {
+    if (!supabase) return;
+
+    await supabase.auth.signOut();
+    setIsAdmin(false);
+    setAdminMessage("");
+  };
+
+  const saveNews = async () => {
+    if (!supabase || !isAdmin) {
+      setAdminMessage("برای ذخیره خبر باید وارد حساب مدیر شوی.");
+      return;
+    }
+
+    setSaving(true);
+    setAdminMessage("");
+
+    try {
+      const existing = newsForRank(editingNewsRank);
+
+      const payload = {
+        billionaire_rank: editingNewsRank,
+        title: newsTitle.trim(),
+        content: newsContent.trim(),
+        source_url: newsSource.trim() || null,
         updated_at: new Date().toISOString(),
       };
 
-      setNews((previous) => [
-        ...previous.filter((item) => item.billionaire_rank !== rank),
-        updated,
-      ].sort((a, b) => a.billionaire_rank - b.billionaire_rank));
+      const result = existing?.id
+        ? await supabase
+            .from("billionaire_news")
+            .update(payload)
+            .eq("id", existing.id)
+        : await supabase
+            .from("billionaire_news")
+            .insert(payload);
 
-      setEditingRank(null);
-      setNewsMessage(`خبر نفر رتبه ${rank} ذخیره شد.`);
+      if (result.error) throw result.error;
+
+      setAdminMessage("خبر ذخیره شد.");
+      await loadData();
     } catch (error) {
-      setNewsMessage(
-        error instanceof Error ? error.message : "ذخیره خبر ناموفق بود."
+      console.error(error);
+      setAdminMessage(
+        "ذخیره انجام نشد. ساختار جدول billionaire_news را بررسی کن."
       );
     } finally {
-      setSavingNews(false);
+      setSaving(false);
     }
-  }
+  };  return (
+    <main className="eco-page" dir="rtl">
+      <div className="eco-glow eco-glow-one" />
+      <div className="eco-glow eco-glow-two" />
 
-  return (    <>
-      <main className="econova-page" dir="rtl">
-        <header className="page-header">
-          <a className="brand" href="/">ECONOVA<span>.</span></a>
-          <div className="header-label">شاخص ثروت جهان</div>
-        </header>
+      <header className="eco-header">
+        <a className="eco-brand" href="/billionaires">
+          <span className="eco-brand-icon">E</span>
+          <span>
+            <strong>ECONOVA</strong>
+            <small>WEALTH INTELLIGENCE</small>
+          </span>
+        </a>
 
-        <section className="hero">
-          <div className="eyebrow">GLOBAL WEALTH TRACKER</div>
-          <h1>ثروتمندترین افراد <span>جهان</span></h1>
-          <p>
-            رتبه‌بندی ثروتمندان جهان، ارزش دارایی‌ها و آخرین خبرهای اختصاصی
-            هرکدام از پنج نفر برتر.
-          </p>
-          <div className="hero-stats">
-            <div className="stat-box">
-              <span>مجموع ثروت ۱۰ نفر اول</span>
-              <strong>{formatWealth(animatedTotal)}</strong>
-            </div>
-            <div className="stat-box">
-              <span>افراد نمایش‌داده‌شده</span>
-              <strong>{topThirty.length} نفر</strong>
-            </div>
-          </div>
-        </section>
+        <nav className="eco-nav">
+          <a href="#overview">نمای کلی</a>
+          <a href="#top-five">ثروتمندان برتر</a>
+          <a href="#ranking">رتبه‌بندی</a>
+          <a href="#news">اخبار</a>
+        </nav>
 
-        {pageError && (
-          <div className="notice error-notice">
-            {pageError}
-          </div>
-        )}
+        <div className="eco-header-actions">
+          <span className="eco-live">
+            <i />
+            داده‌های زنده
+          </span>
 
-        <section className="section-block">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">THE TOP FIVE</div>
-              <h2>پنج ثروتمند برتر</h2>
-              <p>برای هر شخص، بخش خبر جداگانه در نظر گرفته شده است.</p>
-            </div>
-            <span className="gold-chip">TOP 5</span>
-          </div>
-
-          {loading ? (
-            <div className="loading-panel">در حال دریافت اطلاعات ثروتمندان…</div>
-          ) : topFive.length === 0 ? (
-            <div className="loading-panel">
-              اطلاعاتی برای نمایش پیدا نشد. اتصال جدول billionaires را بررسی کن.
-            </div>
-          ) : (
-            <div className="top-list">
-              {topFive.map((person) => {
-                const personNews = news.find(
-                  (item) => item.billionaire_rank === person.rank
-                );
-                const isEditing = editingRank === person.rank;
-                const imageUrl =
-                  person.image_url || photos[person.name] || "";
-
-                return (
-                  <article className="person-card" key={person.rank}>
-                    <div className="person-main">
-                      <div className="rank-badge">
-                        {String(person.rank).padStart(2, "0")}
-                      </div>
-
-                      <div className="person-photo">
-                        {imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={imageUrl} alt={person.name} />
-                        ) : (
-                          <div className="photo-placeholder">
-                            {person.name?.trim().charAt(0) || "?"}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="person-info">
-                        <h3>{person.name}</h3>
-                        <p className="person-company">
-                          {person.company || "شرکت ثبت نشده"}
-                        </p>
-                        <p className="person-country">
-                          {person.country || "کشور نامشخص"}
-                        </p>
-                      </div>
-
-                      <div className="person-wealth">
-                        <span>ثروت تخمینی</span>
-                        <strong>
-                          {formatWealth(Number(person.net_worth_billions || 0))}
-                        </strong>
-                        {person.daily_change_pct !== null &&
-                          person.daily_change_pct !== undefined && (
-                            <small
-                              className={
-                                Number(person.daily_change_pct) >= 0
-                                  ? "change-positive"
-                                  : "change-negative"
-                              }
-                            >
-                              {Number(person.daily_change_pct) > 0 ? "+" : ""}
-                              {Number(person.daily_change_pct)}%
-                            </small>
-                          )}
-                      </div>
-                    </div>
-
-                    <section className="person-news">
-                      <div className="news-heading">
-                        <div>
-                          <span className="news-kicker">NEWS / #{person.rank}</span>
-                          <h4>خبر اختصاصی {person.name}</h4>
-                        </div>
-
-                        {accessToken && !isEditing && (
-                          <button
-                            className="outline-button"
-                            onClick={() => beginEdit(person)}
-                          >
-                            ویرایش خبر
-                          </button>
-                        )}
-                      </div>
-
-                      {isEditing ? (
-                        <div className="news-editor">
-                          <label>
-                            عنوان خبر
-                            <input
-                              value={draftTitle}
-                              onChange={(event) =>
-                                setDraftTitle(event.target.value)
-                              }
-                              maxLength={180}
-                              placeholder="عنوان خبر این شخص را بنویس…"
-                            />
-                          </label>
-
-                          <label>
-                            متن خبر
-                            <textarea
-                              value={draftContent}
-                              onChange={(event) =>
-                                setDraftContent(event.target.value)
-                              }
-                              rows={5}
-                              maxLength={12000}
-                              placeholder="متن خبر را اینجا بنویس…"
-                            />
-                          </label>
-
-                          <div className="editor-actions">
-                            <button
-                              className="primary-button"
-                              disabled={savingNews}
-                              onClick={() => void saveNews(person.rank)}
-                            >
-                              {savingNews ? "در حال ذخیره…" : "ذخیره خبر"}
-                            </button>
-                            <button
-                              className="quiet-button"
-                              disabled={savingNews}
-                              onClick={() => setEditingRank(null)}
-                            >
-                              انصراف
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="news-content">
-                          {personNews?.title || personNews?.content ? (
-                            <>
-                              {personNews.title && (
-                                <h5>{personNews.title}</h5>
-                              )}
-                              {personNews.content ? (
-                                <p className="news-body">
-                                  {personNews.content}
-                                </p>
-                              ) : (
-                                <p className="empty-news">
-                                  هنوز متنی برای این خبر ثبت نشده است.
-                                </p>
-                              )}
-                              {personNews.updated_at && (
-                                <small className="news-date">
-                                  آخرین ویرایش: {formatDate(personNews.updated_at)}
-                                </small>
-                              )}
-                            </>
-                          ) : (
-                            <div className="empty-news">
-                              هنوز خبری برای این شخص منتشر نشده است.
-                              {accessToken && (
-                                <button
-                                  className="text-button"
-                                  onClick={() => beginEdit(person)}
-                                >
-                                  اولین خبر را اضافه کن
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </section>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        <section className="section-block">
-          <div className="section-heading">
-            <div>
-              <div className="eyebrow">RANKING / 01—30</div>
-              <h2>فهرست ۳۰ ثروتمند برتر</h2>
-              <p>فهرست فشرده با رتبه، نام، کشور و ثروت تخمینی.</p>
-            </div>
-            <span className="gold-chip">{topThirty.length} نفر</span>
-          </div>
-
-          <div className="table-wrap">
-            <table className="billionaires-table">
-              <thead>
-                <tr>
-                  <th>رتبه</th>
-                  <th>نام</th>
-                  <th>شرکت</th>
-                  <th>کشور</th>
-                  <th>ثروت</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topThirty.map((person) => (
-                  <tr key={person.rank}>
-                    <td>
-                      <span className="table-rank">
-                        {String(person.rank).padStart(2, "0")}
-                      </span>
-                    </td>
-                    <td className="table-name">{person.name}</td>
-                    <td>{person.company || "—"}</td>
-                    <td>{person.country || "—"}</td>
-                    <td className="table-wealth">
-                      {formatWealth(Number(person.net_worth_billions || 0))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <footer className="page-footer">
-          <span>ECONOVA</span>
-          <span>اطلاعات دارایی‌ها ممکن است با تأخیر به‌روزرسانی شوند.</span>
-          <button
-            className="admin-link"
-            onClick={() => {
-              setLoginOpen((open) => !open);
-              setLoginError("");
-            }}
-          >
-            {accessToken ? "مدیریت خبرها" : "ورود مدیر"}
-          </button>
-        </footer>
-
-        {newsMessage && (
-          <div className="status-message" role="status">
-            {newsMessage}
-          </div>
-        )}
-
-        {loginOpen && (
-          <div className="modal-backdrop" onClick={() => setLoginOpen(false)}>
-            <section
-              className="admin-modal"
-              onClick={(event) => event.stopPropagation()}
+          {isAdmin ? (
+            <button
+              className="eco-button eco-button-small"
+              onClick={() => void logoutAdmin()}
             >
+              خروج مدیر
+            </button>
+          ) : (
+            <button
+              className="eco-button eco-button-small"
+              onClick={() => setLoginOpen(true)}
+            >
+              <span>♙</span> ورود مدیر
+            </button>
+          )}
+        </div>
+      </header>
+
+      <section className="eco-hero" id="overview">
+        <div className="eco-hero-copy">
+          <span className="eco-eyebrow">
+            <span className="eco-eyebrow-line" />
+            نبض ثروت جهان
+          </span>
+
+          <h1>
+            ثروت جهان را
+            <br />
+            <span>هوشمندانه</span> دنبال کن.
+          </h1>
+
+          <p>
+            رتبه‌بندی ثروتمندترین افراد جهان، تغییرات دارایی و
+            آخرین خبرها؛ در یک نمای اقتصادی مدرن.
+          </p>
+
+          <div className="eco-hero-actions">
+            <a className="eco-button" href="#ranking">
+              مشاهده رتبه‌بندی
+              <span>←</span>
+            </a>
+            <a className="eco-text-link" href="#news">
+              تازه‌ترین خبرها <span>↗</span>
+            </a>
+          </div>
+
+          <div className="eco-hero-footnote">
+            <span className="eco-status-dot" />
+            <span>
+              {lastUpdated
+                ? `آخرین دریافت: ${lastUpdated}`
+                : "در انتظار دریافت اطلاعات"}
+            </span>
+          </div>
+        </div>
+
+        <div className="eco-hero-art" aria-hidden="true">
+          <div className="eco-orbit eco-orbit-outer" />
+          <div className="eco-orbit eco-orbit-inner" />
+          <div className="eco-hero-coin">
+            <span>$</span>
+          </div>
+          <div className="eco-floating-card eco-card-top">
+            <span className="eco-floating-icon">↗</span>
+            <div>
+              <small>نمایش هوشمند</small>
+              <strong>WEALTH INDEX</strong>
+            </div>
+          </div>
+          <div className="eco-floating-card eco-card-bottom">
+            <span className="eco-mini-bars">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            <div>
+              <small>رتبه‌بندی</small>
+              <strong>GLOBAL TOP 30</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {errorMessage && (
+        <div className="eco-alert" role="status">
+          <span>!</span>
+          {errorMessage}
+          <button onClick={() => void loadData()}>
+            تلاش مجدد
+          </button>
+        </div>
+      )}
+
+      <section className="eco-stats-grid">
+        <article className="eco-stat-card eco-stat-main">
+          <div className="eco-stat-top">
+            <span className="eco-stat-label">
+              مجموع ثروت ۱۰ نفر اول
+            </span>
+            <span className="eco-stat-icon">◈</span>
+          </div>
+
+          <div className="eco-stat-value">
+            <span className="eco-dollar">$</span>
+            <strong>
+              {animatedTotal.toLocaleString("en-US", {
+                maximumFractionDigits: 1,
+              })}
+            </strong>
+            <span className="eco-stat-unit">میلیارد</span>
+          </div>
+
+          <div className="eco-stat-bottom">
+            <span className="eco-pulse" />
+            مجموع دارایی ثبت‌شده در پایگاه داده
+          </div>
+
+          <div className="eco-stat-decoration">10</div>
+        </article>
+
+        <article className="eco-stat-card">
+          <div className="eco-stat-top">
+            <span className="eco-stat-label">افراد فهرست</span>
+            <span className="eco-stat-icon">♙</span>
+          </div>
+          <div className="eco-stat-value">
+            <strong>{people.length}</strong>
+            <span className="eco-stat-unit">نفر</span>
+          </div>
+          <div className="eco-stat-bottom">
+            اطلاعات دریافت‌شده از Supabase
+          </div>
+        </article>
+
+        <article className="eco-stat-card">
+          <div className="eco-stat-top">
+            <span className="eco-stat-label">نفر اول فهرست</span>
+            <span className="eco-stat-icon">♛</span>
+          </div>
+          <div className="eco-stat-value eco-stat-name">
+            <strong>{sortedPeople[0]?.name ?? "—"}</strong>
+          </div>
+          <div className="eco-stat-bottom">
+            {sortedPeople[0]
+              ? `$${formatBillions(
+                  toNumber(sortedPeople[0].net_worth_billions)
+                )} دارایی ثبت‌شده`
+              : "اطلاعات هنوز بارگذاری نشده"}
+          </div>
+        </article>
+      </section>
+
+      <section className="eco-section" id="top-five">
+        <div className="eco-section-heading">
+          <div>
+            <span className="eco-section-kicker">THE ELITE FIVE</span>
+            <h2>پنج چهرهٔ برتر ثروت</h2>
+            <p>
+              نمای نزدیک از پنج رتبهٔ اول فهرست Econova
+            </p>
+          </div>
+
+          <span className="eco-section-count">01 — 05</span>
+        </div>
+
+        {loading && people.length === 0 ? (
+          <div className="eco-loading">
+            <span className="eco-spinner" />
+            در حال دریافت اطلاعات...
+          </div>
+        ) : (
+          <div className="eco-top-five-list">
+            {topFive.map((person) => {
+              const worth = toNumber(person.net_worth_billions);
+              const change = toNumber(person.daily_change_pct);
+              const selected = activeRank === person.rank;
+
+              return (
+                <button
+                  type="button"
+                  key={person.id}
+                  className={`eco-person-row ${
+                    selected ? "is-selected" : ""
+                  }`}
+                  onClick={() => {
+                    setActiveRank(person.rank);
+                    if (isAdmin) openNewsEditor(person.rank);
+                  }}
+                >
+                  <span className="eco-person-rank">
+                    {String(person.rank).padStart(2, "0")}
+                  </span>
+
+                  <span className="eco-person-photo-wrap">
+                    <img
+                      className="eco-person-photo"
+                      src={photoFor(person)}
+                      alt={person.name}
+                      loading={person.rank <= 5 ? "eager" : "lazy"}
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src =
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            person.name
+                          )}&background=102b25&color=d7f8a8&size=256`;
+                      }}
+                    />
+                    {person.rank === 1 && (
+                      <span className="eco-crown">♛</span>
+                    )}
+                  </span>
+
+                  <span className="eco-person-info">
+                    <strong>{person.name}</strong>
+                    <small>
+                      {person.company || "شرکت ثبت نشده"}
+                      {person.country ? ` · ${person.country}` : ""}
+                    </small>
+                  </span>
+
+                  <span className="eco-person-worth">
+                    <strong>${formatBillions(worth)}</strong>
+                    <small>میلیارد دلار</small>
+                  </span>
+
+                  <span
+                    className={`eco-change ${
+                      changeIsPositive(change)
+                        ? "eco-change-up"
+                        : "eco-change-down"
+                    }`}
+                  >
+                    <span>
+                      {changeIsPositive(change) ? "↗" : "↘"}
+                    </span>
+                    {change > 0 ? "+" : ""}
+                    {change.toFixed(2)}%
+                  </span>
+
+                  <span className="eco-row-arrow">←</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {activePerson && (
+          <div className="eco-feature-person">
+            <div className="eco-feature-image">
+              <img
+                src={photoFor(activePerson)}
+                alt={activePerson.name}
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src =
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      activePerson.name
+                    )}&background=102b25&color=d7f8a8&size=256`;
+                }}
+              />
+              <span className="eco-feature-rank">
+                RANK #{activePerson.rank}
+              </span>
+            </div>
+
+            <div className="eco-feature-content">
+              <span className="eco-section-kicker">
+                SPOTLIGHT PROFILE
+              </span>
+              <h3>{activePerson.name}</h3>
+              <p className="eco-feature-company">
+                {activePerson.company || "اطلاعات شرکت ثبت نشده"}
+                {activePerson.country
+                  ? ` · ${activePerson.country}`
+                  : ""}
+              </p>
+
+              <p className="eco-feature-bio">
+                {activePerson.bio ||
+                  "برای این فرد هنوز زندگی‌نامه‌ای در پایگاه داده ثبت نشده است."}
+              </p>
+
+              <div className="eco-feature-metrics">
+                <div>
+                  <small>ثروت ثبت‌شده</small>
+                  <strong>
+                    ${formatBillions(
+                      toNumber(activePerson.net_worth_billions)
+                    )}
+                  </strong>
+                </div>
+                <div>
+                  <small>تغییر روزانه</small>
+                  <strong
+                    className={
+                      toNumber(activePerson.daily_change_pct) >= 0
+                        ? "eco-positive-text"
+                        : "eco-negative-text"
+                    }
+                  >
+                    {toNumber(activePerson.daily_change_pct) > 0
+                      ? "+"
+                      : ""}
+                    {toNumber(
+                      activePerson.daily_change_pct
+                    ).toFixed(2)}
+                    %
+                  </strong>
+                </div>
+              </div>
+
+              {activePerson.source_url && (
+                <a
+                  className="eco-text-link"
+                  href={activePerson.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  مشاهده منبع اطلاعات ↗
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+        <section className="eco-section" id="ranking">
+        <div className="eco-section-heading">
+          <div>
+            <span className="eco-section-kicker">GLOBAL RANKING</span>
+            <h2>جدول ثروتمندان جهان</h2>
+            <p>رتبه‌بندی بر اساس دارایی ثبت‌شده در پایگاه داده</p>
+          </div>
+          <span className="eco-section-count">
+            {filteredPeople.length} نفر
+          </span>
+        </div>
+
+        <div className="eco-table-tools">
+          <label className="eco-search">
+            <span>⌕</span>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="جست‌وجوی نام، شرکت یا کشور..."
+              aria-label="جست‌وجوی ثروتمندان"
+            />
+            {searchTerm && (
               <button
-                className="modal-close"
-                aria-label="بستن"
-                onClick={() => setLoginOpen(false)}
+                type="button"
+                onClick={() => setSearchTerm("")}
+                aria-label="پاک کردن جست‌وجو"
               >
                 ×
               </button>
+            )}
+          </label>
 
-              {accessToken ? (
+          <button
+            className="eco-outline-button"
+            onClick={() => void loadData()}
+            disabled={loading}
+          >
+            {loading ? "در حال دریافت..." : "↻ به‌روزرسانی"}
+          </button>
+        </div>
+
+        <div className="eco-table-wrap">
+          <table className="eco-table">
+            <thead>
+              <tr>
+                <th>رتبه</th>
+                <th>فرد</th>
+                <th>شرکت</th>
+                <th>کشور</th>
+                <th>ثروت (میلیارد دلار)</th>
+                <th>تغییر روزانه</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visiblePeople.map((person) => {
+                const change = toNumber(person.daily_change_pct);
+
+                return (
+                  <tr key={person.id}>
+                    <td>
+                      <span className="eco-table-rank">
+                        {String(person.rank).padStart(2, "0")}
+                      </span>
+                    </td>
+
+                    <td>
+                      <button
+                        type="button"
+                        className="eco-table-person"
+                        onClick={() => {
+                          setActiveRank(person.rank);
+                          document
+                            .getElementById("top-five")
+                            ?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            });
+                        }}
+                      >
+                        <img
+                          src={photoFor(person)}
+                          alt=""
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src =
+                              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                person.name
+                              )}&background=102b25&color=d7f8a8&size=128`;
+                          }}
+                        />
+                        <strong>{person.name}</strong>
+                      </button>
+                    </td>
+
+                    <td>{person.company || "—"}</td>
+                    <td>{person.country || "—"}</td>
+                    <td className="eco-table-money">
+                      ${formatBillions(
+                        toNumber(person.net_worth_billions)
+                      )}
+                    </td>
+                    <td>
+                      <span
+                        className={`eco-change ${
+                          changeIsPositive(change)
+                            ? "eco-change-up"
+                            : "eco-change-down"
+                        }`}
+                      >
+                        {changeIsPositive(change) ? "↗" : "↘"}
+                        {change > 0 ? "+" : ""}
+                        {change.toFixed(2)}%
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {!loading && visiblePeople.length === 0 && (
+            <div className="eco-empty">
+              فردی با این مشخصات پیدا نشد.
+            </div>
+          )}
+
+          {filteredPeople.length > 10 && (
+            <button
+              className="eco-show-more"
+              onClick={() => setShowAll((current) => !current)}
+            >
+              {showAll ? "نمایش ۱۰ نفر اول" : "نمایش همه نتایج"}
+              <span>{showAll ? "↑" : "↓"}</span>
+            </button>
+          )}
+        </div>
+
+        <p className="eco-data-note">
+          ارزش دارایی‌ها ممکن است با منابع دیگر تفاوت داشته باشد.
+          تغییر روزانه فقط زمانی قابل اتکاست که مقدار روز قبل و
+          منبع اطلاعات به‌درستی ثبت شده باشند.
+        </p>
+      </section>
+
+      <section className="eco-section" id="news">
+        <div className="eco-section-heading">
+          <div>
+            <span className="eco-section-kicker">WEALTH NEWS</span>
+            <h2>اخبار پنج چهرهٔ برتر</h2>
+            <p>
+              برای مشاهده خبرهای ثبت‌شده، یکی از افراد را انتخاب کن.
+            </p>
+          </div>
+          <span className="eco-section-count">NEWSROOM</span>
+        </div>
+
+        <div className="eco-news-tabs">
+          {topFive.map((person) => (
+            <button
+              key={person.id}
+              className={
+                activeRank === person.rank ? "is-active" : ""
+              }
+              onClick={() => {
+                setActiveRank(person.rank);
+                if (isAdmin) openNewsEditor(person.rank);
+              }}
+            >
+              <img src={photoFor(person)} alt="" loading="lazy" />
+              <span>{person.name}</span>
+            </button>
+          ))}
+        </div>
+
+        {activePerson && (
+          <article className="eco-news-card">
+            <div className="eco-news-avatar">
+              <img src={photoFor(activePerson)} alt="" loading="lazy" />
+            </div>
+
+            <div className="eco-news-main">
+              <span className="eco-section-kicker">
+                NEWS · RANK #{activePerson.rank}
+              </span>
+
+              {newsForRank(activePerson.rank) ? (
                 <>
-                  <div className="eyebrow">ADMIN SESSION</div>
-                  <h3>مدیریت خبرها</h3>
-                  <p>وارد حساب مدیر شده‌ای و می‌توانی خبرهای پنج نفر اول را ویرایش کنی.</p>
-                  <button className="primary-button full-button" onClick={handleLogout}>
-                    خروج از حساب مدیر
-                  </button>
+                  <h3>
+                    {String(
+                      newsForRank(activePerson.rank)?.title ||
+                        `اخبار ${activePerson.name}`
+                    )}
+                  </h3>
+                  <p>
+                    {String(
+                      newsForRank(activePerson.rank)?.content ??
+                        newsForRank(activePerson.rank)?.body ??
+                        "متنی برای این خبر ثبت نشده است."
+                    )}
+                  </p>
+
+                  {newsForRank(activePerson.rank)?.source_url && (
+                    <a
+                      href={String(
+                        newsForRank(activePerson.rank)?.source_url
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="eco-text-link"
+                    >
+                      مطالعه منبع خبر ↗
+                    </a>
+                  )}
                 </>
               ) : (
-                <form onSubmit={handleAdminLogin}>
-                  <div className="eyebrow">SECURE ACCESS</div>
-                  <h3>ورود مدیر</h3>
-                  <p>برای ویرایش و ذخیره خبرها، با حساب مدیر وارد شو.</p>
-
-                  <label>
-                    ایمیل
-                    <input
-                      type="email"
-                      value={adminEmail}
-                      onChange={(event) => setAdminEmail(event.target.value)}
-                      autoComplete="username"
-                      required
-                    />
-                  </label>
-
-                  <label>
-                    رمز عبور
-                    <input
-                      type="password"
-                      value={adminPassword}
-                      onChange={(event) => setAdminPassword(event.target.value)}
-                      autoComplete="current-password"
-                      required
-                    />
-                  </label>
-
-                  {loginError && (
-                    <p className="form-error">{loginError}</p>
-                  )}
-
-                  <button
-                    className="primary-button full-button"
-                    type="submit"
-                    disabled={loginBusy}
-                  >
-                    {loginBusy ? "در حال ورود…" : "ورود امن"}
-                  </button>
-                </form>
+                <>
+                  <h3>هنوز خبری ثبت نشده است</h3>
+                  <p>
+                    برای {activePerson.name} خبر اختصاصی در
+                    پایگاه داده پیدا نشد.
+                  </p>
+                </>
               )}
-            </section>
-          </div>
+
+              {isAdmin && (
+                <button
+                  className="eco-button eco-button-small"
+                  onClick={() => openNewsEditor(activePerson.rank)}
+                >
+                  ویرایش خبر این فرد
+                </button>
+              )}
+            </div>
+          </article>
         )}
-      </main>
-          <style jsx global>{`
+      </section>
+
+      {isAdmin && (
+        <section className="eco-section eco-admin-section" id="admin">
+          <div className="eco-section-heading">
+            <div>
+              <span className="eco-section-kicker">ADMIN WORKSPACE</span>
+              <h2>مدیریت خبرها</h2>
+              <p>ویرایش خبر مربوط به یکی از پنج نفر اول</p>
+            </div>
+            <span className="eco-admin-badge">مدیر وارد شده</span>
+          </div>
+
+          <div className="eco-admin-form">
+            <label>
+              انتخاب ثروتمند
+              <select
+                value={editingNewsRank}
+                onChange={(event) => {
+                  const rank = Number(event.target.value);
+                  openNewsEditor(rank);
+                }}
+              >
+                {topFive.map((person) => (
+                  <option key={person.id} value={person.rank}>
+                    {person.rank}. {person.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              عنوان خبر
+              <input
+                value={newsTitle}
+                onChange={(event) => setNewsTitle(event.target.value)}
+                placeholder="عنوان کوتاه و دقیق خبر"
+              />
+            </label>
+
+            <label>
+              متن خبر
+              <textarea
+                rows={5}
+                value={newsContent}
+                onChange={(event) => setNewsContent(event.target.value)}
+                placeholder="خلاصه خبر را اینجا وارد کن..."
+              />
+            </label>
+
+            <label>
+              لینک منبع
+              <input
+                type="url"
+                value={newsSource}
+                onChange={(event) => setNewsSource(event.target.value)}
+                placeholder="https://example.com/news"
+                dir="ltr"
+              />
+            </label>
+
+            <button
+              className="eco-button"
+              onClick={() => void saveNews()}
+              disabled={saving || !newsTitle.trim()}
+            >
+              {saving ? "در حال ذخیره..." : "ذخیره خبر"}
+              <span>↗</span>
+            </button>
+
+            {adminMessage && (
+              <p className="eco-admin-message" role="status">
+                {adminMessage}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {loginOpen && (
+        <div
+          className="eco-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setLoginOpen(false);
+            }
+          }}
+        >
+          <section
+            className="eco-login-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="eco-login-title"
+          >
+            <button
+              className="eco-modal-close"
+              onClick={() => setLoginOpen(false)}
+              aria-label="بستن پنجره"
+            >
+              ×
+            </button>
+
+            <div className="eco-login-icon">E</div>
+            <span className="eco-section-kicker">SECURE ACCESS</span>
+            <h2 id="eco-login-title">ورود مدیر Econova</h2>
+            <p>با حساب مدیر ثبت‌شده در Supabase وارد شو.</p>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void loginAdmin();
+              }}
+            >
+              <label>
+                ایمیل مدیر
+                <input
+                  type="email"
+                  autoComplete="username"
+                  required
+                  value={adminEmail}
+                  onChange={(event) =>
+                    setAdminEmail(event.target.value)
+                  }
+                  placeholder="admin@example.com"
+                  dir="ltr"
+                />
+              </label>
+
+              <label>
+                رمز عبور
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={adminPassword}
+                  onChange={(event) =>
+                    setAdminPassword(event.target.value)
+                  }
+                  placeholder="رمز عبور"
+                  dir="ltr"
+                />
+              </label>
+
+              <button
+                type="submit"
+                className="eco-button eco-login-submit"
+                disabled={saving}
+              >
+                {saving ? "در حال بررسی..." : "ورود امن"}
+              </button>
+            </form>
+
+            {adminMessage && (
+              <p className="eco-admin-message" role="status">
+                {adminMessage}
+              </p>
+            )}
+          </section>
+        </div>
+      )}
+            <footer className="eco-footer">
+        <a className="eco-brand" href="/billionaires">
+          <span className="eco-brand-icon">E</span>
+          <span>
+            <strong>ECONOVA</strong>
+            <small>WEALTH INTELLIGENCE</small>
+          </span>
+        </a>
+
+        <p>
+          اطلاعات اقتصادی برای آگاهی بیشتر؛ نه توصیهٔ سرمایه‌گذاری.
+        </p>
+
+        <a href="#overview" className="eco-back-top">
+          بازگشت به بالا ↑
+        </a>
+      </footer>
+
+      <style jsx global>{`
         :root {
           color-scheme: dark;
-          --eco-bg: #080b12;
-          --eco-panel: #111722;
-          --eco-panel2: #161e2b;
-          --eco-gold: #e5c76b;
-          --eco-gold2: #b89543;
-          --eco-text: #f4f5f8;
-          --eco-muted: #98a3b5;
-          --eco-border: rgba(229, 199, 107, 0.18);
+          --eco-bg: #07110f;
+          --eco-panel: #0d1b17;
+          --eco-panel-2: #11251e;
+          --eco-border: rgba(206, 245, 214, 0.12);
+          --eco-text: #edf7ee;
+          --eco-muted: #8da69a;
+          --eco-green: #b9f27c;
+          --eco-green-dark: #6bbd72;
+          --eco-red: #ff8585;
         }
 
         * {
           box-sizing: border-box;
+        }
+
+        html {
+          scroll-behavior: smooth;
+          scroll-padding-top: 90px;
         }
 
         body {
@@ -747,748 +1173,784 @@ export default function BillionairesPage() {
 
         button,
         input,
-        textarea {
+        textarea,
+        select {
           font: inherit;
         }
 
+        button,
+        a {
+          -webkit-tap-highlight-color: transparent;
+        }
+
         button {
-          cursor: pointer;
+          color: inherit;
         }
 
-        button:disabled {
-          cursor: not-allowed;
-          opacity: 0.6;
-        }
-
-        .econova-page {
-          min-height: 100vh;
-          padding: 0 20px 36px;
-          background:
-            radial-gradient(ellipse at 80% 0%, rgba(178, 140, 50, 0.11), transparent 34%),
-            var(--eco-bg);
-        }
-
-        .page-header {
-          max-width: 1120px;
-          min-height: 76px;
-          margin: auto;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-        }
-
-        .brand {
-          color: #fff;
-          font-family: Arial, sans-serif;
-          font-size: 23px;
-          font-weight: 900;
-          letter-spacing: 1px;
+        a {
+          color: inherit;
           text-decoration: none;
         }
 
-        .brand span {
-          color: var(--eco-gold);
+        .eco-page {
+          min-height: 100vh;
+          position: relative;
+          overflow: hidden;
+          padding: 0 6.5%;
+          background:
+            radial-gradient(
+              ellipse at 85% 7%,
+              rgba(47, 105, 68, 0.15),
+              transparent 35%
+            ),
+            var(--eco-bg);
+          isolation: isolate;
         }
 
-        .header-label {
-          color: var(--eco-muted);
-          font-size: 12px;
+        .eco-glow {
+          position: absolute;
+          z-index: -1;
+          pointer-events: none;
+          width: 340px;
+          height: 340px;
+          border-radius: 50%;
+          filter: blur(100px);
+          opacity: 0.12;
         }
 
-        .hero,
-        .section-block,
-        .page-footer {
-          max-width: 1120px;
-          margin-left: auto;
-          margin-right: auto;
+        .eco-glow-one {
+          top: 500px;
+          right: -220px;
+          background: #7bea90;
         }
 
-        .hero {
-          padding: 56px 0 34px;
+        .eco-glow-two {
+          top: 1500px;
+          left: -230px;
+          background: #369c79;
         }
 
-        .eyebrow {
-          margin-bottom: 10px;
-          color: var(--eco-gold);
-          font-family: Arial, sans-serif;
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 2px;
-        }
-
-        .hero h1 {
-          margin: 0;
-          font-size: clamp(27px, 5vw, 44px);
-          line-height: 1.5;
-          font-weight: 900;
-        }
-
-        .hero h1 span {
-          color: var(--eco-gold);
-        }
-
-        .hero > p {
-          max-width: 650px;
-          margin: 12px 0 24px;
-          color: var(--eco-muted);
-          font-size: 13px;
-          line-height: 2;
-        }
-
-        .hero-stats {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 12px;
-          max-width: 650px;
-        }
-
-        .stat-box {
-          padding: 17px 19px;
-          border: 1px solid var(--eco-border);
-          border-radius: 15px;
-          background: linear-gradient(140deg, #171d29, #0d121c);
-        }
-
-        .stat-box span,
-        .person-wealth span {
-          display: block;
-          color: var(--eco-muted);
-          font-size: 11px;
-        }
-
-        .stat-box strong {
-          display: block;
-          margin-top: 9px;
-          color: var(--eco-gold);
-          font-family: Arial, sans-serif;
-          font-size: clamp(19px, 3vw, 28px);
-          direction: ltr;
-          text-align: right;
-          font-variant-numeric: tabular-nums;
-        }
-
-        .section-block {
-          margin-top: 34px;
-        }
-
-        .section-heading {
+        .eco-header {
+          min-height: 82px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
-          margin-bottom: 18px;
+          gap: 24px;
+          border-bottom: 1px solid var(--eco-border);
         }
 
-        .section-heading h2 {
-          margin: 0;
-          font-size: clamp(19px, 3vw, 25px);
-        }
-
-        .section-heading p {
-          margin: 7px 0 0;
-          color: var(--eco-muted);
-          font-size: 11px;
-          line-height: 1.9;
-        }
-
-        .gold-chip {
+        .eco-brand {
+          display: inline-flex;
+          align-items: center;
+          gap: 11px;
           flex-shrink: 0;
-          padding: 7px 11px;
-          border: 1px solid var(--eco-border);
-          border-radius: 9px;
-          color: var(--eco-gold);
-          background: rgba(229, 199, 107, 0.06);
-          font-size: 11px;
-          font-weight: 700;
         }
 
-        .top-list {
+        .eco-brand-icon {
+          width: 39px;
+          height: 39px;
           display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          gap: 14px;
+          place-items: center;
+          border-radius: 12px;
+          background: var(--eco-green);
+          color: #102017;
+          font-size: 24px;
+          font-weight: 900;
         }
 
-        .person-card {
-          min-width: 0;
-          padding: 16px;
-          overflow: hidden;
-          border: 1px solid var(--eco-border);
-          border-radius: 18px;
-          background: linear-gradient(145deg, #151c29, #0e131d 80%);
-          box-shadow: 0 8px 28px rgba(0, 0, 0, 0.13);
-          transition: border-color 0.2s, transform 0.2s;
+        .eco-brand strong,
+        .eco-brand small {
+          display: block;
+          direction: ltr;
+          text-align: left;
         }
 
-        .person-card:hover {
-          border-color: rgba(229, 199, 107, 0.42);
+        .eco-brand strong {
+          font-size: 16px;
+          letter-spacing: 1.5px;
+        }
+
+        .eco-brand small {
+          margin-top: 4px;
+          font-size: 8px;
+          letter-spacing: 1.6px;
+          color: var(--eco-muted);
+        }
+
+        .eco-nav {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 26px;
+          font-size: 12px;
+          color: #a9bcb0;
+        }
+
+        .eco-nav a,
+        .eco-text-link,
+        .eco-back-top {
+          transition: color 0.2s ease;
+        }
+
+        .eco-nav a:hover,
+        .eco-text-link:hover,
+        .eco-back-top:hover {
+          color: var(--eco-green);
+        }
+
+        .eco-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+
+        .eco-live {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 10px;
+          color: var(--eco-muted);
+          white-space: nowrap;
+        }
+
+        .eco-live i,
+        .eco-status-dot,
+        .eco-pulse {
+          display: inline-block;
+          width: 7px;
+          height: 7px;
+          background: var(--eco-green);
+          border-radius: 50%;
+          box-shadow: 0 0 12px rgba(185, 242, 124, 0.5);
+        }
+
+        .eco-button,
+        .eco-outline-button {
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          padding: 0 20px;
+          border: 1px solid transparent;
+          border-radius: 10px;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 700;
+          transition:
+            transform 0.2s ease,
+            background 0.2s ease,
+            border-color 0.2s ease;
+        }
+
+        .eco-button {
+          background: var(--eco-green);
+          color: #132219;
+        }
+
+        .eco-button:hover {
+          background: #d1ff9f;
           transform: translateY(-2px);
         }
 
-        .person-main {
-          display: grid;
-          grid-template-columns: 38px 76px minmax(0, 1fr) auto;
-          align-items: center;
-          gap: 15px;
-          min-width: 0;
+        .eco-button:disabled,
+        .eco-outline-button:disabled {
+          opacity: 0.55;
+          cursor: wait;
+          transform: none;
         }
 
-        .rank-badge {
+        .eco-button-small {
+          min-height: 36px;
+          padding: 0 13px;
+          font-size: 11px;
+        }
+
+        .eco-outline-button {
+          background: transparent;
+          color: var(--eco-text);
+          border-color: var(--eco-border);
+        }
+
+        .eco-outline-button:hover {
+          border-color: var(--eco-green);
+        }
+
+        .eco-hero {
+          min-height: 440px;
+          display: grid;
+          grid-template-columns: 1.05fr 0.95fr;
+          align-items: center;
+          gap: 30px;
+          padding: 46px 0 35px;
+        }
+
+        .eco-hero-copy {
+          max-width: 610px;
+        }
+
+        .eco-eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          color: var(--eco-green);
+          font-size: 12px;
+        }
+
+        .eco-eyebrow-line {
+          width: 26px;
+          height: 1px;
+          background: var(--eco-green);
+        }
+
+        .eco-hero h1 {
+          margin: 22px 0 17px;
+          font-size: clamp(36px, 4.8vw, 62px);
+          line-height: 1.5;
+          letter-spacing: -1.7px;
+        }
+
+        .eco-hero h1 span {
+          color: var(--eco-green);
+        }
+
+        .eco-hero-copy > p {
+          max-width: 440px;
+          margin: 0;
+          color: var(--eco-muted);
+          font-size: 13px;
+          line-height: 2.2;
+        }
+
+        .eco-hero-actions {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 23px;
+          margin-top: 27px;
+        }
+
+        .eco-text-link {
+          color: #c6d8ca;
+          font-size: 12px;
+        }
+
+        .eco-hero-footnote {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          margin-top: 29px;
+          color: var(--eco-muted);
+          font-size: 10px;
+        }
+
+        .eco-hero-art {
+          min-height: 340px;
+          position: relative;
           display: grid;
           place-items: center;
-          width: 36px;
-          height: 36px;
-          border: 1px solid var(--eco-border);
-          border-radius: 11px;
-          color: var(--eco-gold);
+        }
+
+        .eco-orbit {
+          position: absolute;
+          border: 1px solid rgba(185, 242, 124, 0.18);
+          border-radius: 50%;
+          transform: rotate(-22deg);
+        }
+
+        .eco-orbit-outer {
+          width: min(340px, 80%);
+          height: 250px;
+        }
+
+        .eco-orbit-inner {
+          width: min(270px, 65%);
+          height: 340px;
+          transform: rotate(35deg);
+          border-color: rgba(185, 242, 124, 0.11);
+        }
+
+        .eco-hero-coin {
+          width: 180px;
+          height: 180px;
+          display: grid;
+          place-items: center;
+          border-radius: 50%;
+          border: 1px solid rgba(185, 242, 124, 0.45);
+          background:
+            radial-gradient(circle at 30% 25%, #294a34, #0d1b13 72%);
+          box-shadow:
+            0 0 70px rgba(110, 218, 121, 0.13),
+            inset 0 0 35px rgba(185, 242, 124, 0.08);
+          animation: eco-float 5s ease-in-out infinite;
+        }
+
+        .eco-hero-coin span {
+          color: var(--eco-green);
           font-family: Arial, sans-serif;
-          font-size: 13px;
-          font-weight: 800;
+          font-size: 100px;
+          font-weight: 300;
+          text-shadow: 0 0 25px rgba(185, 242, 124, 0.25);
         }
 
-        .person-photo {
-          width: 76px;
-          height: 76px;
-          overflow: hidden;
-          border: 1px solid rgba(229, 199, 107, 0.3);
-          border-radius: 14px;
-          background: #202939;
+        .eco-floating-card {
+          position: absolute;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px;
+          border: 1px solid var(--eco-border);
+          border-radius: 13px;
+          background: rgba(13, 27, 23, 0.92);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+          backdrop-filter: blur(12px);
         }
 
-        .person-photo img {
+        .eco-card-top {
+          top: 45px;
+          right: 0;
+        }
+
+        .eco-card-bottom {
+          bottom: 35px;
+          left: 0;
+        }
+
+        .eco-floating-card small,
+        .eco-floating-card strong {
           display: block;
+          direction: ltr;
+          text-align: left;
+        }
+
+        .eco-floating-card small {
+          margin-bottom: 6px;
+          color: var(--eco-muted);
+          font-size: 9px;
+        }
+
+        .eco-floating-card strong {
+          font-size: 10px;
+          letter-spacing: 0.8px;
+        }
+
+        .eco-floating-icon {
+          display: grid;
+          place-items: center;
+          width: 35px;
+          height: 35px;
+          border-radius: 10px;
+          background: rgba(185, 242, 124, 0.12);
+          color: var(--eco-green);
+        }
+
+        .eco-mini-bars {
+          height: 33px;
+          display: flex;
+          align-items: end;
+          gap: 4px;
+        }
+
+        .eco-mini-bars i {
+          width: 5px;
+          border-radius: 4px;
+          background: var(--eco-green);
+        }
+
+        .eco-mini-bars i:nth-child(1) { height: 12px; }
+        .eco-mini-bars i:nth-child(2) { height: 20px; }
+        .eco-mini-bars i:nth-child(3) { height: 16px; }
+        .eco-mini-bars i:nth-child(4) { height: 28px; }
+        .eco-mini-bars i:nth-child(5) { height: 33px; }
+
+        .eco-alert {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin: 12px 0 20px;
+          padding: 14px 16px;
+          border: 1px solid rgba(255, 191, 100, 0.25);
+          border-radius: 10px;
+          background: rgba(255, 191, 100, 0.06);
+          color: #f2d6a7;
+          font-size: 12px;
+          line-height: 1.8;
+        }
+
+        .eco-alert button {
+          margin-right: auto;
+          padding: 7px 11px;
+          border: 1px solid var(--eco-border);
+          border-radius: 7px;
+          background: transparent;
+          cursor: pointer;
+        }
+
+        .eco-stats-grid {
+          display: grid;
+          grid-template-columns: 1.5fr 1fr 1fr;
+          gap: 15px;
+          margin: 12px 0 85px;
+        }
+
+        .eco-stat-card {
+          min-height: 165px;
+          position: relative;
+          overflow: hidden;
+          padding: 22px;
+          border: 1px solid var(--eco-border);
+          border-radius: 16px;
+          background: linear-gradient(145deg, #10221b, #0b1713);
+        }
+
+        .eco-stat-main {
+          background:
+            radial-gradient(circle at 85% 20%, rgba(185, 242, 124, 0.12), transparent 42%),
+            linear-gradient(145deg, #142b20, #0b1713);
+        }
+
+        .eco-stat-top,
+        .eco-stat-bottom {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .eco-stat-label {
+          color: var(--eco-muted);
+          font-size: 11px;
+        }
+
+        .eco-stat-icon {
+          display: grid;
+          place-items: center;
+          width: 32px;
+          height: 32px;
+          border: 1px solid var(--eco-border);
+          border-radius: 9px;
+          color: var(--eco-green);
+        }
+
+        .eco-stat-value {
+          display: flex;
+          align-items: baseline;
+          flex-wrap: wrap;
+          gap: 7px;
+          margin: 18px 0 14px;
+        }
+
+        .eco-stat-value strong {
+          font-family: Arial, sans-serif;
+          font-size: clamp(25px, 3vw, 38px);
+          letter-spacing: -1px;
+        }
+
+        .eco-dollar {
+          color: var(--eco-green);
+          font-family: Arial, sans-serif;
+          font-size: 24px;
+        }
+
+        .eco-stat-unit {
+          color: var(--eco-muted);
+          font-size: 10px;
+        }
+
+        .eco-stat-bottom {
+          justify-content: flex-start;
+          color: var(--eco-muted);
+          font-size: 10px;
+        }
+
+        .eco-stat-name strong {
+          font-family: Tahoma, Arial, sans-serif;
+          font-size: clamp(17px, 2vw, 24px);
+          letter-spacing: 0;
+        }
+
+        .eco-stat-decoration {
+          position: absolute;
+          left: 12px;
+          bottom: -28px;
+          color: rgba(185, 242, 124, 0.035);
+          font-family: Arial, sans-serif;
+          font-size: 125px;
+          font-weight: 900;
+          pointer-events: none;
+        }
+
+        .eco-section {
+          margin: 0 0 88px;
+          scroll-margin-top: 25px;
+        }
+
+        .eco-section-heading {
+          display: flex;
+          align-items: end;
+          justify-content: space-between;
+          gap: 20px;
+          margin-bottom: 25px;
+        }
+
+        .eco-section-kicker {
+          display: block;
+          margin-bottom: 10px;
+          color: var(--eco-green);
+          font-family: Arial, sans-serif;
+          font-size: 9px;
+          letter-spacing: 2px;
+          direction: ltr;
+          text-align: right;
+        }
+
+        .eco-section-heading h2 {
+          margin: 0;
+          font-size: clamp(23px, 3vw, 31px);
+        }
+
+        .eco-section-heading p {
+          margin: 11px 0 0;
+          color: var(--eco-muted);
+          font-size: 11px;
+          line-height: 2;
+        }
+
+        .eco-section-count {
+          color: var(--eco-muted);
+          font-family: Arial, sans-serif;
+          font-size: 11px;
+          letter-spacing: 1px;
+          white-space: nowrap;
+        }
+
+        .eco-top-five-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .eco-person-row {
+          width: 100%;
+          min-height: 92px;
+          display: grid;
+          grid-template-columns: 38px 58px minmax(120px, 1fr) minmax(110px, 0.6fr) 95px 20px;
+          align-items: center;
+          gap: 15px;
+          padding: 14px 19px;
+          border: 1px solid var(--eco-border);
+          border-radius: 13px;
+          background: rgba(13, 27, 23, 0.76);
+          text-align: right;
+          cursor: pointer;
+          transition:
+            border-color 0.2s ease,
+            background 0.2s ease,
+            transform 0.2s ease;
+        }
+
+        .eco-person-row:hover,
+        .eco-person-row.is-selected {
+          border-color: rgba(185, 242, 124, 0.5);
+          background: linear-gradient(100deg, rgba(185, 242, 124, 0.06), #102019);
+        }
+
+        .eco-person-row:hover {
+          transform: translateX(-3px);
+        }
+
+        .eco-person-rank {
+          color: #748b7d;
+          font-family: Arial, sans-serif;
+          font-size: 16px;
+        }
+
+        .eco-person-photo-wrap {
+          position: relative;
+          display: block;
+          width: 54px;
+          height: 54px;
+        }
+
+        .eco-person-photo {
+          width: 100%;
+          height: 100%;
+          display: block;
+          object-fit: cover;
+          border: 1px solid rgba(185, 242, 124, 0.25);
+          border-radius: 50%;
+          background: var(--eco-panel-2);
+        }
+
+        .eco-crown {
+          position: absolute;
+          top: -9px;
+          right: -6px;
+          color: var(--eco-green);
+          font-size: 17px;
+          filter: drop-shadow(0 0 6px rgba(185, 242, 124, 0.4));
+        }
+
+        .eco-person-info,
+        .eco-person-worth {
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .eco-person-info strong {
+          overflow-wrap: anywhere;
+          font-size: 13px;
+        }
+
+        .eco-person-info small,
+        .eco-person-worth small {
+          color: var(--eco-muted);
+          font-size: 10px;
+          line-height: 1.8;
+        }
+
+        .eco-person-worth strong {
+          direction: ltr;
+          text-align: right;
+          color: var(--eco-green);
+          font-family: Arial, sans-serif;
+          font-size: 18px;
+        }
+
+        .eco-change {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          direction: ltr;
+          font-family: Arial, sans-serif;
+          font-size: 11px;
+          white-space: nowrap;
+        }
+
+        .eco-change-up,
+        .eco-positive-text {
+          color: #91e4a3;
+        }
+
+        .eco-change-down,
+        .eco-negative-text {
+          color: var(--eco-red);
+        }
+
+        .eco-row-arrow {
+          color: var(--eco-muted);
+          font-size: 15px;
+        }
+
+        .eco-feature-person {
+          display: grid;
+          grid-template-columns: 250px 1fr;
+          gap: 30px;
+          margin-top: 20px;
+          padding: 23px;
+          border: 1px solid var(--eco-border);
+          border-radius: 16px;
+          background: linear-gradient(135deg, #10231a, #0b1713);
+        }
+
+        .eco-feature-image {
+          position: relative;
+          min-height: 250px;
+          overflow: hidden;
+          border-radius: 12px;
+          background: var(--eco-panel-2);
+        }
+
+        .eco-feature-image img {
+          position: absolute;
+          inset: 0;
           width: 100%;
           height: 100%;
           object-fit: cover;
         }
 
-        .photo-placeholder {
-          display: grid;
-          width: 100%;
-          height: 100%;
-          place-items: center;
-          color: var(--eco-gold);
+        .eco-feature-rank {
+          position: absolute;
+          right: 12px;
+          bottom: 12px;
+          padding: 8px 10px;
+          border: 1px solid var(--eco-border);
+          border-radius: 7px;
+          background: rgba(7, 17, 15, 0.85);
+          color: var(--eco-green);
+          font-family: Arial, sans-serif;
+          font-size: 10px;
+        }
+
+        .eco-feature-content {
+          padding: 7px 0;
+        }
+
+        .eco-feature-content h3 {
+          margin: 12px 0 7px;
           font-size: 25px;
-          font-weight: 800;
         }
 
-        .person-info {
-          min-width: 0;
+        .eco-feature-company {
+          color: var(--eco-green);
+          font-size: 11px;
         }
 
-        .person-info h3 {
-          margin: 0 0 7px;
-          font-size: 16px;
-          overflow-wrap: anywhere;
-        }
-
-        .person-company,
-        .person-country {
-          margin: 4px 0 0;
+        .eco-feature-bio {
           color: var(--eco-muted);
-          font-size: 11px;
-          line-height: 1.7;
-        }
-
-        .person-wealth {
-          min-width: 120px;
-          text-align: left;
-          direction: ltr;
-        }
-
-        .person-wealth span {
-          margin-bottom: 7px;
-          font-size: 10px;
-        }
-
-        .person-wealth strong {
-          display: block;
-          color: var(--eco-gold);
-          font-family: Arial, sans-serif;
-          font-size: 20px;
-          white-space: nowrap;
-        }
-
-        .person-wealth small {
-          display: inline-block;
-          margin-top: 7px;
-          font-family: Arial, sans-serif;
-          font-size: 11px;
-        }
-
-        .change-positive {
-          color: #6ed8a0;
-        }
-
-        .change-negative {
-          color: #ff8888;
-        }
-
-        .person-news {
-          margin-top: 16px;
-          padding: 15px;
-          border: 1px solid rgba(255, 255, 255, 0.065);
-          border-radius: 13px;
-          background: rgba(4, 8, 15, 0.45);
-        }
-
-        .news-heading {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-        }
-
-        .news-kicker {
-          color: var(--eco-gold2);
-          font-family: Arial, sans-serif;
-          font-size: 9px;
-          font-weight: 800;
-          letter-spacing: 1px;
-        }
-
-        .news-heading h4 {
-          margin: 5px 0 0;
-          font-size: 13px;
-        }
-
-        .news-content {
-          margin-top: 12px;
-        }
-
-        .news-content h5 {
-          margin: 0 0 8px;
-          color: #f4d98b;
-          font-size: 14px;
-          line-height: 1.9;
-        }
-
-        .news-body {
-          margin: 0;
-          color: #d0d5df;
           font-size: 12px;
-          line-height: 2.1;
-          white-space: pre-wrap;
-          overflow-wrap: anywhere;
+          line-height: 2.2;
         }
 
-        .empty-news {
-          margin: 10px 0 0;
-          color: var(--eco-muted);
-          font-size: 11px;
-          line-height: 1.9;
-        }
-
-        .news-date {
-          display: block;
-          margin-top: 12px;
-          color: #8792a3;
-          font-size: 10px;
-        }
-
-        .news-editor {
-          display: grid;
-          gap: 12px;
-          margin-top: 16px;
-        }
-
-        .news-editor label,
-        .admin-modal label {
-          display: grid;
-          gap: 7px;
-          color: #c8d0dd;
-          font-size: 11px;
-        }
-
-        .news-editor input,
-        .news-editor textarea,
-        .admin-modal input {
-          width: 100%;
-          min-width: 0;
-          padding: 11px 12px;
-          border: 1px solid #30394a;
-          border-radius: 9px;
-          outline: none;
-          color: #f7f8fa;
-          background: #0b1019;
-          font-size: 12px;
-          line-height: 1.8;
-        }
-
-        .news-editor textarea {
-          resize: vertical;
-        }
-
-        .news-editor input:focus,
-        .news-editor textarea:focus,
-        .admin-modal input:focus {
-          border-color: var(--eco-gold2);
-        }
-
-        .editor-actions {
+        .eco-feature-metrics {
           display: flex;
           flex-wrap: wrap;
+          gap: 35px;
+          margin: 22px 0;
+        }
+
+        .eco-feature-metrics div {
+          display: flex;
+          flex-direction: column;
           gap: 9px;
         }
 
-        .primary-button,
-        .outline-button,
-        .quiet-button {
-          padding: 10px 14px;
-          border-radius: 9px;
-          font-size: 11px;
-          font-weight: 700;
-          transition: opacity 0.2s, background 0.2s;
-        }
-
-        .primary-button {
-          border: 1px solid var(--eco-gold);
-          color: #14110a;
-          background: var(--eco-gold);
-        }
-
-        .primary-button:hover {
-          background: #f2d984;
-        }
-
-        .outline-button {
-          border: 1px solid var(--eco-border);
-          color: var(--eco-gold);
-          background: transparent;
-        }
-
-        .outline-button:hover {
-          background: rgba(229, 199, 107, 0.08);
-        }
-
-        .quiet-button {
-          border: 1px solid #30394a;
-          color: #c2cad6;
-          background: transparent;
-        }
-
-        .text-button {
-          display: block;
-          margin-top: 7px;
-          padding: 0;
-          border: 0;
-          color: var(--eco-gold);
-          background: transparent;
-          font-size: 11px;
-        }
-
-        .table-wrap {
-          overflow-x: auto;
-          border: 1px solid var(--eco-border);
-          border-radius: 15px;
-          background: #0e141e;
-        }
-
-        .billionaires-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 11px;
-          text-align: right;
-        }
-
-        .billionaires-table th {
-          padding: 12px 10px;
-          color: var(--eco-gold);
-          background: #171e2a;
+        .eco-feature-metrics small {
+          color: var(--eco-muted);
           font-size: 10px;
-          font-weight: 700;
-          white-space: nowrap;
         }
 
-        .billionaires-table td {
-          padding: 10px;
-          border-top: 1px solid rgba(255, 255, 255, 0.055);
-          color: #c6cedb;
-          font-size: 10px;
-          line-height: 1.7;
-        }
-
-        .billionaires-table tbody tr:hover {
-          background: rgba(229, 199, 107, 0.035);
-        }
-
-        .table-rank {
-          color: var(--eco-gold);
+        .eco-feature-metrics strong {
           font-family: Arial, sans-serif;
-          font-size: 10px;
-          font-weight: 800;
+          font-size: 19px;
         }
 
-        .table-name {
-          color: #f4f5f8 !important;
-          font-weight: 700;
-        }
-
-        .table-wealth {
-          color: var(--eco-gold) !important;
-          direction: ltr;
-          text-align: right;
-          white-space: nowrap;
-          font-family: Arial, sans-serif;
-        }
-
-        .page-footer {
+        .eco-loading,
+        .eco-empty {
           display: flex;
-          flex-wrap: wrap;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          min-height: 130px;
+          color: var(--eco-muted);
+          font-size: 12px;
+        }
+
+        .eco-spinner {
+          width: 20px;
+          height: 20px;
+          border: 2px solid var(--eco-border);
+          border-top-color: var(--eco-green);
+          border-radius: 50%;
+          animation: eco-spin 0.8s linear infinite;
+        }
+
+        .eco-table-tools {
+          display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
-          margin-top: 42px;
-          padding-top: 20px;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-          color: var(--eco-muted);
-          font-size: 10px;
-        }
-
-        .page-footer > span:first-child {
-          color: var(--eco-gold);
-          font-family: Arial, sans-serif;
-          font-size: 14px;
-          font-weight: 900;
-        }
-
-        .admin-link {
-          padding: 8px 10px;
-          border: 1px solid var(--eco-border);
-          border-radius: 8px;
-          color: var(--eco-gold);
-          background: transparent;
-          font-size: 10px;
-        }
-
-        .notice,
-        .loading-panel,
-        .status-message {
-          max-width: 1120px;
-          margin: 16px auto;
-          padding: 13px 15px;
-          border: 1px solid var(--eco-border);
-          border-radius: 11px;
-          color: #d7dce5;
-          background: var(--eco-panel);
-          font-size: 12px;
-          line-height: 1.9;
-        }
-
-        .error-notice {
-          border-color: rgba(255, 120, 120, 0.3);
-          color: #ffb6b6;
-        }
-
-        .status-message {
-          position: fixed;
-          z-index: 100;
-          right: 20px;
-          bottom: 18px;
-          left: 20px;
-          max-width: 520px;
-          margin: auto;
-          border-color: rgba(229, 199, 107, 0.4);
-          background: #171e2a;
-          box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
-        }
-
-        .modal-backdrop {
-          position: fixed;
-          z-index: 200;
-          inset: 0;
-          display: grid;
-          place-items: center;
-          padding: 18px;
-          background: rgba(0, 0, 0, 0.72);
-          backdrop-filter: blur(6px);
-        }
-
-        .admin-modal {
-          position: relative;
-          width: 100%;
-          max-width: 420px;
-          max-height: 90vh;
-          overflow-y: auto;
-          padding: 26px;
-          border: 1px solid var(--eco-border);
-          border-radius: 18px;
-          background: #111722;
-          box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
-        }
-
-        .admin-modal h3 {
-          margin: 0 0 10px;
-          font-size: 22px;
-        }
-
-        .admin-modal p {
-          color: var(--eco-muted);
-          font-size: 12px;
-          line-height: 2;
-        }
-
-        .admin-modal form {
-          display: grid;
-          gap: 15px;
-        }
-
-        .modal-close {
-          position: absolute;
-          top: 10px;
-          left: 12px;
-          width: 32px;
-          height: 32px;
-          border: 0;
-          border-radius: 8px;
-          color: #fff;
-          background: #242d3b;
-          font-size: 23px;
-        }
-
-        .full-button {
-          width: 100%;
-          margin-top: 6px;
-        }
-
-        .form-error {
-          color: #ffaaaa !important;
-        }
-
-        @media (max-width: 650px) {
-          .econova-page {
-            padding-right: 12px;
-            padding-left: 12px;
-          }
-
-          .page-header {
-            min-height: 62px;
-          }
-
-          .brand {
-            font-size: 20px;
-          }
-
-          .hero {
-            padding-top: 36px;
-          }
-
-          .hero-stats {
-            gap: 8px;
-          }
-
-          .stat-box {
-            padding: 13px 11px;
-          }
-
-          .stat-box span {
-            font-size: 10px;
-            line-height: 1.8;
-          }
-
-          .person-card {
-            padding: 10px;
-            border-radius: 13px;
-          }
-
-          .person-main {
-            grid-template-columns: 27px 54px minmax(0, 1fr);
-            gap: 9px;
-          }
-
-          .rank-badge {
-            width: 27px;
-            height: 29px;
-            border-radius: 8px;
-            font-size: 10px;
-          }
-
-          .person-photo {
-            width: 54px;
-            height: 54px;
-            border-radius: 10px;
-          }
-
-          .person-info h3 {
-            margin-bottom: 4px;
-            font-size: 12px;
-          }
-
-          .person-company,
-          .person-country {
-            margin-top: 2px;
-            font-size: 9px;
-          }
-
-          .person-wealth {
-            grid-column: 2 / -1;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 7px;
-            min-width: 0;
-            text-align: right;
-            direction: rtl;
-          }
-
-          .person-wealth span {
-            margin: 0;
-            font-size: 9px;
-          }
-
-          .person-wealth strong {
-            font-size: 16px;
-          }
-
-          .person-wealth small {
-            margin-top: 0;
-            font-size: 10px;
-          }
-
-          .person-news {
-            margin-top: 12px;
-            padding: 11px;
-          }
-
-          .news-heading h4 {
-            font-size: 11px;
-          }
-
-          .outline-button,
-          .primary-button,
-          .quiet-button {
-            padding: 9px 10px;
-            font-size: 10px;
-          }
-
-          .billionaires-table {
-            min-width: 470px;
-          }
-
-          .billionaires-table th,
-          .billionaires-table td {
-            padding: 8px 7px;
-            font-size: 9px;
-          }
-
-          .page-footer {
-            align-items: flex-start;
-          }
-
-          .section-heading p {
-            max-width: 250px;
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          *,
-          *::before,
-          *::after {
-            scroll-behavior: auto !important;
-            transition-duration: 0.01ms !important;
-          }
-        }
-      `}</style>
-    </>
-  );
-}
+          flex-wrap: 
