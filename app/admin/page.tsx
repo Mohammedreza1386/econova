@@ -137,7 +137,7 @@ function changeField(
             image_url: person.image_url,
             bio: person.bio,
             net_worth_billions: person.net_worth_billions,
-            daily_change_pct: person.daily_change_pct,
+            daily_change_pct: Number(String(person.daily_change_pct).replace(/^\+/, "")),
             updated_at: new Date().toISOString(),
           }),
         }
