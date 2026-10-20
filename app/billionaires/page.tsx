@@ -197,6 +197,7 @@ export default function BillionairesPage() {
                       <th className="p-4">شرکت</th>
                       <th className="p-4">کشور</th>
                       <th className="p-4">ثروت (میلیارد دلار)</th>
+                      <th className="p-4">تغییر روزانه</th>
                     </tr>
                   </thead>
                   <tbody>
