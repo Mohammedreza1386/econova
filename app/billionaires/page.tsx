@@ -1,167 +1,180 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js": "^2.0.0"
 
 type Billionaire = {
   id: string | number;
   rank: number;
   name: string;
-  company?: string | null;
-  country?: string | null;
-  image_url?: string | null;
-  bio?: string | null;
-  net_worth_billions: number | string;
-  daily_change_pct?: number | string | null;
+  company: string | null;
+  country: string | null;
+  image_url: string | null;
+  bio: string | null;
+  net_worth_billions: number;
+  daily_change_pct: number | null;
   daily_change_date?: string | null;
-  yesterday_net_worth_billions?: number | string | null;
-  source_url?: string | null;
   updated_at?: string | null;
+  source_url?: string | null;
+  yesterday_net_worth_billions?: number | null;
 };
 
 type BillionaireNews = {
   id?: string | number;
-  billionaire_rank?: number;
-  rank?: number;
-  title?: string | null;
+  rank: number;
+  title: string;
   content?: string | null;
   body?: string | null;
   source_url?: string | null;
   updated_at?: string | null;
-  [key: string]: unknown;
 };
 
 const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") || "";
 
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const SUPABASE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-const supabase: SupabaseClient | null =
-  SUPABASE_URL && SUPABASE_ANON_KEY
-    ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    : null;
-
-const FALLBACK_PHOTOS: Record<string, string> = {
-  "Elon Musk":
-    "https://unavatar.io/x/elonmusk",
-  "Jeff Bezos":
-    "https://unavatar.io/x/JeffBezos",
-  "Larry Page":
-    "https://commons.wikimedia.org/wiki/Special:FilePath/Larry_Page_in_the_European_Parliament%2C_17_July_2009.jpg",
-  "Sergey Brin":
-    "https://unavatar.io/x/sergeybrin",
-  "Mark Zuckerberg":
-    "https://unavatar.io/x/finkd",
-  "Michael Dell":
-    "https://unavatar.io/x/MichaelDell",
-  "Jensen Huang":
-    "https://unavatar.io/x/nvidia",
-  "Larry Ellison":
-    "https://unavatar.io/x/Oracle",
-  "Steve Ballmer":
-    "https://unavatar.io/x/SteveBallmer",
-  "Warren Buffett":
-    "https://unavatar.io/x/WarrenBuffett",
+const API_HEADERS = {
+  apikey: SUPABASE_KEY,
+  "Content-Type": "application/json",
 };
 
-const formatMoney = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+const GREEN = "#b9f27c";
+
+function formatMoney(value: number | null | undefined): string {
+  const amount = Number(value ?? 0);
+
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 1,
     maximumFractionDigits: 1,
-  }).format(value);
+  }).format(Number.isFinite(amount) ? amount : 0);
+}
 
-const formatBillions = (value: number) =>
-  `${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 1,
-  }).format(value)}B`;
+function formatBillions(value: number): string {
+  return `$${formatMoney(value)}B`;
+}
 
-const toNumber = (value: unknown): number => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
+function formatChange(value: number | null | undefined): string {
+  const number = Number(value ?? 0);
+  const sign = number > 0 ? "+" : "";
 
-const photoFor = (person: Billionaire) =>
-  person.image_url?.trim() ||
-  FALLBACK_PHOTOS[person.name] ||
-  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+  return `${sign}${number.toFixed(2)}%`;
+}
+
+function photoFor(person: Billionaire): string {
+  if (person.image_url?.trim()) {
+    return person.image_url;
+  }
+
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
     person.name || "Econova"
-  )}&background=102b25&color=d7f8a8&size=256`;
+  )}&background=14271d&color=b9f27c&size=160&bold=true`;
+}
 
-const changeIsPositive = (value: number) => value >= 0;
+async function apiRequest<T>(
+  path: string,
+  options: RequestInit = {},
+  token?: string
+): Promise<T> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error(
+      "تنظیمات Supabase در Environment Variables سایت Vercel وارد نشده است."
+    );
+  }
+
+  const response = await fetch(`${SUPABASE_URL}${path}`, {
+    ...options,
+    headers: {
+      ...API_HEADERS,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
+    cache: "no-store",
+  });
+
+  const text = await response.text();
+
+  let data: unknown = null;
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text;
+  }
+
+  if (!response.ok) {
+    const message =
+      typeof data === "object" && data !== null && "message" in data
+        ? String((data as { message: unknown }).message)
+        : `خطای درخواست: ${response.status}`;
+
+    throw new Error(message);
+  }
+
+  return data as T;
+}
 
 export default function BillionairesPage() {
   const [people, setPeople] = useState<Billionaire[]>([]);
   const [news, setNews] = useState<BillionaireNews[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-  const [lastUpdated, setLastUpdated] = useState("");
 
-  const [activeRank, setActiveRank] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAll, setShowAll] = useState(false);
+  const [activeRank, setActiveRank] = useState(1);
 
+  const [animatedTotal, setAnimatedTotal] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState("");
+
+  const [loginOpen, setLoginOpen] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
+  const [adminToken, setAdminToken] = useState("");
+
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
   const [adminMessage, setAdminMessage] = useState("");
-  const [saving, setSaving] = useState(false);
 
   const [editingNewsRank, setEditingNewsRank] = useState(1);
   const [newsTitle, setNewsTitle] = useState("");
   const [newsContent, setNewsContent] = useState("");
   const [newsSource, setNewsSource] = useState("");
-
-  const [animatedTotal, setAnimatedTotal] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!supabase) {
-      setErrorMessage(
-        "اتصال Supabase تنظیم نشده است. متغیرهای محیطی را بررسی کن."
-      );
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setErrorMessage("");
 
     try {
-      const [peopleResult, newsResult] = await Promise.all([
-        supabase
-          .from("billionaires")
-          .select("*")
-          .order("rank", { ascending: true })
-          .limit(30),
-
-        supabase
-          .from("billionaire_news")
-          .select("*")
-          .order("updated_at", { ascending: false }),
+      const [peopleData, newsData] = await Promise.all([
+        apiRequest<Billionaire[]>(
+          "/rest/v1/billionaires?select=*&order=rank.asc&limit=100"
+        ),
+        apiRequest<BillionaireNews[]>(
+          "/rest/v1/billionaire_news?select=*&order=rank.asc"
+        ).catch(() => [] as BillionaireNews[]),
       ]);
 
-      if (peopleResult.error) throw peopleResult.error;
-
-      setPeople(
-        ((peopleResult.data ?? []) as Billionaire[]).sort(
-          (a, b) => Number(a.rank) - Number(b.rank)
-        )
+      const sorted = [...peopleData].sort(
+        (a, b) => Number(a.rank) - Number(b.rank)
       );
 
-      if (newsResult.error) {
-        console.warn("News loading issue:", newsResult.error.message);
-        setNews([]);
-      } else {
-        setNews((newsResult.data ?? []) as BillionaireNews[]);
-      }
+      setPeople(sorted);
+      setNews(newsData || []);
 
-      setLastUpdated(new Date().toLocaleString("fa-IR"));
+      if (sorted.length > 0) {
+        setLastUpdated(
+          sorted[0].updated_at
+            ? new Date(sorted[0].updated_at).toLocaleString("fa-IR")
+            : "اطلاعات دریافت شد"
+        );
+      }
     } catch (error) {
-      console.error(error);
       setErrorMessage(
-        "دریافت اطلاعات انجام نشد. اتصال اینترنت و تنظیمات Supabase را بررسی کن."
+        error instanceof Error
+          ? error.message
+          : "دریافت اطلاعات با خطا مواجه شد."
       );
     } finally {
       setLoading(false);
@@ -172,88 +185,70 @@ export default function BillionairesPage() {
     void loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    if (!supabase) return;
-
-    supabase.auth.getSession().then(({ data }) => {
-      const role = data.session?.user.app_metadata?.role;
-      setIsAdmin(role === "admin");
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAdmin(session?.user.app_metadata?.role === "admin");
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const sortedPeople = useMemo(
-    () =>
-      [...people].sort(
-        (a, b) => Number(a.rank) - Number(b.rank)
-      ),
+    () => [...people].sort((a, b) => a.rank - b.rank),
     [people]
   );
 
   const topFive = useMemo(
-    () => sortedPeople.filter((person) => person.rank <= 5),
-    [sortedPeople]
-  );
-
-  const topTen = useMemo(
-    () => sortedPeople.filter((person) => person.rank <= 10),
+    () => sortedPeople.slice(0, 5),
     [sortedPeople]
   );
 
   const topTenTotal = useMemo(
     () =>
-      topTen.reduce(
-        (sum, person) => sum + toNumber(person.net_worth_billions),
-        0
-      ),
-    [topTen]
+      sortedPeople
+        .slice(0, 10)
+        .reduce(
+          (total, person) =>
+            total + Number(person.net_worth_billions || 0),
+          0
+        ),
+    [sortedPeople]
   );
 
   useEffect(() => {
     let frame = 0;
-    const start = performance.now();
-    const duration = 1400;
-    const initial = 0;
+    const duration = 1000;
+    const start = Date.now();
+    const initial = animatedTotal;
+    const difference = topTenTotal - initial;
 
-    const animate = (now: number) => {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 4);
+    let animationFrame = 0;
 
-      setAnimatedTotal(
-        initial + (topTenTotal - initial) * eased
-      );
+    const animate = () => {
+      const progress = Math.min((Date.now() - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+
+      setAnimatedTotal(initial + difference * eased);
 
       if (progress < 1) {
-        frame = requestAnimationFrame(animate);
+        animationFrame = window.requestAnimationFrame(animate);
       }
     };
 
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
+    animationFrame = window.requestAnimationFrame(animate);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      frame++;
+      void frame;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topTenTotal]);
 
   const filteredPeople = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    const query = searchTerm.trim().toLocaleLowerCase();
 
-    if (!term) return sortedPeople;
+    if (!query) return sortedPeople;
 
     return sortedPeople.filter((person) =>
       [
         person.name,
-        person.company ?? "",
-        person.country ?? "",
+        person.company || "",
+        person.country || "",
         String(person.rank),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(term)
+      ].some((value) => value.toLocaleLowerCase().includes(query))
     );
   }, [sortedPeople, searchTerm]);
 
@@ -261,76 +256,86 @@ export default function BillionairesPage() {
     ? filteredPeople
     : filteredPeople.slice(0, 10);
 
-  const newsForRank = (rank: number) =>
-    news.find(
-      (item) =>
-        Number(item.billionaire_rank ?? item.rank) === rank
-    );
-
   const activePerson =
-    sortedPeople.find((person) => person.rank === activeRank) ??
-    topFive[0];
+    sortedPeople.find((person) => person.rank === activeRank) ||
+    sortedPeople[0];
 
-  const openNewsEditor = (rank: number) => {
-    const existing = newsForRank(rank);
+  const newsForRank = (rank: number) =>
+    news.find((item) => Number(item.rank) === rank);
 
-    setEditingNewsRank(rank);
-    setNewsTitle(String(existing?.title ?? ""));
-    setNewsContent(
-      String(existing?.content ?? existing?.body ?? "")
-    );
-    setNewsSource(String(existing?.source_url ?? ""));
-    setAdminMessage("");
-  };
+  const changeIsPositive = (person: Billionaire) =>
+    Number(person.daily_change_pct || 0) >= 0;
 
   const loginAdmin = async () => {
-    if (!supabase) {
-      setAdminMessage("اتصال Supabase برقرار نیست.");
-      return;
-    }
-
-    setSaving(true);
     setAdminMessage("");
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: adminEmail.trim(),
-        password: adminPassword,
+      const result = await apiRequest<{
+        access_token: string;
+        user?: { id: string; email?: string };
+      }>("/auth/v1/token?grant_type=password", {
+        method: "POST",
+        body: JSON.stringify({
+          email: adminEmail,
+          password: adminPassword,
+        }),
       });
 
-      if (error) throw error;
+      const userId = result.user?.id;
 
-      if (data.user?.app_metadata?.role !== "admin") {
-        await supabase.auth.signOut();
-        setIsAdmin(false);
-        setAdminMessage("این حساب دسترسی مدیر ندارد.");
-        return;
+      if (!userId) {
+        throw new Error("حساب کاربری معتبر نیست.");
       }
 
+      const admins = await apiRequest<{ user_id: string }[]>(
+        `/rest/v1/admin_users?select=user_id&user_id=eq.${encodeURIComponent(
+          userId
+        )}`,
+        {},
+        result.access_token
+      );
+
+      if (!admins.some((admin) => admin.user_id === userId)) {
+        throw new Error("این حساب دسترسی مدیر ندارد.");
+      }
+
+      setAdminToken(result.access_token);
       setIsAdmin(true);
       setLoginOpen(false);
       setAdminPassword("");
       setAdminMessage("ورود مدیر موفق بود.");
-      openNewsEditor(activeRank);
     } catch (error) {
-      console.error(error);
-      setAdminMessage("ورود ناموفق بود. ایمیل و رمز را بررسی کن.");
-    } finally {
-      setSaving(false);
+      setAdminMessage(
+        error instanceof Error ? error.message : "ورود ناموفق بود."
+      );
     }
   };
 
-  const logoutAdmin = async () => {
-    if (!supabase) return;
-
-    await supabase.auth.signOut();
+  const logoutAdmin = () => {
+    setAdminToken("");
     setIsAdmin(false);
+    setAdminMessage("");
+    setLoginOpen(false);
+  };
+
+  const openNewsEditor = (rank: number) => {
+    const item = newsForRank(rank);
+
+    setEditingNewsRank(rank);
+    setNewsTitle(item?.title || "");
+    setNewsContent(item?.content || item?.body || "");
+    setNewsSource(item?.source_url || "");
     setAdminMessage("");
   };
 
   const saveNews = async () => {
-    if (!supabase || !isAdmin) {
+    if (!isAdmin || !adminToken) {
       setAdminMessage("برای ذخیره خبر باید وارد حساب مدیر شوی.");
+      return;
+    }
+
+    if (!newsTitle.trim() || !newsContent.trim()) {
+      setAdminMessage("عنوان و متن خبر را وارد کن.");
       return;
     }
 
@@ -341,408 +346,364 @@ export default function BillionairesPage() {
       const existing = newsForRank(editingNewsRank);
 
       const payload = {
-        billionaire_rank: editingNewsRank,
+        rank: editingNewsRank,
         title: newsTitle.trim(),
         content: newsContent.trim(),
         source_url: newsSource.trim() || null,
         updated_at: new Date().toISOString(),
       };
 
-      const result = existing?.id
-        ? await supabase
-            .from("billionaire_news")
-            .update(payload)
-            .eq("id", existing.id)
-        : await supabase
-            .from("billionaire_news")
-            .insert(payload);
+      if (existing?.id != null) {
+        await apiRequest(
+          `/rest/v1/billionaire_news?id=eq.${encodeURIComponent(
+            String(existing.id)
+          )}`,
+          {
+            method: "PATCH",
+            headers: { Prefer: "return=minimal" },
+            body: JSON.stringify(payload),
+          },
+          adminToken
+        );
+      } else {
+        await apiRequest("/rest/v1/billionaire_news", {
+          method: "POST",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify(payload),
+        }, adminToken);
+      }
 
-      if (result.error) throw result.error;
-
-      setAdminMessage("خبر ذخیره شد.");
       await loadData();
+      setAdminMessage("خبر ذخیره شد.");
     } catch (error) {
-      console.error(error);
       setAdminMessage(
-        "ذخیره انجام نشد. ساختار جدول billionaire_news را بررسی کن."
+        error instanceof Error
+          ? `ذخیره خبر ناموفق بود: ${error.message}`
+          : "ذخیره خبر ناموفق بود."
       );
     } finally {
       setSaving(false);
     }
-  };  return (
+  };
+
+  // پارت ۲ از این خط ادامه پیدا می‌کند.
+  return (
     <main className="eco-page" dir="rtl">
       <div className="eco-glow eco-glow-one" />
       <div className="eco-glow eco-glow-two" />
 
       <header className="eco-header">
-        <a className="eco-brand" href="/billionaires">
-          <span className="eco-brand-icon">E</span>
+        <a href="#home" className="eco-logo">
+          <span className="eco-logo-mark">E</span>
           <span>
             <strong>ECONOVA</strong>
-            <small>WEALTH INTELLIGENCE</small>
+            <small>اقتصاد، فراتر از خبر</small>
           </span>
         </a>
 
         <nav className="eco-nav">
-          <a href="#overview">نمای کلی</a>
+          <a href="#home">خانه</a>
           <a href="#top-five">ثروتمندان برتر</a>
           <a href="#ranking">رتبه‌بندی</a>
           <a href="#news">اخبار</a>
         </nav>
 
-        <div className="eco-header-actions">
-          <span className="eco-live">
-            <i />
-            داده‌های زنده
-          </span>
-
-          {isAdmin ? (
-            <button
-              className="eco-button eco-button-small"
-              onClick={() => void logoutAdmin()}
-            >
-              خروج مدیر
-            </button>
-          ) : (
-            <button
-              className="eco-button eco-button-small"
-              onClick={() => setLoginOpen(true)}
-            >
-              <span>♙</span> ورود مدیر
-            </button>
-          )}
-        </div>
+        <button
+          className="eco-admin-button"
+          onClick={() => {
+            if (isAdmin) {
+              logoutAdmin();
+            } else {
+              setLoginOpen(true);
+            }
+          }}
+        >
+          {isAdmin ? "خروج مدیر" : "ورود مدیر"}
+        </button>
       </header>
 
-      <section className="eco-hero" id="overview">
-        <div className="eco-hero-copy">
+      <section className="eco-hero" id="home">
+        <div className="eco-hero-content">
           <span className="eco-eyebrow">
-            <span className="eco-eyebrow-line" />
-            نبض ثروت جهان
+            <span className="eco-live-dot" />
+            نمای زنده ثروت جهان
           </span>
 
           <h1>
-            ثروت جهان را
+            دنیای ثروت را
             <br />
-            <span>هوشمندانه</span> دنبال کن.
+            <span>متفاوت ببین.</span>
           </h1>
 
           <p>
-            رتبه‌بندی ثروتمندترین افراد جهان، تغییرات دارایی و
-            آخرین خبرها؛ در یک نمای اقتصادی مدرن.
+            رتبه‌بندی ثروتمندترین افراد جهان، تغییرات ثروت و
+            تازه‌ترین اطلاعات اقتصادی را در یک نگاه دنبال کن.
           </p>
 
           <div className="eco-hero-actions">
-            <a className="eco-button" href="#ranking">
-              مشاهده رتبه‌بندی
+            <a href="#top-five" className="eco-button eco-button-primary">
+              مشاهده ثروتمندان
               <span>←</span>
             </a>
-            <a className="eco-text-link" href="#news">
-              تازه‌ترین خبرها <span>↗</span>
+
+            <a href="#news" className="eco-button eco-button-secondary">
+              آخرین اخبار
             </a>
           </div>
 
-          <div className="eco-hero-footnote">
-            <span className="eco-status-dot" />
+          <div className="eco-hero-meta">
             <span>
-              {lastUpdated
-                ? `آخرین دریافت: ${lastUpdated}`
-                : "در انتظار دریافت اطلاعات"}
+              <i className="eco-meta-dot" />
+              اطلاعات متصل به پایگاه داده
             </span>
+            <span>به‌روزرسانی: {lastUpdated || "در انتظار دریافت اطلاعات"}</span>
           </div>
         </div>
 
-        <div className="eco-hero-art" aria-hidden="true">
-          <div className="eco-orbit eco-orbit-outer" />
-          <div className="eco-orbit eco-orbit-inner" />
+        <div className="eco-hero-art">
+          <div className="eco-orbit eco-orbit-one" />
+          <div className="eco-orbit eco-orbit-two" />
+
           <div className="eco-hero-coin">
             <span>$</span>
           </div>
-          <div className="eco-floating-card eco-card-top">
+
+          <div className="eco-floating-card eco-floating-card-top">
             <span className="eco-floating-icon">↗</span>
-            <div>
-              <small>نمایش هوشمند</small>
-              <strong>WEALTH INDEX</strong>
-            </div>
-          </div>
-          <div className="eco-floating-card eco-card-bottom">
-            <span className="eco-mini-bars">
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
+            <span>
+              <small>مجموع ثروت ۱۰ نفر اول</small>
+              <strong>{formatBillions(animatedTotal)}</strong>
             </span>
-            <div>
-              <small>رتبه‌بندی</small>
-              <strong>GLOBAL TOP 30</strong>
-            </div>
+          </div>
+
+          <div className="eco-floating-card eco-floating-card-bottom">
+            <span className="eco-floating-icon">◎</span>
+            <span>
+              <small>افراد رتبه‌بندی‌شده</small>
+              <strong>{people.length} نفر</strong>
+            </span>
           </div>
         </div>
       </section>
-
-      {errorMessage && (
-        <div className="eco-alert" role="status">
-          <span>!</span>
-          {errorMessage}
-          <button onClick={() => void loadData()}>
-            تلاش مجدد
-          </button>
-        </div>
-      )}
 
       <section className="eco-stats-grid">
         <article className="eco-stat-card eco-stat-main">
-          <div className="eco-stat-top">
-            <span className="eco-stat-label">
-              مجموع ثروت ۱۰ نفر اول
-            </span>
-            <span className="eco-stat-icon">◈</span>
-          </div>
+          <span className="eco-stat-label">
+            مجموع ثروت ۱۰ نفر اول
+          </span>
 
-          <div className="eco-stat-value">
-            <span className="eco-dollar">$</span>
-            <strong>
-              {animatedTotal.toLocaleString("en-US", {
-                maximumFractionDigits: 1,
-              })}
-            </strong>
-            <span className="eco-stat-unit">میلیارد</span>
-          </div>
+          <strong className="eco-stat-value">
+            {formatBillions(animatedTotal)}
+          </strong>
 
-          <div className="eco-stat-bottom">
-            <span className="eco-pulse" />
-            مجموع دارایی ثبت‌شده در پایگاه داده
-          </div>
+          <span className="eco-stat-description">
+            بر اساس اطلاعات ثبت‌شده در پایگاه داده
+          </span>
 
-          <div className="eco-stat-decoration">10</div>
+          <div className="eco-stat-decoration">$</div>
         </article>
 
         <article className="eco-stat-card">
-          <div className="eco-stat-top">
-            <span className="eco-stat-label">افراد فهرست</span>
-            <span className="eco-stat-icon">♙</span>
-          </div>
-          <div className="eco-stat-value">
-            <strong>{people.length}</strong>
-            <span className="eco-stat-unit">نفر</span>
-          </div>
-          <div className="eco-stat-bottom">
-            اطلاعات دریافت‌شده از Supabase
-          </div>
+          <span className="eco-stat-label">افراد در فهرست</span>
+          <strong className="eco-stat-value">{people.length}</strong>
+          <span className="eco-stat-description">
+            نفر در رتبه‌بندی Econova
+          </span>
         </article>
 
         <article className="eco-stat-card">
-          <div className="eco-stat-top">
-            <span className="eco-stat-label">نفر اول فهرست</span>
-            <span className="eco-stat-icon">♛</span>
-          </div>
-          <div className="eco-stat-value eco-stat-name">
-            <strong>{sortedPeople[0]?.name ?? "—"}</strong>
-          </div>
-          <div className="eco-stat-bottom">
-            {sortedPeople[0]
-              ? `$${formatBillions(
-                  toNumber(sortedPeople[0].net_worth_billions)
-                )} دارایی ثبت‌شده`
-              : "اطلاعات هنوز بارگذاری نشده"}
-          </div>
+          <span className="eco-stat-label">ثروتمندترین فرد</span>
+          <strong className="eco-stat-value eco-stat-name">
+            {topFive[0]?.name || "—"}
+          </strong>
+          <span className="eco-stat-description">
+            {topFive[0]
+              ? formatBillions(topFive[0].net_worth_billions)
+              : "در انتظار دریافت اطلاعات"}
+          </span>
         </article>
       </section>
 
-      <section className="eco-section" id="top-five">
+      <div className="eco-status-line">
+        <span>
+          {loading ? "در حال دریافت اطلاعات..." : "اطلاعات پایگاه داده"}
+        </span>
+
+        <button onClick={() => void loadData()} disabled={loading}>
+          {loading ? "در حال بارگذاری..." : "↻ به‌روزرسانی"}
+        </button>
+      </div>
+
+      {errorMessage && (
+        <div className="eco-error-message" role="alert">
+          <strong>دریافت اطلاعات ناموفق بود</strong>
+          <p>{errorMessage}</p>
+          <button onClick={() => void loadData()}>تلاش دوباره</button>
+        </div>
+      )}
+
+      {/* پارت ۳ از این خط ادامه پیدا می‌کند. */}
+            <section className="eco-section" id="top-five">
         <div className="eco-section-heading">
           <div>
-            <span className="eco-section-kicker">THE ELITE FIVE</span>
-            <h2>پنج چهرهٔ برتر ثروت</h2>
-            <p>
-              نمای نزدیک از پنج رتبهٔ اول فهرست Econova
-            </p>
+            <span className="eco-section-kicker">THE ELITE</span>
+            <h2>پنج ثروتمند برتر جهان</h2>
+            <p>نگاهی نزدیک به افراد صدرنشین فهرست ثروت</p>
           </div>
-
-          <span className="eco-section-count">01 — 05</span>
+          <span className="eco-section-number">01 / TOP 05</span>
         </div>
 
-        {loading && people.length === 0 ? (
-          <div className="eco-loading">
-            <span className="eco-spinner" />
-            در حال دریافت اطلاعات...
-          </div>
-        ) : (
-          <div className="eco-top-five-list">
-            {topFive.map((person) => {
-              const worth = toNumber(person.net_worth_billions);
-              const change = toNumber(person.daily_change_pct);
-              const selected = activeRank === person.rank;
-
-              return (
+        {topFive.length > 0 ? (
+          <div className="eco-top-five-layout">
+            <div className="eco-top-five-list">
+              {topFive.map((person) => (
                 <button
-                  type="button"
                   key={person.id}
                   className={`eco-person-row ${
-                    selected ? "is-selected" : ""
+                    activeRank === person.rank ? "is-active" : ""
                   }`}
-                  onClick={() => {
-                    setActiveRank(person.rank);
-                    if (isAdmin) openNewsEditor(person.rank);
-                  }}
+                  onClick={() => setActiveRank(person.rank)}
                 >
                   <span className="eco-person-rank">
                     {String(person.rank).padStart(2, "0")}
                   </span>
 
-                  <span className="eco-person-photo-wrap">
-                    <img
-                      className="eco-person-photo"
-                      src={photoFor(person)}
-                      alt={person.name}
-                      loading={person.rank <= 5 ? "eager" : "lazy"}
-                      onError={(event) => {
-                        event.currentTarget.onerror = null;
-                        event.currentTarget.src =
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                            person.name
-                          )}&background=102b25&color=d7f8a8&size=256`;
-                      }}
-                    />
-                    {person.rank === 1 && (
-                      <span className="eco-crown">♛</span>
-                    )}
-                  </span>
+                  <img
+                    className="eco-person-avatar"
+                    src={photoFor(person)}
+                    alt={person.name}
+                    loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.onerror = null;
+                      event.currentTarget.src =
+                        "https://ui-avatars.com/api/?name=Econova&background=14271d&color=b9f27c&size=160";
+                    }}
+                  />
 
                   <span className="eco-person-info">
                     <strong>{person.name}</strong>
                     <small>
-                      {person.company || "شرکت ثبت نشده"}
-                      {person.country ? ` · ${person.country}` : ""}
+                      {person.company || person.country || "اطلاعات تکمیلی ثبت نشده"}
                     </small>
                   </span>
 
                   <span className="eco-person-worth">
-                    <strong>${formatBillions(worth)}</strong>
-                    <small>میلیارد دلار</small>
+                    <strong>
+                      {formatBillions(person.net_worth_billions)}
+                    </strong>
+                    <small
+                      className={
+                        changeIsPositive(person)
+                          ? "eco-positive"
+                          : "eco-negative"
+                      }
+                    >
+                      {formatChange(person.daily_change_pct)}
+                    </small>
                   </span>
 
-                  <span
-                    className={`eco-change ${
-                      changeIsPositive(change)
-                        ? "eco-change-up"
-                        : "eco-change-down"
-                    }`}
-                  >
-                    <span>
-                      {changeIsPositive(change) ? "↗" : "↘"}
-                    </span>
-                    {change > 0 ? "+" : ""}
-                    {change.toFixed(2)}%
-                  </span>
-
-                  <span className="eco-row-arrow">←</span>
+                  <span className="eco-person-arrow">←</span>
                 </button>
-              );
-            })}
-          </div>
-        )}
-
-        {activePerson && (
-          <div className="eco-feature-person">
-            <div className="eco-feature-image">
-              <img
-                src={photoFor(activePerson)}
-                alt={activePerson.name}
-                onError={(event) => {
-                  event.currentTarget.onerror = null;
-                  event.currentTarget.src =
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      activePerson.name
-                    )}&background=102b25&color=d7f8a8&size=256`;
-                }}
-              />
-              <span className="eco-feature-rank">
-                RANK #{activePerson.rank}
-              </span>
+              ))}
             </div>
 
-            <div className="eco-feature-content">
-              <span className="eco-section-kicker">
-                SPOTLIGHT PROFILE
-              </span>
-              <h3>{activePerson.name}</h3>
-              <p className="eco-feature-company">
-                {activePerson.company || "اطلاعات شرکت ثبت نشده"}
-                {activePerson.country
-                  ? ` · ${activePerson.country}`
-                  : ""}
-              </p>
-
-              <p className="eco-feature-bio">
-                {activePerson.bio ||
-                  "برای این فرد هنوز زندگی‌نامه‌ای در پایگاه داده ثبت نشده است."}
-              </p>
-
-              <div className="eco-feature-metrics">
-                <div>
-                  <small>ثروت ثبت‌شده</small>
-                  <strong>
-                    ${formatBillions(
-                      toNumber(activePerson.net_worth_billions)
-                    )}
-                  </strong>
+            {activePerson ? (
+              <article className="eco-featured-person">
+                <div className="eco-featured-topline">
+                  <span className="eco-featured-badge">
+                    RANK #{activePerson.rank}
+                  </span>
+                  <span className="eco-featured-star">✦</span>
                 </div>
-                <div>
-                  <small>تغییر روزانه</small>
+
+                <img
+                  className="eco-featured-image"
+                  src={photoFor(activePerson)}
+                  alt={activePerson.name}
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src =
+                      "https://ui-avatars.com/api/?name=Econova&background=14271d&color=b9f27c&size=160";
+                  }}
+                />
+
+                <span className="eco-featured-label">
+                  ثروت تخمینی ثبت‌شده
+                </span>
+
+                <h3>{activePerson.name}</h3>
+
+                <p className="eco-featured-company">
+                  {activePerson.company || "شرکت ثبت نشده"}
+                  {activePerson.country
+                    ? ` · ${activePerson.country}`
+                    : ""}
+                </p>
+
+                <strong className="eco-featured-worth">
+                  {formatBillions(activePerson.net_worth_billions)}
+                </strong>
+
+                <div className="eco-featured-divider" />
+
+                <div className="eco-featured-details">
+                  <span>تغییر روزانه</span>
                   <strong
                     className={
-                      toNumber(activePerson.daily_change_pct) >= 0
-                        ? "eco-positive-text"
-                        : "eco-negative-text"
+                      changeIsPositive(activePerson)
+                        ? "eco-positive"
+                        : "eco-negative"
                     }
                   >
-                    {toNumber(activePerson.daily_change_pct) > 0
-                      ? "+"
-                      : ""}
-                    {toNumber(
-                      activePerson.daily_change_pct
-                    ).toFixed(2)}
-                    %
+                    {formatChange(activePerson.daily_change_pct)}
                   </strong>
                 </div>
-              </div>
 
-              {activePerson.source_url && (
-                <a
-                  className="eco-text-link"
-                  href={activePerson.source_url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  مشاهده منبع اطلاعات ↗
-                </a>
-              )}
-            </div>
+                {activePerson.bio && (
+                  <p className="eco-featured-bio">{activePerson.bio}</p>
+                )}
+
+                {activePerson.source_url && (
+                  <a
+                    className="eco-source-link"
+                    href={activePerson.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    مشاهده منبع اطلاعات ↗
+                  </a>
+                )}
+              </article>
+            ) : null}
+          </div>
+        ) : (
+          <div className="eco-empty-state">
+            هنوز اطلاعاتی برای نمایش ثبت نشده است.
           </div>
         )}
       </section>
-        <section className="eco-section" id="ranking">
+
+      {/* پارت ۴ از این خط ادامه پیدا می‌کند. */}
+            <section className="eco-section" id="ranking">
         <div className="eco-section-heading">
           <div>
             <span className="eco-section-kicker">GLOBAL RANKING</span>
-            <h2>جدول ثروتمندان جهان</h2>
-            <p>رتبه‌بندی بر اساس دارایی ثبت‌شده در پایگاه داده</p>
+            <h2>رتبه‌بندی ثروتمندان</h2>
+            <p>جست‌وجو و مقایسه اطلاعات افراد ثبت‌شده</p>
           </div>
-          <span className="eco-section-count">
+          <span className="eco-section-number">
             {filteredPeople.length} نفر
           </span>
         </div>
 
-        <div className="eco-table-tools">
-          <label className="eco-search">
+        <div className="eco-ranking-toolbar">
+          <label className="eco-search-box">
             <span>⌕</span>
             <input
               type="search"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="جست‌وجوی نام، شرکت یا کشور..."
+              placeholder="نام، شرکت، کشور یا رتبه..."
               aria-label="جست‌وجوی ثروتمندان"
             />
             {searchTerm && (
@@ -757,293 +718,184 @@ export default function BillionairesPage() {
           </label>
 
           <button
-            className="eco-outline-button"
-            onClick={() => void loadData()}
-            disabled={loading}
+            className="eco-show-all-button"
+            onClick={() => setShowAll((current) => !current)}
           >
-            {loading ? "در حال دریافت..." : "↻ به‌روزرسانی"}
+            {showAll ? "نمایش ۱۰ نفر اول" : "نمایش همه افراد"}
           </button>
         </div>
 
-        <div className="eco-table-wrap">
-          <table className="eco-table">
+        <div className="eco-ranking-table-wrap">
+          <table className="eco-ranking-table">
             <thead>
               <tr>
                 <th>رتبه</th>
-                <th>فرد</th>
+                <th>شخص</th>
                 <th>شرکت</th>
                 <th>کشور</th>
-                <th>ثروت (میلیارد دلار)</th>
+                <th>ثروت تخمینی</th>
                 <th>تغییر روزانه</th>
               </tr>
             </thead>
+
             <tbody>
-              {visiblePeople.map((person) => {
-                const change = toNumber(person.daily_change_pct);
+              {visiblePeople.map((person) => (
+                <tr key={person.id}>
+                  <td>
+                    <span className="eco-table-rank">
+                      {String(person.rank).padStart(2, "0")}
+                    </span>
+                  </td>
 
-                return (
-                  <tr key={person.id}>
-                    <td>
-                      <span className="eco-table-rank">
-                        {String(person.rank).padStart(2, "0")}
-                      </span>
-                    </td>
+                  <td>
+                    <button
+                      className="eco-table-person"
+                      onClick={() => {
+                        setActiveRank(person.rank);
+                        document
+                          .getElementById("top-five")
+                          ?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    >
+                      <img
+                        src={photoFor(person)}
+                        alt=""
+                        loading="lazy"
+                      />
+                      <strong>{person.name}</strong>
+                    </button>
+                  </td>
 
-                    <td>
-                      <button
-                        type="button"
-                        className="eco-table-person"
-                        onClick={() => {
-                          setActiveRank(person.rank);
-                          document
-                            .getElementById("top-five")
-                            ?.scrollIntoView({
-                              behavior: "smooth",
-                              block: "start",
-                            });
-                        }}
-                      >
-                        <img
-                          src={photoFor(person)}
-                          alt=""
-                          loading="lazy"
-                          onError={(event) => {
-                            event.currentTarget.onerror = null;
-                            event.currentTarget.src =
-                              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                person.name
-                              )}&background=102b25&color=d7f8a8&size=128`;
-                          }}
-                        />
-                        <strong>{person.name}</strong>
-                      </button>
-                    </td>
+                  <td>{person.company || "—"}</td>
+                  <td>{person.country || "—"}</td>
 
-                    <td>{person.company || "—"}</td>
-                    <td>{person.country || "—"}</td>
-                    <td className="eco-table-money">
-                      ${formatBillions(
-                        toNumber(person.net_worth_billions)
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={`eco-change ${
-                          changeIsPositive(change)
-                            ? "eco-change-up"
-                            : "eco-change-down"
-                        }`}
-                      >
-                        {changeIsPositive(change) ? "↗" : "↘"}
-                        {change > 0 ? "+" : ""}
-                        {change.toFixed(2)}%
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+                  <td className="eco-table-worth">
+                    {formatBillions(person.net_worth_billions)}
+                  </td>
+
+                  <td
+                    className={
+                      changeIsPositive(person)
+                        ? "eco-positive"
+                        : "eco-negative"
+                    }
+                  >
+                    {formatChange(person.daily_change_pct)}
+                  </td>
+                </tr>
+              ))}
+
+              {visiblePeople.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="eco-table-empty">
+                    فردی با این مشخصات پیدا نشد.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
-
-          {!loading && visiblePeople.length === 0 && (
-            <div className="eco-empty">
-              فردی با این مشخصات پیدا نشد.
-            </div>
-          )}
-
-          {filteredPeople.length > 10 && (
-            <button
-              className="eco-show-more"
-              onClick={() => setShowAll((current) => !current)}
-            >
-              {showAll ? "نمایش ۱۰ نفر اول" : "نمایش همه نتایج"}
-              <span>{showAll ? "↑" : "↓"}</span>
-            </button>
-          )}
         </div>
-
-        <p className="eco-data-note">
-          ارزش دارایی‌ها ممکن است با منابع دیگر تفاوت داشته باشد.
-          تغییر روزانه فقط زمانی قابل اتکاست که مقدار روز قبل و
-          منبع اطلاعات به‌درستی ثبت شده باشند.
-        </p>
       </section>
 
       <section className="eco-section" id="news">
         <div className="eco-section-heading">
           <div>
-            <span className="eco-section-kicker">WEALTH NEWS</span>
-            <h2>اخبار پنج چهرهٔ برتر</h2>
-            <p>
-              برای مشاهده خبرهای ثبت‌شده، یکی از افراد را انتخاب کن.
-            </p>
+            <span className="eco-section-kicker">LATEST UPDATES</span>
+            <h2>اخبار ثروتمندان برتر</h2>
+            <p>خبرهای ثبت‌شده برای پنج رتبه نخست</p>
           </div>
-          <span className="eco-section-count">NEWSROOM</span>
+          <span className="eco-section-number">NEWS / 05</span>
         </div>
 
-        <div className="eco-news-tabs">
-          {topFive.map((person) => (
-            <button
-              key={person.id}
-              className={
-                activeRank === person.rank ? "is-active" : ""
-              }
-              onClick={() => {
-                setActiveRank(person.rank);
-                if (isAdmin) openNewsEditor(person.rank);
-              }}
-            >
-              <img src={photoFor(person)} alt="" loading="lazy" />
-              <span>{person.name}</span>
-            </button>
-          ))}
-        </div>
+        <div className="eco-news-grid">
+          {topFive.map((person) => {
+            const item = newsForRank(person.rank);
 
-        {activePerson && (
-          <article className="eco-news-card">
-            <div className="eco-news-avatar">
-              <img src={photoFor(activePerson)} alt="" loading="lazy" />
-            </div>
-
-            <div className="eco-news-main">
-              <span className="eco-section-kicker">
-                NEWS · RANK #{activePerson.rank}
-              </span>
-
-              {newsForRank(activePerson.rank) ? (
-                <>
-                  <h3>
-                    {String(
-                      newsForRank(activePerson.rank)?.title ||
-                        `اخبار ${activePerson.name}`
-                    )}
-                  </h3>
-                  <p>
-                    {String(
-                      newsForRank(activePerson.rank)?.content ??
-                        newsForRank(activePerson.rank)?.body ??
-                        "متنی برای این خبر ثبت نشده است."
-                    )}
-                  </p>
-
-                  {newsForRank(activePerson.rank)?.source_url && (
-                    <a
-                      href={String(
-                        newsForRank(activePerson.rank)?.source_url
-                      )}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="eco-text-link"
-                    >
-                      مطالعه منبع خبر ↗
-                    </a>
-                  )}
-                </>
-              ) : (
-                <>
-                  <h3>هنوز خبری ثبت نشده است</h3>
-                  <p>
-                    برای {activePerson.name} خبر اختصاصی در
-                    پایگاه داده پیدا نشد.
-                  </p>
-                </>
-              )}
-
-              {isAdmin && (
-                <button
-                  className="eco-button eco-button-small"
-                  onClick={() => openNewsEditor(activePerson.rank)}
-                >
-                  ویرایش خبر این فرد
-                </button>
-              )}
-            </div>
-          </article>
-        )}
-      </section>
-
-      {isAdmin && (
-        <section className="eco-section eco-admin-section" id="admin">
-          <div className="eco-section-heading">
-            <div>
-              <span className="eco-section-kicker">ADMIN WORKSPACE</span>
-              <h2>مدیریت خبرها</h2>
-              <p>ویرایش خبر مربوط به یکی از پنج نفر اول</p>
-            </div>
-            <span className="eco-admin-badge">مدیر وارد شده</span>
-          </div>
-
-          <div className="eco-admin-form">
-            <label>
-              انتخاب ثروتمند
-              <select
-                value={editingNewsRank}
-                onChange={(event) => {
-                  const rank = Number(event.target.value);
-                  openNewsEditor(rank);
-                }}
+            return (
+              <article
+                className="eco-news-card"
+                key={`news-${person.id}`}
               >
-                {topFive.map((person) => (
-                  <option key={person.id} value={person.rank}>
-                    {person.rank}. {person.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <div className="eco-news-card-top">
+                  <span className="eco-news-rank">
+                    رتبه {person.rank}
+                  </span>
+                  <span className="eco-news-symbol">↗</span>
+                </div>
 
-            <label>
-              عنوان خبر
-              <input
-                value={newsTitle}
-                onChange={(event) => setNewsTitle(event.target.value)}
-                placeholder="عنوان کوتاه و دقیق خبر"
-              />
-            </label>
+                <div className="eco-news-person">
+                  <img
+                    src={photoFor(person)}
+                    alt=""
+                    loading="lazy"
+                  />
+                  <div>
+                    <strong>{person.name}</strong>
+                    <small>
+                      {person.company || person.country || "ثروتمند برتر"}
+                    </small>
+                  </div>
+                </div>
 
-            <label>
-              متن خبر
-              <textarea
-                rows={5}
-                value={newsContent}
-                onChange={(event) => setNewsContent(event.target.value)}
-                placeholder="خلاصه خبر را اینجا وارد کن..."
-              />
-            </label>
+                {item ? (
+                  <>
+                    <h3>{item.title}</h3>
+                    <p className="eco-news-content">
+                      {item.content || item.body || "متن خبر ثبت نشده است."}
+                    </p>
 
-            <label>
-              لینک منبع
-              <input
-                type="url"
-                value={newsSource}
-                onChange={(event) => setNewsSource(event.target.value)}
-                placeholder="https://example.com/news"
-                dir="ltr"
-              />
-            </label>
+                                    {item.updated_at && (
+                  <span className="eco-news-date">
+                    {new Date(item.updated_at).toLocaleDateString("fa-IR")}
+                  </span>
+                )}
 
-            <button
-              className="eco-button"
-              onClick={() => void saveNews()}
-              disabled={saving || !newsTitle.trim()}
-            >
-              {saving ? "در حال ذخیره..." : "ذخیره خبر"}
-              <span>↗</span>
-            </button>
-
-            {adminMessage && (
-              <p className="eco-admin-message" role="status">
-                {adminMessage}
-              </p>
+                {item.source_url && (
+                  <a
+                    className="eco-source-link"
+                    href={item.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    مطالعه منبع خبر ↗
+                  </a>
+                )}
+              </>
+            ) : (
+              <div className="eco-news-empty">
+                <span>◇</span>
+                <h3>هنوز خبری ثبت نشده است</h3>
+                <p>
+                  خبر این فرد پس از ثبت در پنل مدیریت اینجا نمایش داده می‌شود.
+                </p>
+              </div>
             )}
-          </div>
-        </section>
-      )}
 
-      {loginOpen && (
+            {isAdmin && (
+              <button
+                className="eco-edit-news-button"
+                onClick={() => openNewsEditor(person.rank)}
+              >
+                ویرایش خبر این فرد
+              </button>
+            )}
+          </article>
+        );
+      })}
+
+      {topFive.length === 0 && (
+        <div className="eco-empty-state">
+          پس از دریافت اطلاعات ثروتمندان، اخبار این بخش نمایش داده می‌شود.
+        </div>
+      )}
+    </div>
+  </section>
+
+  {/* پارت ۵ از این خط ادامه پیدا می‌کند. */}
+            {loginOpen && (
         <div
           className="eco-modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
+          onClick={(event) => {
             if (event.target === event.currentTarget) {
               setLoginOpen(false);
             }
@@ -1063,94 +915,150 @@ export default function BillionairesPage() {
               ×
             </button>
 
-            <div className="eco-login-icon">E</div>
-            <span className="eco-section-kicker">SECURE ACCESS</span>
-            <h2 id="eco-login-title">ورود مدیر Econova</h2>
-            <p>با حساب مدیر ثبت‌شده در Supabase وارد شو.</p>
+            <span className="eco-modal-icon">E</span>
+            <span className="eco-section-kicker">ADMIN ACCESS</span>
+            <h2 id="eco-login-title">ورود مدیر</h2>
+            <p>برای مدیریت اخبار، با حساب مجاز مدیر وارد شو.</p>
 
             <form
+              className="eco-admin-form"
               onSubmit={(event) => {
                 event.preventDefault();
                 void loginAdmin();
               }}
             >
-              <label>
-                ایمیل مدیر
-                <input
-                  type="email"
-                  autoComplete="username"
-                  required
-                  value={adminEmail}
-                  onChange={(event) =>
-                    setAdminEmail(event.target.value)
-                  }
-                  placeholder="admin@example.com"
-                  dir="ltr"
-                />
-              </label>
+              <label htmlFor="eco-admin-email">ایمیل</label>
+              <input
+                id="eco-admin-email"
+                type="email"
+                autoComplete="username"
+                value={adminEmail}
+                onChange={(event) => setAdminEmail(event.target.value)}
+                placeholder="admin@example.com"
+                required
+              />
 
-              <label>
-                رمز عبور
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={adminPassword}
-                  onChange={(event) =>
-                    setAdminPassword(event.target.value)
-                  }
-                  placeholder="رمز عبور"
-                  dir="ltr"
-                />
-              </label>
+              <label htmlFor="eco-admin-password">رمز عبور</label>
+              <input
+                id="eco-admin-password"
+                type="password"
+                autoComplete="current-password"
+                value={adminPassword}
+                onChange={(event) => setAdminPassword(event.target.value)}
+                placeholder="رمز عبور حساب مدیر"
+                required
+              />
 
               <button
+                className="eco-button eco-button-primary eco-submit-button"
                 type="submit"
-                className="eco-button eco-login-submit"
-                disabled={saving}
               >
-                {saving ? "در حال بررسی..." : "ورود امن"}
+                ورود به پنل مدیریت
               </button>
             </form>
-
-            {adminMessage && (
-              <p className="eco-admin-message" role="status">
-                {adminMessage}
-              </p>
-            )}
           </section>
         </div>
       )}
-            <footer className="eco-footer">
-        <a className="eco-brand" href="/billionaires">
-          <span className="eco-brand-icon">E</span>
+
+      {isAdmin && (
+        <section className="eco-admin-panel" id="admin-panel">
+          <div className="eco-section-heading">
+            <div>
+              <span className="eco-section-kicker">CONTROL CENTER</span>
+              <h2>پنل مدیریت اخبار</h2>
+              <p>خبر مربوط به یکی از پنج رتبه نخست را ثبت یا ویرایش کن.</p>
+            </div>
+            <span className="eco-admin-status">مدیر وارد شده</span>
+          </div>
+
+          <form
+            className="eco-admin-form eco-news-editor"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveNews();
+            }}
+          >
+            <label htmlFor="eco-news-rank">انتخاب رتبه</label>
+            <select
+              id="eco-news-rank"
+              value={editingNewsRank}
+              onChange={(event) => openNewsEditor(Number(event.target.value))}
+            >
+              {topFive.map((person) => (
+                <option key={person.id} value={person.rank}>
+                  رتبه {person.rank} — {person.name}
+                </option>
+              ))}
+            </select>
+
+            <label htmlFor="eco-news-title">عنوان خبر</label>
+            <input
+              id="eco-news-title"
+              value={newsTitle}
+              onChange={(event) => setNewsTitle(event.target.value)}
+              placeholder="عنوان خبر را وارد کن"
+              required
+            />
+
+            <label htmlFor="eco-news-content">متن خبر</label>
+            <textarea
+              id="eco-news-content"
+              value={newsContent}
+              onChange={(event) => setNewsContent(event.target.value)}
+              placeholder="متن خبر را بنویس..."
+              rows={5}
+              required
+            />
+
+            <label htmlFor="eco-news-source">لینک منبع خبر (اختیاری)</label>
+            <input
+              id="eco-news-source"
+              type="url"
+              value={newsSource}
+              onChange={(event) => setNewsSource(event.target.value)}
+              placeholder="https://example.com/news"
+            />
+
+            <button
+              className="eco-button eco-button-primary eco-submit-button"
+              type="submit"
+              disabled={saving || topFive.length === 0}
+            >
+              {saving ? "در حال ذخیره..." : "ذخیره خبر"}
+            </button>
+          </form>
+        </section>
+      )}
+
+      {adminMessage && (
+        <div className="eco-admin-message" role="status">
+          {adminMessage}
+        </div>
+      )}
+
+      <footer className="eco-footer">
+        <a href="#home" className="eco-logo">
+          <span className="eco-logo-mark">E</span>
           <span>
             <strong>ECONOVA</strong>
-            <small>WEALTH INTELLIGENCE</small>
+            <small>اقتصاد، فراتر از خبر</small>
           </span>
         </a>
 
-        <p>
-          اطلاعات اقتصادی برای آگاهی بیشتر؛ نه توصیهٔ سرمایه‌گذاری.
+                <p>
+          اطلاعات این صفحه بر اساس داده‌های ثبت‌شده ارائه می‌شود؛
+          ارزش ثروت‌ها تخمینی است و ممکن است با منابع دیگر تفاوت داشته باشد.
         </p>
 
-        <a href="#overview" className="eco-back-top">
-          بازگشت به بالا ↑
-        </a>
+        <span className="eco-footer-copy">
+          © {new Date().getFullYear()} ECONOVA
+        </span>
       </footer>
 
-      <style jsx global>{`
+      {/* پارت ۶ از این خط ادامه پیدا می‌کند. */}
+            <style jsx global>{`
         :root {
           color-scheme: dark;
-          --eco-bg: #07110f;
-          --eco-panel: #0d1b17;
-          --eco-panel-2: #11251e;
-          --eco-border: rgba(206, 245, 214, 0.12);
-          --eco-text: #edf7ee;
-          --eco-muted: #8da69a;
-          --eco-green: #b9f27c;
-          --eco-green-dark: #6bbd72;
-          --eco-red: #ff8585;
         }
 
         * {
@@ -1164,8 +1072,8 @@ export default function BillionairesPage() {
 
         body {
           margin: 0;
-          background: var(--eco-bg);
-          color: var(--eco-text);
+          background: #07100c;
+          color: #f2f6f0;
           font-family: Tahoma, Arial, sans-serif;
         }
 
@@ -1182,7 +1090,12 @@ export default function BillionairesPage() {
         }
 
         button {
-          color: inherit;
+          cursor: pointer;
+        }
+
+        button:disabled {
+          cursor: not-allowed;
+          opacity: 0.55;
         }
 
         a {
@@ -1191,536 +1104,507 @@ export default function BillionairesPage() {
         }
 
         .eco-page {
-          min-height: 100vh;
           position: relative;
+          min-height: 100vh;
           overflow: hidden;
-          padding: 0 6.5%;
+          padding: 0 6%;
           background:
             radial-gradient(
-              ellipse at 85% 7%,
-              rgba(47, 105, 68, 0.15),
-              transparent 35%
+              ellipse at 85% 5%,
+              rgba(57, 111, 65, 0.16),
+              transparent 34%
             ),
-            var(--eco-bg);
+            #07100c;
+          color: #f2f6f0;
           isolation: isolate;
         }
 
         .eco-glow {
           position: absolute;
           z-index: -1;
-          pointer-events: none;
-          width: 340px;
-          height: 340px;
+          width: 320px;
+          height: 320px;
           border-radius: 50%;
-          filter: blur(100px);
+          filter: blur(110px);
           opacity: 0.12;
+          pointer-events: none;
         }
 
         .eco-glow-one {
           top: 500px;
-          right: -220px;
-          background: #7bea90;
+          right: -200px;
+          background: #b9f27c;
         }
 
         .eco-glow-two {
-          top: 1500px;
-          left: -230px;
-          background: #369c79;
+          top: 1200px;
+          left: -220px;
+          background: #38b87a;
         }
 
         .eco-header {
-          min-height: 82px;
+          position: relative;
+          z-index: 5;
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 24px;
-          border-bottom: 1px solid var(--eco-border);
+          min-height: 88px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
 
-        .eco-brand {
+        .eco-logo {
           display: inline-flex;
           align-items: center;
           gap: 11px;
           flex-shrink: 0;
         }
 
-        .eco-brand-icon {
-          width: 39px;
-          height: 39px;
+        .eco-logo-mark {
           display: grid;
+          width: 43px;
+          height: 43px;
           place-items: center;
-          border-radius: 12px;
-          background: var(--eco-green);
-          color: #102017;
-          font-size: 24px;
+          border-radius: 14px;
+          background: #b9f27c;
+          color: #102015;
+          font-size: 25px;
           font-weight: 900;
         }
 
-        .eco-brand strong,
-        .eco-brand small {
+        .eco-logo strong,
+        .eco-logo small {
           display: block;
-          direction: ltr;
-          text-align: left;
         }
 
-        .eco-brand strong {
-          font-size: 16px;
-          letter-spacing: 1.5px;
+        .eco-logo strong {
+          font-size: 18px;
+          letter-spacing: 2px;
         }
 
-        .eco-brand small {
-          margin-top: 4px;
-          font-size: 8px;
-          letter-spacing: 1.6px;
-          color: var(--eco-muted);
+        .eco-logo small {
+          margin-top: 5px;
+          color: #849489;
+          font-size: 10px;
         }
 
         .eco-nav {
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 26px;
+          gap: 30px;
+          color: #b6c2b8;
+          font-size: 13px;
+        }
+
+        .eco-nav a:hover {
+          color: #b9f27c;
+        }
+
+        .eco-admin-button,
+        .eco-show-all-button {
+          border: 1px solid rgba(185, 242, 124, 0.28);
+          border-radius: 11px;
+          background: rgba(185, 242, 124, 0.06);
+          color: #c8f69b;
+          padding: 11px 17px;
           font-size: 12px;
-          color: #a9bcb0;
-        }
-
-        .eco-nav a,
-        .eco-text-link,
-        .eco-back-top {
-          transition: color 0.2s ease;
-        }
-
-        .eco-nav a:hover,
-        .eco-text-link:hover,
-        .eco-back-top:hover {
-          color: var(--eco-green);
-        }
-
-        .eco-header-actions {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-
-        .eco-live {
-          display: inline-flex;
-          align-items: center;
-          gap: 7px;
-          font-size: 10px;
-          color: var(--eco-muted);
-          white-space: nowrap;
-        }
-
-        .eco-live i,
-        .eco-status-dot,
-        .eco-pulse {
-          display: inline-block;
-          width: 7px;
-          height: 7px;
-          background: var(--eco-green);
-          border-radius: 50%;
-          box-shadow: 0 0 12px rgba(185, 242, 124, 0.5);
-        }
-
-        .eco-button,
-        .eco-outline-button {
-          min-height: 44px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          padding: 0 20px;
-          border: 1px solid transparent;
-          border-radius: 10px;
-          cursor: pointer;
-          font-size: 12px;
-          font-weight: 700;
-          transition:
-            transform 0.2s ease,
-            background 0.2s ease,
-            border-color 0.2s ease;
-        }
-
-        .eco-button {
-          background: var(--eco-green);
-          color: #132219;
-        }
-
-        .eco-button:hover {
-          background: #d1ff9f;
-          transform: translateY(-2px);
-        }
-
-        .eco-button:disabled,
-        .eco-outline-button:disabled {
-          opacity: 0.55;
-          cursor: wait;
-          transform: none;
-        }
-
-        .eco-button-small {
-          min-height: 36px;
-          padding: 0 13px;
-          font-size: 11px;
-        }
-
-        .eco-outline-button {
-          background: transparent;
-          color: var(--eco-text);
-          border-color: var(--eco-border);
-        }
-
-        .eco-outline-button:hover {
-          border-color: var(--eco-green);
         }
 
         .eco-hero {
-          min-height: 440px;
           display: grid;
           grid-template-columns: 1.05fr 0.95fr;
           align-items: center;
-          gap: 30px;
-          padding: 46px 0 35px;
+          gap: 35px;
+          min-height: 490px;
+          padding: 65px 0 55px;
         }
 
-        .eco-hero-copy {
-          max-width: 610px;
+        .eco-hero-content {
+          position: relative;
+          z-index: 1;
         }
 
         .eco-eyebrow {
           display: inline-flex;
           align-items: center;
           gap: 10px;
-          color: var(--eco-green);
+          border: 1px solid rgba(185, 242, 124, 0.17);
+          border-radius: 30px;
+          padding: 9px 14px;
+          background: rgba(185, 242, 124, 0.05);
+          color: #c4f59a;
           font-size: 12px;
         }
 
-        .eco-eyebrow-line {
-          width: 26px;
-          height: 1px;
-          background: var(--eco-green);
+        .eco-live-dot,
+        .eco-meta-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #b9f27c;
+          box-shadow: 0 0 12px rgba(185, 242, 124, 0.7);
         }
 
         .eco-hero h1 {
-          margin: 22px 0 17px;
-          font-size: clamp(36px, 4.8vw, 62px);
-          line-height: 1.5;
-          letter-spacing: -1.7px;
+          margin: 25px 0 20px;
+          font-size: clamp(38px, 5.2vw, 67px);
+          line-height: 1.45;
+          letter-spacing: -2px;
         }
 
         .eco-hero h1 span {
-          color: var(--eco-green);
+          color: #b9f27c;
         }
 
-        .eco-hero-copy > p {
-          max-width: 440px;
-          margin: 0;
-          color: var(--eco-muted);
-          font-size: 13px;
+        .eco-hero-content > p {
+          max-width: 490px;
+          color: #9ca99f;
+          font-size: 15px;
           line-height: 2.2;
         }
 
         .eco-hero-actions {
           display: flex;
-          align-items: center;
           flex-wrap: wrap;
-          gap: 23px;
+          gap: 12px;
           margin-top: 27px;
         }
 
-        .eco-text-link {
-          color: #c6d8ca;
-          font-size: 12px;
+        .eco-button {
+          display: inline-flex;
+          min-height: 47px;
+          align-items: center;
+          justify-content: center;
+          gap: 13px;
+          border: 1px solid transparent;
+          border-radius: 12px;
+          padding: 12px 20px;
+          font-size: 13px;
+          transition: transform 0.2s ease;
         }
 
-        .eco-hero-footnote {
+        .eco-button:hover {
+          transform: translateY(-2px);
+        }
+
+        .eco-button-primary {
+          background: #b9f27c;
+          color: #112014;
+          font-weight: 800;
+        }
+
+        .eco-button-secondary {
+          border-color: rgba(255, 255, 255, 0.13);
+          background: rgba(255, 255, 255, 0.025);
+          color: #e1e9e1;
+        }
+
+        .eco-hero-meta {
           display: flex;
-          align-items: center;
-          gap: 9px;
-          margin-top: 29px;
-          color: var(--eco-muted);
+          flex-wrap: wrap;
+          gap: 15px 22px;
+          margin-top: 30px;
+          color: #77867b;
           font-size: 10px;
         }
 
+        .eco-hero-meta span:first-child {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .eco-meta-dot {
+          width: 6px;
+          height: 6px;
+        }
+
         .eco-hero-art {
-          min-height: 340px;
           position: relative;
           display: grid;
+          min-height: 350px;
           place-items: center;
         }
 
         .eco-orbit {
           position: absolute;
-          border: 1px solid rgba(185, 242, 124, 0.18);
+          width: min(330px, 75%);
+          aspect-ratio: 1;
+          border: 1px solid rgba(185, 242, 124, 0.11);
           border-radius: 50%;
-          transform: rotate(-22deg);
+          animation: eco-orbit 24s linear infinite;
         }
 
-        .eco-orbit-outer {
-          width: min(340px, 80%);
-          height: 250px;
+        .eco-orbit-one {
+          transform: rotateX(65deg) rotate(-25deg);
         }
 
-        .eco-orbit-inner {
-          width: min(270px, 65%);
-          height: 340px;
-          transform: rotate(35deg);
-          border-color: rgba(185, 242, 124, 0.11);
+        .eco-orbit-two {
+          width: min(270px, 62%);
+          transform: rotateX(65deg) rotate(35deg);
+          animation-direction: reverse;
         }
 
         .eco-hero-coin {
-          width: 180px;
-          height: 180px;
           display: grid;
+          width: clamp(145px, 19vw, 215px);
+          aspect-ratio: 1;
           place-items: center;
+          border: 1px solid rgba(210, 255, 174, 0.55);
           border-radius: 50%;
-          border: 1px solid rgba(185, 242, 124, 0.45);
-          background:
-            radial-gradient(circle at 30% 25%, #294a34, #0d1b13 72%);
+          background: radial-gradient(
+            circle at 35% 28%,
+            #e1ffc0 0,
+            #b9f27c 12%,
+            #548e40 42%,
+            #173522 73%,
+            #09150d 100%
+          );
           box-shadow:
-            0 0 70px rgba(110, 218, 121, 0.13),
-            inset 0 0 35px rgba(185, 242, 124, 0.08);
+            0 0 60px rgba(139, 217, 100, 0.14),
+            inset 0 0 25px rgba(255, 255, 255, 0.15);
           animation: eco-float 5s ease-in-out infinite;
         }
 
         .eco-hero-coin span {
-          color: var(--eco-green);
-          font-family: Arial, sans-serif;
-          font-size: 100px;
+          color: #efffdb;
+          font-size: clamp(75px, 10vw, 120px);
           font-weight: 300;
-          text-shadow: 0 0 25px rgba(185, 242, 124, 0.25);
+          text-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
         }
 
         .eco-floating-card {
           position: absolute;
+          z-index: 2;
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 14px;
-          border: 1px solid var(--eco-border);
-          border-radius: 13px;
-          background: rgba(13, 27, 23, 0.92);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 15px;
+          padding: 15px;
+          background: rgba(14, 26, 18, 0.91);
+          box-shadow: 0 18px 50px rgba(0, 0, 0, 0.23);
           backdrop-filter: blur(12px);
         }
 
-        .eco-card-top {
-          top: 45px;
+        .eco-floating-card-top {
+          top: 30px;
           right: 0;
         }
 
-        .eco-card-bottom {
-          bottom: 35px;
+        .eco-floating-card-bottom {
+          bottom: 30px;
           left: 0;
+        }
+
+        .eco-floating-icon {
+          display: grid;
+          width: 38px;
+          height: 38px;
+          place-items: center;
+          border-radius: 12px;
+          background: rgba(185, 242, 124, 0.1);
+          color: #b9f27c;
+          font-size: 21px;
         }
 
         .eco-floating-card small,
         .eco-floating-card strong {
           display: block;
-          direction: ltr;
-          text-align: left;
         }
 
         .eco-floating-card small {
           margin-bottom: 6px;
-          color: var(--eco-muted);
-          font-size: 9px;
+          color: #91a094;
+          font-size: 10px;
         }
 
         .eco-floating-card strong {
-          font-size: 10px;
-          letter-spacing: 0.8px;
+          color: #e9f6e5;
+          font-size: 17px;
+          direction: ltr;
+          text-align: right;
         }
 
-        .eco-floating-icon {
-          display: grid;
-          place-items: center;
-          width: 35px;
-          height: 35px;
-          border-radius: 10px;
-          background: rgba(185, 242, 124, 0.12);
-          color: var(--eco-green);
+        @keyframes eco-orbit {
+          to {
+            rotate: 360deg;
+          }
         }
 
-        .eco-mini-bars {
-          height: 33px;
-          display: flex;
-          align-items: end;
-          gap: 4px;
-        }
-
-        .eco-mini-bars i {
-          width: 5px;
-          border-radius: 4px;
-          background: var(--eco-green);
-        }
-
-        .eco-mini-bars i:nth-child(1) { height: 12px; }
-        .eco-mini-bars i:nth-child(2) { height: 20px; }
-        .eco-mini-bars i:nth-child(3) { height: 16px; }
-        .eco-mini-bars i:nth-child(4) { height: 28px; }
-        .eco-mini-bars i:nth-child(5) { height: 33px; }
-
-        .eco-alert {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-          margin: 12px 0 20px;
-          padding: 14px 16px;
-          border: 1px solid rgba(255, 191, 100, 0.25);
-          border-radius: 10px;
-          background: rgba(255, 191, 100, 0.06);
-          color: #f2d6a7;
-          font-size: 12px;
-          line-height: 1.8;
-        }
-
-        .eco-alert button {
-          margin-right: auto;
-          padding: 7px 11px;
-          border: 1px solid var(--eco-border);
-          border-radius: 7px;
-          background: transparent;
-          cursor: pointer;
+        @keyframes eco-float {
+          0%,
+          100% {
+            translate: 0 0;
+          }
+          50% {
+            translate: 0 -10px;
+          }
         }
 
         .eco-stats-grid {
           display: grid;
-          grid-template-columns: 1.5fr 1fr 1fr;
+          grid-template-columns: 1.25fr 1fr 1fr;
           gap: 15px;
-          margin: 12px 0 85px;
+          margin-bottom: 28px;
         }
 
         .eco-stat-card {
-          min-height: 165px;
           position: relative;
+          min-width: 0;
           overflow: hidden;
-          padding: 22px;
-          border: 1px solid var(--eco-border);
-          border-radius: 16px;
-          background: linear-gradient(145deg, #10221b, #0b1713);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 18px;
+          padding: 25px;
+          background: linear-gradient(
+            145deg,
+            rgba(23, 38, 27, 0.86),
+            rgba(12, 22, 15, 0.75)
+          );
         }
 
         .eco-stat-main {
-          background:
-            radial-gradient(circle at 85% 20%, rgba(185, 242, 124, 0.12), transparent 42%),
-            linear-gradient(145deg, #142b20, #0b1713);
+          border-color: rgba(185, 242, 124, 0.19);
+          background: linear-gradient(
+            125deg,
+            rgba(53, 83, 40, 0.42),
+            rgba(15, 28, 18, 0.9)
+          );
         }
 
-        .eco-stat-top,
-        .eco-stat-bottom {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
+        .eco-stat-label,
+        .eco-stat-value,
+        .eco-stat-description {
+          position: relative;
+          z-index: 1;
+          display: block;
         }
 
         .eco-stat-label {
-          color: var(--eco-muted);
-          font-size: 11px;
-        }
-
-        .eco-stat-icon {
-          display: grid;
-          place-items: center;
-          width: 32px;
-          height: 32px;
-          border: 1px solid var(--eco-border);
-          border-radius: 9px;
-          color: var(--eco-green);
+          color: #9baa9d;
+          font-size: 12px;
         }
 
         .eco-stat-value {
-          display: flex;
-          align-items: baseline;
-          flex-wrap: wrap;
-          gap: 7px;
-          margin: 18px 0 14px;
+          margin: 17px 0 9px;
+          color: #f1f7ed;
+          font-size: clamp(23px, 3vw, 34px);
+          direction: ltr;
+          text-align: right;
+          overflow-wrap: anywhere;
         }
 
-        .eco-stat-value strong {
-          font-family: Arial, sans-serif;
-          font-size: clamp(25px, 3vw, 38px);
-          letter-spacing: -1px;
+        .eco-stat-main .eco-stat-value {
+          color: #c5f99a;
         }
 
-        .eco-dollar {
-          color: var(--eco-green);
-          font-family: Arial, sans-serif;
-          font-size: 24px;
+        .eco-stat-name {
+          font-size: clamp(18px, 2vw, 26px);
+          direction: rtl;
         }
 
-        .eco-stat-unit {
-          color: var(--eco-muted);
+        .eco-stat-description {
+          color: #718174;
           font-size: 10px;
-        }
-
-        .eco-stat-bottom {
-          justify-content: flex-start;
-          color: var(--eco-muted);
-          font-size: 10px;
-        }
-
-        .eco-stat-name strong {
-          font-family: Tahoma, Arial, sans-serif;
-          font-size: clamp(17px, 2vw, 24px);
-          letter-spacing: 0;
+          line-height: 1.9;
         }
 
         .eco-stat-decoration {
           position: absolute;
           left: 12px;
-          bottom: -28px;
-          color: rgba(185, 242, 124, 0.035);
-          font-family: Arial, sans-serif;
-          font-size: 125px;
+          bottom: -35px;
+          color: rgba(185, 242, 124, 0.055);
+          font-size: 130px;
           font-weight: 900;
-          pointer-events: none;
+        }
+
+        .eco-status-line {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+          margin: 28px 0 10px;
+          color: #819083;
+          font-size: 11px;
+        }
+
+        .eco-status-line button {
+          border: 0;
+          background: transparent;
+          color: #b9f27c;
+          font-size: 11px;
+        }
+
+        .eco-error-message,
+        .eco-admin-message {
+          margin: 15px 0;
+          border: 1px solid rgba(255, 139, 139, 0.25);
+          border-radius: 13px;
+          padding: 17px;
+          background: rgba(105, 28, 28, 0.12);
+          color: #ffb3b3;
+          font-size: 12px;
+          line-height: 1.9;
+          overflow-wrap: anywhere;
+        }
+
+        .eco-error-message p {
+          margin: 8px 0;
+        }
+
+        .eco-error-message button {
+          border: 0;
+          background: transparent;
+          color: #ffd0d0;
+          text-decoration: underline;
         }
 
         .eco-section {
-          margin: 0 0 88px;
-          scroll-margin-top: 25px;
+          padding: 65px 0 20px;
+          scroll-margin-top: 35px;
         }
 
         .eco-section-heading {
           display: flex;
-          align-items: end;
+          align-items: flex-end;
           justify-content: space-between;
           gap: 20px;
-          margin-bottom: 25px;
+          margin-bottom: 27px;
         }
 
         .eco-section-kicker {
-          display: block;
-          margin-bottom: 10px;
-          color: var(--eco-green);
-          font-family: Arial, sans-serif;
-          font-size: 9px;
+          color: #b9f27c;
+          font-size: 10px;
+          font-weight: 800;
           letter-spacing: 2px;
-          direction: ltr;
-          text-align: right;
         }
 
         .eco-section-heading h2 {
-          margin: 0;
-          font-size: clamp(23px, 3vw, 31px);
+          margin: 11px 0 9px;
+          font-size: clamp(23px, 3vw, 32px);
+          line-height: 1.5;
         }
 
         .eco-section-heading p {
-          margin: 11px 0 0;
-          color: var(--eco-muted);
-          font-size: 11px;
-          line-height: 2;
+          margin: 0;
+          color: #839187;
+          font-size: 12px;
+          line-height: 1.9;
         }
 
-        .eco-section-count {
-          color: var(--eco-muted);
-          font-family: Arial, sans-serif;
+        .eco-section-number {
+          flex-shrink: 0;
+          padding-bottom: 5px;
+          color: #68786c;
           font-size: 11px;
-          letter-spacing: 1px;
-          white-space: nowrap;
+          direction: ltr;
+        }
+        
+        .eco-top-five-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+          gap: 22px;
+          align-items: stretch;
         }
 
         .eco-top-five-list {
@@ -1730,717 +1614,745 @@ export default function BillionairesPage() {
         }
 
         .eco-person-row {
-          width: 100%;
-          min-height: 92px;
-          display: grid;
-          grid-template-columns: 38px 58px minmax(120px, 1fr) minmax(110px, 0.6fr) 95px 20px;
+          display: flex;
           align-items: center;
-          gap: 15px;
-          padding: 14px 19px;
-          border: 1px solid var(--eco-border);
-          border-radius: 13px;
-          background: rgba(13, 27, 23, 0.76);
+          gap: 12px;
+          width: 100%;
+          padding: 12px;
+          color: #e8f0ea;
           text-align: right;
+          background: #0c1511;
+          border: 1px solid #23372b;
+          border-radius: 14px;
           cursor: pointer;
-          transition:
-            border-color 0.2s ease,
-            background 0.2s ease,
-            transform 0.2s ease;
-        }
-
-        .eco-person-row:hover,
-        .eco-person-row.is-selected {
-          border-color: rgba(185, 242, 124, 0.5);
-          background: linear-gradient(100deg, rgba(185, 242, 124, 0.06), #102019);
+          transition: border-color 0.2s, background 0.2s, transform 0.2s;
         }
 
         .eco-person-row:hover {
-          transform: translateX(-3px);
+          background: #13231a;
+          border-color: #3b8050;
+          transform: translateY(-2px);
+        }
+
+        .eco-person-row.active {
+          background: linear-gradient(110deg, #173b25, #102019);
+          border-color: #46c66b;
+          box-shadow: 0 0 20px #1b9b4720;
         }
 
         .eco-person-rank {
-          color: #748b7d;
-          font-family: Arial, sans-serif;
-          font-size: 16px;
+          display: grid;
+          flex-shrink: 0;
+          place-items: center;
+          width: 30px;
+          height: 30px;
+          color: #a7e8b4;
+          background: #1c3525;
+          border-radius: 9px;
+          font-size: 13px;
+          font-weight: 800;
+          direction: ltr;
         }
 
-        .eco-person-photo-wrap {
-          position: relative;
-          display: block;
+        .eco-person-avatar {
           width: 54px;
           height: 54px;
-        }
-
-        .eco-person-photo {
-          width: 100%;
-          height: 100%;
-          display: block;
+          flex-shrink: 0;
           object-fit: cover;
-          border: 1px solid rgba(185, 242, 124, 0.25);
-          border-radius: 50%;
-          background: var(--eco-panel-2);
+          background: #1b2920;
+          border: 1px solid #344c3a;
+          border-radius: 12px;
         }
 
-        .eco-crown {
-          position: absolute;
-          top: -9px;
-          right: -6px;
-          color: var(--eco-green);
-          font-size: 17px;
-          filter: drop-shadow(0 0 6px rgba(185, 242, 124, 0.4));
-        }
-
-        .eco-person-info,
-        .eco-person-worth {
-          min-width: 0;
+        .eco-person-info {
           display: flex;
+          flex: 1;
+          min-width: 0;
           flex-direction: column;
-          gap: 8px;
-        }
-
-        .eco-person-info strong {
-          overflow-wrap: anywhere;
-          font-size: 13px;
-        }
-
-        .eco-person-info small,
-        .eco-person-worth small {
-          color: var(--eco-muted);
-          font-size: 10px;
-          line-height: 1.8;
-        }
-
-        .eco-person-worth strong {
-          direction: ltr;
-          text-align: right;
-          color: var(--eco-green);
-          font-family: Arial, sans-serif;
-          font-size: 18px;
-        }
-
-        .eco-change {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
           gap: 5px;
-          direction: ltr;
-          font-family: Arial, sans-serif;
-          font-size: 11px;
+        }
+
+        .eco-person-name {
+          overflow: hidden;
+          color: #f1f7f2;
+          font-size: 14px;
+          font-weight: 800;
+          text-overflow: ellipsis;
           white-space: nowrap;
         }
 
-        .eco-change-up,
-        .eco-positive-text {
-          color: #91e4a3;
-        }
-
-        .eco-change-down,
-        .eco-negative-text {
-          color: var(--eco-red);
-        }
-
-        .eco-row-arrow {
-          color: var(--eco-muted);
-          font-size: 15px;
-        }
-
-        .eco-feature-person {
-          display: grid;
-          grid-template-columns: 250px 1fr;
-          gap: 30px;
-          margin-top: 20px;
-          padding: 23px;
-          border: 1px solid var(--eco-border);
-          border-radius: 16px;
-          background: linear-gradient(135deg, #10231a, #0b1713);
-        }
-
-        .eco-feature-image {
-          position: relative;
-          min-height: 250px;
+        .eco-person-company {
           overflow: hidden;
-          border-radius: 12px;
-          background: var(--eco-panel-2);
+          color: #879b8c;
+          font-size: 11px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
-        .eco-feature-image img {
+        .eco-person-wealth {
+          flex-shrink: 0;
+          color: #65df86;
+          font-size: 13px;
+          font-weight: 800;
+          direction: ltr;
+          text-align: left;
+        }
+
+        .eco-featured-person {
+          position: relative;
+          display: flex;
+          min-height: 100%;
+          flex-direction: column;
+          overflow: hidden;
+          padding: 24px;
+          background:
+            radial-gradient(ellipse at 80% 0%, #245f373d, transparent 52%),
+            linear-gradient(145deg, #15251b, #0b120e 75%);
+          border: 1px solid #31583a;
+          border-radius: 20px;
+        }
+
+        .eco-featured-person::before {
           position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
+          top: 0;
+          right: 24px;
+          left: 24px;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, #65df86, transparent);
+          content: "";
         }
 
-        .eco-feature-rank {
-          position: absolute;
-          right: 12px;
-          bottom: 12px;
-          padding: 8px 10px;
-          border: 1px solid var(--eco-border);
-          border-radius: 7px;
-          background: rgba(7, 17, 15, 0.85);
-          color: var(--eco-green);
-          font-family: Arial, sans-serif;
-          font-size: 10px;
+        .eco-featured-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 20px;
         }
 
-        .eco-feature-content {
-          padding: 7px 0;
+        .eco-featured-label {
+          color: #a3b8a8;
+          font-size: 12px;
+          font-weight: 700;
         }
 
-        .eco-feature-content h3 {
-          margin: 12px 0 7px;
-          font-size: 25px;
-        }
-
-        .eco-feature-company {
-          color: var(--eco-green);
+        .eco-featured-badge {
+          padding: 6px 10px;
+          color: #7be995;
+          background: #173824;
+          border: 1px solid #2f7042;
+          border-radius: 20px;
           font-size: 11px;
         }
 
-        .eco-feature-bio {
-          color: var(--eco-muted);
-          font-size: 12px;
-          line-height: 2.2;
+        .eco-featured-main {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          margin-bottom: 20px;
         }
 
-        .eco-feature-metrics {
+        .eco-featured-avatar {
+          width: 112px;
+          height: 112px;
+          flex-shrink: 0;
+          object-fit: cover;
+          background: #203126;
+          border: 2px solid #4c9b60;
+          border-radius: 18px;
+          box-shadow: 0 8px 32px #0005;
+        }
+
+        .eco-featured-rank {
+          margin-bottom: 8px;
+          color: #7ce493;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .eco-featured-name {
+          margin: 0 0 8px;
+          color: #f1f7f2;
+          font-size: 25px;
+          font-weight: 900;
+          line-height: 1.4;
+        }
+
+        .eco-featured-company {
+          color: #a0b2a4;
+          font-size: 13px;
+        }
+
+        .eco-featured-divider {
+          height: 1px;
+          margin: 4px 0 18px;
+          background: #2a3b2e;
+        }
+
+        .eco-featured-wealth-label {
+          margin-bottom: 8px;
+          color: #8fa495;
+          font-size: 12px;
+        }
+
+        .eco-featured-wealth {
+          color: #70e88c;
+          font-size: clamp(25px, 3vw, 38px);
+          font-weight: 900;
+          direction: ltr;
+          text-align: right;
+          letter-spacing: -1px;
+        }
+
+        .eco-featured-description {
+          margin-top: 16px;
+          color: #a5b5a9;
+          font-size: 13px;
+          line-height: 2;
+        }
+
+        .eco-featured-footer {
           display: flex;
           flex-wrap: wrap;
-          gap: 35px;
-          margin: 22px 0;
+          gap: 8px;
+          margin-top: auto;
+          padding-top: 20px;
         }
 
-        .eco-feature-metrics div {
+        .eco-mini-tag {
+          padding: 7px 10px;
+          color: #c4d7c9;
+          background: #1a2b20;
+          border: 1px solid #304a36;
+          border-radius: 9px;
+          font-size: 11px;
+        }
+
+        .eco-ranking-toolbar {
           display: flex;
-          flex-direction: column;
-          gap: 9px;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 18px;
         }
 
-        .eco-feature-metrics small {
-          color: var(--eco-muted);
+        .eco-search-input {
+          width: min(100%, 340px);
+          min-height: 44px;
+          padding: 10px 14px;
+          color: #edf5ef;
+          background: #0b130e;
+          border: 1px solid #2a4030;
+          border-radius: 11px;
+          outline: none;
+          font: inherit;
+          font-size: 13px;
+        }
+
+        .eco-search-input:focus {
+          border-color: #58b96f;
+          box-shadow: 0 0 0 3px #58b96f18;
+        }
+
+        .eco-ranking-count {
+          color: #8da393;
+          font-size: 12px;
+        }
+
+        .eco-ranking-table-wrap {
+          width: 100%;
+          overflow-x: auto;
+          border: 1px solid #23372a;
+          border-radius: 14px;
+        }
+
+        .eco-ranking-table {
+          width: 100%;
+          border-collapse: collapse;
+          text-align: right;
+          white-space: nowrap;
+        }
+
+        .eco-ranking-table th {
+          padding: 15px 16px;
+          color: #93aa99;
+          background: #111d15;
+          border-bottom: 1px solid #2a3c2f;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .eco-ranking-table td {
+          padding: 13px 16px;
+          color: #dce8df;
+          border-bottom: 1px solid #1e2d22;
+          font-size: 12px;
+        }
+
+        .eco-ranking-table tbody tr {
+          background: #0d1510;
+          transition: background 0.2s;
+        }
+
+        .eco-ranking-table tbody tr:hover {
+          background: #16241a;
+        }
+
+        .eco-ranking-table tbody tr:last-child td {
+          border-bottom: 0;
+        }
+
+        .eco-table-person {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 190px;
+        }
+
+        .eco-table-avatar {
+          width: 36px;
+          height: 36px;
+          flex-shrink: 0;
+          object-fit: cover;
+          background: #1d2c21;
+          border-radius: 9px;
+        }
+
+        .eco-table-person-name {
+          color: #eef6ef;
+          font-weight: 800;
+        }
+
+        .eco-table-rank {
+          color: #83dc98;
+          font-weight: 900;
+          direction: ltr;
+        }
+
+        .eco-table-wealth {
+          color: #69df85 !important;
+          font-weight: 800;
+          direction: ltr;
+        }
+
+        .eco-news-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .eco-news-card {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          padding: 18px;
+          background: linear-gradient(145deg, #142019, #0c130f);
+          border: 1px solid #263a2c;
+          border-radius: 16px;
+          transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .eco-news-card:hover {
+          transform: translateY(-3px);
+          border-color: #477a51;
+        }
+
+        .eco-news-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 15px;
+        }
+
+        .eco-news-category {
+          padding: 5px 9px;
+          color: #88e49d;
+          background: #193623;
+          border-radius: 7px;
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .eco-news-date {
+          color: #788d7e;
           font-size: 10px;
         }
 
-        .eco-feature-metrics strong {
-          font-family: Arial, sans-serif;
-          font-size: 19px;
+        .eco-news-title {
+          margin: 0 0 10px;
+          color: #edf5ef;
+          font-size: 15px;
+          font-weight: 800;
+          line-height: 1.8;
         }
 
-        .eco-loading,
-        .eco-empty {
+        .eco-news-content {
+          flex: 1;
+          color: #a0b0a4;
+          font-size: 12px;
+          line-height: 2;
+          overflow-wrap: anywhere;
+        }
+
+        .eco-news-source {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 18px;
+          color: #73df8b;
+          font-size: 12px;
+          font-weight: 700;
+          text-decoration: none;
+        }
+
+        .eco-news-source:hover {
+          color: #a1f5b1;
+          text-decoration: underline;
+        }
+
+        .eco-empty-state {
+          grid-column: 1 / -1;
+          padding: 32px 18px;
+          color: #849889;
+          background: #0c1510;
+          border: 1px dashed #304536;
+          border-radius: 14px;
+          text-align: center;
+          font-size: 13px;
+          line-height: 2;
+        }
+
+        .eco-loading {
+          padding: 32px 16px;
+          color: #91a797;
+          text-align: center;
+          font-size: 13px;
+        }
+
+        .eco-error-message {
+          margin-top: 12px;
+          padding: 12px 14px;
+          color: #ffb4a8;
+          background: #351b19;
+          border: 1px solid #65302a;
+          border-radius: 10px;
+          font-size: 12px;
+          line-height: 1.8;
+        }
+
+        .eco-success-message {
+          margin-top: 12px;
+          padding: 12px 14px;
+          color: #9bf0ad;
+          background: #142e1d;
+          border: 1px solid #2c6740;
+          border-radius: 10px;
+          font-size: 12px;
+          line-height: 1.8;
+        }
+
+        .eco-admin-panel {
+          padding: 24px;
+          background:
+            radial-gradient(ellipse at 100% 0%, #24472a2b, transparent 45%),
+            #0d1510;
+          border: 1px solid #2d4432;
+          border-radius: 18px;
+        }
+
+        .eco-admin-heading {
           display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .eco-admin-title {
+          margin: 0;
+          color: #eef6ef;
+          font-size: 19px;
+          font-weight: 900;
+        }
+
+        .eco-admin-subtitle {
+          margin-top: 7px;
+          color: #91a596;
+          font-size: 12px;
+          line-height: 1.8;
+        }
+
+        .eco-admin-form {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+        }
+
+        .eco-form-field {
+          display: flex;
+          min-width: 0;
+          flex-direction: column;
+          gap: 7px;
+        }
+
+        .eco-form-field.full {
+          grid-column: 1 / -1;
+        }
+
+        .eco-form-label {
+          color: #b8c9bc;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .eco-form-input,
+        .eco-form-textarea,
+        .eco-form-select {
+          width: 100%;
+          min-width: 0;
+          padding: 12px 13px;
+          color: #edf5ef;
+          background: #080f0b;
+          border: 1px solid #2a4030;
+          border-radius: 10px;
+          outline: none;
+          font: inherit;
+          font-size: 13px;
+        }
+
+        .eco-form-input:focus,
+        .eco-form-textarea:focus,
+        .eco-form-select:focus {
+          border-color: #5bc273;
+          box-shadow: 0 0 0 3px #5bc27318;
+        }
+
+        .eco-form-textarea {
+          min-height: 125px;
+          resize: vertical;
+          line-height: 1.9;
+        }
+
+        .eco-admin-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 18px;
+        }
+
+        .eco-button {
+          display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 12px;
-          min-height: 130px;
-          color: var(--eco-muted);
+          gap: 8px;
+          min-height: 42px;
+          padding: 10px 16px;
+          color: #f2fff4;
+          background: #246b38;
+          border: 1px solid #388a4e;
+          border-radius: 10px;
+          cursor: pointer;
+          font: inherit;
           font-size: 12px;
+          font-weight: 800;
+          transition: background 0.2s, transform 0.2s;
         }
 
-        .eco-spinner {
-          width: 20px;
-          height: 20px;
-          border: 2px solid var(--eco-border);
-          border-top-color: var(--eco-green);
-          border-radius: 50%;
-          animation: eco-spin 0.8s linear infinite;
+        .eco-button:hover {
+          background: #2c8244;
+          transform: translateY(-1px);
         }
 
-        .eco-table-tools {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 15px;
+        .eco-button:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .eco-button.secondary {
+          color: #c6d5ca;
+          background: #17231a;
+          border-color: #344a39;
+        }
+
+        .eco-button.secondary:hover {
+          background: #223328;
+        }
+
+        .eco-button.danger {
+          color: #ffc0b7;
+          background: #321c1a;
+          border-color: #67352e;
+        }
+
+        .eco-admin-login {
+          max-width: 520px;
+          margin: 0 auto;
+        }
+
+        .eco-admin-lock {
+          display: grid;
+          width: 54px;
+          height: 54px;
+          margin-bottom: 16px;
+          place-items: center;
+          color: #8be6a0;
+          background: #183522;
+          border: 1px solid #356d43;
+          border-radius: 15px;
+          font-size: 22px;
+        }
+
+        .eco-admin-note {
+          margin-top: 14px;
+          color: #819687;
+          font-size: 11px;
+          line-height: 1.9;
+        }
+
+        .eco-footer {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          padding: 24px 0 12px;
+          color: #718476;
+          border-top: 1px solid #213126;
+          font-size: 11px;
+          line-height: 1.8;
+        }
+
+        .eco-footer-brand {
+          color: #a8c4af;
+          font-size: 14px;
+          font-weight: 900;
+        }
+
+        .eco-footer-links {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 14px;
+        }
+
+        .eco-footer-links a {
+          color: #8da192;
+          text-decoration: none;
+        }
+
+        .eco-footer-links a:hover {
+          color: #75e18d;
+        }
+        
+        @media (max-width: 1000px) {
+          .eco-top-five-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .eco-top-five-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .eco-news-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 700px) {
+          .eco-top-five-list {
+            grid-template-columns: 1fr;
+          }
+
+          .eco-featured-person {
+            padding: 18px;
+          }
+
+          .eco-featured-main {
+            align-items: flex-start;
+            gap: 13px;
+          }
+
+          .eco-featured-avatar {
+            width: 82px;
+            height: 82px;
+          }
+
+          .eco-featured-name {
+            font-size: 20px;
+          }
+
+          .eco-featured-wealth {
+            font-size: 27px;
+            overflow-wrap: anywhere;
+          }
+
+          .eco-ranking-toolbar {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .eco-search-input {
+            width: 100%;
+          }
+
+          .eco-news-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .eco-admin-panel {
+            padding: 17px;
+          }
+
+          .eco-admin-form {
+            grid-template-columns: 1fr;
+          }
+
+          .eco-form-field.full {
+            grid-column: auto;
+          }
+
+          .eco-footer {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .eco-person-row {
+            gap: 9px;
+            padding: 10px;
+          }
+
+          .eco-person-avatar {
+            width: 44px;
+            height: 44px;
+          }
+
+          .eco-person-wealth {
+            font-size: 11px;
+          }
+
+          .eco-featured-main {
+            flex-direction: column;
+          }
+
+          .eco-featured-avatar {
+            width: 96px;
+            height: 96px;
+          }
+
+          .eco-admin-actions .eco-button {
+            width: 100%;
+          }
+        }
+      `}</style>
+    </main>
+  );
 }
 
-.eco-search {
-  min-width: min(100%, 310px);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 13px;
-  border: 1px solid var(--eco-border);
-  border-radius: 10px;
-  background: var(--eco-panel);
-  color: var(--eco-muted);
-}
 
-.eco-search input {
-  width: 100%;
-  min-height: 43px;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--eco-text);
-  font-size: 11px;
-}
-
-.eco-search button {
-  border: 0;
-  background: transparent;
-  color: var(--eco-muted);
-  cursor: pointer;
-}
-
-.eco-table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--eco-border);
-  border-radius: 13px;
-  background: rgba(13, 27, 23, 0.76);
-}
-
-.eco-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: right;
-  white-space: nowrap;
-  font-size: 11px;
-}
-
-.eco-table th {
-  padding: 17px 15px;
-  background: rgba(185, 242, 124, 0.035);
-  color: var(--eco-muted);
-  font-size: 10px;
-  font-weight: 500;
-}
-
-.eco-table td {
-  padding: 13px 15px;
-  border-top: 1px solid rgba(206, 245, 214, 0.07);
-}
-
-.eco-table tbody tr {
-  transition: background 0.2s ease;
-}
-
-.eco-table tbody tr:hover {
-  background: rgba(185, 242, 124, 0.035);
-}
-
-.eco-table-rank {
-  color: var(--eco-green);
-  font-family: Arial, sans-serif;
-}
-
-.eco-table-person {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  text-align: right;
-  cursor: pointer;
-}
-
-.eco-table-person img {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--eco-panel-2);
-}
-
-.eco-table-person strong {
-  font-size: 11px;
-}
-
-.eco-table-money {
-  color: var(--eco-green);
-  font-family: Arial, sans-serif;
-}
-
-.eco-show-more {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 49px;
-  border: 0;
-  border-top: 1px solid var(--eco-border);
-  background: transparent;
-  color: var(--eco-green);
-  cursor: pointer;
-  font-size: 11px;
-}
-
-.eco-data-note {
-  margin-top: 14px;
-  color: var(--eco-muted);
-  font-size: 10px;
-  line-height: 2;
-}
-
-.eco-news-tabs {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 3px 0 15px;
-  scrollbar-width: thin;
-  scrollbar-color: #355240 transparent;
-}
-
-.eco-news-tabs button {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 13px;
-  border: 1px solid var(--eco-border);
-  border-radius: 10px;
-  background: var(--eco-panel);
-  color: var(--eco-muted);
-  cursor: pointer;
-  font-size: 11px;
-}
-
-.eco-news-tabs button.is-active {
-  border-color: var(--eco-green);
-  background: rgba(185, 242, 124, 0.08);
-  color: var(--eco-text);
-}
-
-.eco-news-tabs img {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--eco-panel-2);
-}
-
-.eco-news-card {
-  display: grid;
-  grid-template-columns: 85px 1fr;
-  gap: 20px;
-  padding: 24px;
-  border: 1px solid var(--eco-border);
-  border-radius: 15px;
-  background: linear-gradient(130deg, #10231a, #0b1713);
-}
-
-.eco-news-avatar img {
-  width: 80px;
-  height: 80px;
-  border-radius: 12px;
-  object-fit: cover;
-  background: var(--eco-panel-2);
-}
-
-.eco-news-main h3 {
-  margin: 8px 0 12px;
-  font-size: 19px;
-  line-height: 1.8;
-}
-
-.eco-news-main p {
-  color: var(--eco-muted);
-  font-size: 12px;
-  line-height: 2.2;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.eco-news-main .eco-button {
-  margin-top: 10px;
-}
-
-.eco-admin-section {
-  padding: 25px;
-  border: 1px solid var(--eco-border);
-  border-radius: 16px;
-  background: rgba(13, 27, 23, 0.76);
-}
-
-.eco-admin-badge {
-  padding: 8px 10px;
-  border: 1px solid rgba(185, 242, 124, 0.25);
-  border-radius: 8px;
-  color: var(--eco-green);
-  font-size: 10px;
-}
-
-.eco-admin-form,
-.eco-login-modal form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.eco-admin-form label,
-.eco-login-modal label {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  color: #b5c7ba;
-  font-size: 11px;
-}
-
-.eco-admin-form input,
-.eco-admin-form textarea,
-.eco-admin-form select,
-.eco-login-modal input {
-  width: 100%;
-  min-height: 43px;
-  padding: 12px;
-  border: 1px solid var(--eco-border);
-  border-radius: 9px;
-  outline: 0;
-  background: #08130f;
-  color: var(--eco-text);
-  font-size:     12px;
-}
-
-.eco-admin-form textarea {
-  resize: vertical;
-  line-height: 2;
-}
-
-.eco-admin-form input:focus,
-.eco-admin-form textarea:focus,
-.eco-admin-form select:focus,
-.eco-login-modal input:focus {
-  border-color: rgba(185, 242, 124, 0.6);
-}
-
-.eco-admin-form .eco-button {
-  align-self: flex-start;
-}
-
-.eco-admin-message {
-  margin: 0;
-  color: var(--eco-green);
-  font-size: 11px;
-  line-height: 1.9;
-}
-
-.eco-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  overflow-y: auto;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(8px);
-}
-
-.eco-login-modal {
-  width: min(100%, 420px);
-  position: relative;
-  padding: 30px;
-  border: 1px solid var(--eco-border);
-  border-radius: 18px;
-  background: #0d1b17;
-  box-shadow: 0 25px 100px rgba(0, 0, 0, 0.4);
-}
-
-.eco-modal-close {
-  position: absolute;
-  top: 12px;
-  left: 14px;
-  width: 33px;
-  height: 33px;
-  border: 1px solid var(--eco-border);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--eco-muted);
-  cursor: pointer;
-  font-size: 20px;
-}
-
-.eco-login-icon {
-  width: 45px;
-  height: 45px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 20px;
-  border-radius: 13px;
-  background: var(--eco-green);
-  color: #102017;
-  font-size: 26px;
-  font-weight: 900;
-}
-
-.eco-login-modal h2 {
-  margin: 8px 0;
-  font-size: 23px;
-}
-
-.eco-login-modal > p {
-  margin: 0 0 24px;
-  color: var(--eco-muted);
-  font-size: 11px;
-  line-height: 2;
-}
-
-.eco-login-submit {
-  width: 100%;
-  margin-top: 5px;
-}
-
-.eco-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 18px;
-  padding: 25px 0;
-  border-top: 1px solid var(--eco-border);
-}
-
-.eco-footer > p {
-  color: var(--eco-muted);
-  font-size: 10px;
-  line-height: 1.8;
-}
-
-.eco-back-top {
-  color: var(--eco-muted);
-  font-size: 11px;
-}
-
-@keyframes eco-float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-9px);
-  }
-}
-
-@keyframes eco-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 1000px) {
-  .eco-stats-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .eco-stat-main {
-    grid-column: 1 / -1;
-  }
-
-  .eco-feature-person {
-    grid-template-columns: 210px 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .eco-header {
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 13px 0;
-  }
-
-  .eco-nav {
-    order: 3;
-    width: 100%;
-    justify-content: flex-start;
-    overflow-x: auto;
-    padding: 8px 0 2px;
-    gap: 22px;
-    white-space: nowrap;
-  }
-
-  .eco-hero {
-    grid-template-columns: 1fr;
-    padding: 44px 0 25px;
-  }
-
-  .eco-hero-art {
-    min-height: 290px;
-  }
-
-  .eco-stats-grid {
-    gap: 10px;
-    margin-bottom: 60px;
-  }
-
-  .eco-section {
-    margin-bottom: 60px;
-  }
-
-  .eco-person-row {
-    grid-template-columns: 24px 43px minmax(0, 1fr) auto;
-    grid-template-rows: auto auto;
-    gap: 9px;
-    min-height: 78px;
-    padding: 10px;
-  }
-
-  .eco-person-row .eco-person-info {
-    grid-column: 3 / 5;
-    grid-row: 1;
-  }
-
-  .eco-person-row .eco-person-worth {
-    grid-column: 3;
-    grid-row: 2;
-    flex-direction: row;
-    gap: 5px;
-  }
-
-  .eco-person-row .eco-change {
-    grid-column: 4;
-    grid-row: 2;
-    justify-self: end;
-  }
-
-  .eco-person-row .eco-row-arrow {
-    display: none;
-  }
-
-  .eco-person-row .eco-person-rank,
-  .eco-person-row .eco-person-photo-wrap {
-    grid-row: 1 / 3;
-  }
-
-  .eco-feature-person {
-    grid-template-columns: 1fr;
-  }
-
-  .eco-table {
-    min-width: 680px;
-  }
-
-  .eco-news-card {
-    grid-template-columns: 55px 1fr;
-    gap: 13px;
-    padding: 15px;
-  }
-
-  .eco-news-avatar img {
-    width: 54px;
-    height: 54px;
-  }
-
-  .eco-footer {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-    `}</style>
-  </main>
-);
-}
+      
