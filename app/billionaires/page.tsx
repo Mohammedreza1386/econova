@@ -149,9 +149,30 @@ export default function BillionairesPage() {
                     <p className="mt-2 text-sm text-slate-400">
                       {person.company || "شرکت ثبت نشده"}
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {person.country || "کشور ثبت نشده"}
-                    </p>
+                    
+<p className="mt-1 text-sm text-slate-500">
+  {person.country || "کشور ثبت نشده"}
+</p>
+
+<p
+  className={`mt-3 text-sm font-semibold ${
+    Number(person.daily_change_pct ?? 0) >= 0
+      ? "text-emerald-400"
+      : "text-red-400"
+  }`}
+>
+  تغییر روزانه:{" "}
+  {Number(person.daily_change_pct ?? 0) > 0 ? "+" : ""}
+  {Number(person.daily_change_pct ?? 0).toFixed(2)}%
+</p>
+
+{person.updated_at && (
+  <p className="mt-2 text-xs text-slate-400">
+    آخرین به‌روزرسانی:{" "}
+    {new Date(person.updated_at).toLocaleString("fa-IR")}
+  </p>
+)}
+
                   </article>
                 ))}
               </div>
