@@ -128,35 +128,31 @@ export default function BillionairesPage() {
   );
 
   useEffect(() => {
-    let frame = 0;
-    let startTime: number | null = null;
-    const duration = 1600;
+  let frame = 0;
+  let animationId = 0;
+  const duration = 2200;
+  let startTime: number | null = null;
 
-    setAnimatedTotal(0);
+  setAnimatedTotal(0);
 
-    if (topTenTotal <= 0) return;
+  const animate = (time: number) => {
+    if (startTime === null) startTime = time;
 
-    const animate = (timestamp: number) => {
-      if (startTime === null) startTime = timestamp;
+    const progress = Math.min((time - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 4);
 
-      const progress = Math.min(
-        (timestamp - startTime) / duration,
-        1
-      );
+    setAnimatedTotal(topTenTotal * eased);
 
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setAnimatedTotal(topTenTotal * eased);
+    if (progress < 1) {
+      animationId = requestAnimationFrame(animate);
+    }
+  };
 
-      if (progress < 1) {
-        frame = requestAnimationFrame(animate);
-      }
-    };
+  animationId = requestAnimationFrame(animate);
 
-    frame = requestAnimationFrame(animate);
-
-    return () => cancelAnimationFrame(frame);
-  }, [topTenTotal]);
-
+  return () => cancelAnimationFrame(animationId);
+}, [topTenTotal]);
+  
   return (
     <main className="econova-page">
       <div className="econova-container">
