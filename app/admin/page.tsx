@@ -99,28 +99,31 @@ export default function AdminPage() {
       setBusy(false);
     }
   }
+  
+function changeField(
+  id: string,
+  field: keyof Billionaire,
+  value: string
+) {
+  setPeople((current) =>
+    current.map((person) =>
+      person.id === id
+        ? {
+            ...person,
+            [field]:
+              field === "rank" ||
+              field === "net_worth_billions" ||
+              field === "daily_change_pct"
+                ? value.trim() === "" || value.trim() === "-"
+                  ? value
+                  : Number(value.replace(/^\+/, ""))
+                : value,
+          }
+        : person
+    )
+  );
+}
 
-  function changeField(
-    id: string,
-    field: keyof Billionaire,
-    value: string
-  ) {
-    setPeople((current) =>
-      current.map((person) =>
-        person.id === id
-          ? {
-              ...person,
-              [field]:
-                field === "rank" ||
-                field === "net_worth_billions" ||
-                field === "daily_change_pct"
-                  ? Number(value)
-                  : value,
-            }
-          : person
-      )
-    );
-  }
 
   async function savePerson(person: Billionaire) {
     setBusy(true);
