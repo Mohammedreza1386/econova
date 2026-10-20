@@ -1,179 +1,9 @@
 
-"use client";
-
-import { useEffect, useState } from "react";
-
-type Billionaire = {
-  id: number;
-  rank: number;
-  name: string;
-  image_url?: string | null;
-  company: string | null;
-  country: string | null;
-  net_worth_billions: number;
-  daily_change_pct: number | null;
-  updated_at: string | null;
-  source_url: string | null;
-  source_checked_at: string | null;
-};
-
-const SUPABASE_URL =
-  "https://zusbebjskchgehdjvpsm.supabase.co";
-
-const SUPABASE_KEY =
-  "sb_publishable_WGMEA7-K8FAResrVCL8GJQ_6KCxrvmK";
-
-const money = (value: number) =>
-  new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 1,
-  }).format(Number.isFinite(value) ? value : 0);
-
-// عکس افراد شناخته‌شده؛ برای نام‌های دیگر از تصویر ثبت‌شده در دیتابیس استفاده می‌شود.
-function photoFor(name: string): string | null {
-  const n = name.toLowerCase();
-
-  const photos: [string[], string][] = [
-    [
-      ["elon musk"],
-      "https://commons.wikimedia.org/wiki/Special:FilePath/Elon_Musk_Royal_Society_%28crop2%29.jpg",
-    ],
-    [
-      ["jeff bezos"],
-      "https://commons.wikimedia.org/wiki/Special:FilePath/Jeff_Bezos_2016.jpg",
-    ],
-    [
-      ["mark zuckerberg"],
-      "https://commons.wikimedia.org/wiki/Special:FilePath/Mark_Zuckerberg_F8_2018_keynote.jpg",
-    ],
-    [
-      ["warren buffett"],
-      "https://commons.wikimedia.org/wiki/Special:FilePath/Warren_Buffett_at_the_2015_SelectUSA_Investment_Summit.jpg",
-    ],
-    [
-      ["larry page"],
-      "https://commons.wikimedia.org/wiki/Special:FilePath/Larry_Page_in_the_European_Parliament%2C_17.06.2009.jpg",
-    ],
-    [
-      ["sergey brin"],
-      "https://commons.wikimedia.org/wiki/Special:FilePath/Sergey_Brin_Ted_2010.jpg",
-    ],
-    [
-      ["bernard arnault"],
-      "https://commons.wikimedia.org/wiki/Special:FilePath/Bernard_Arnault.jpg",
-    ],
-    [
-      ["larry ellison"],
-      "https://commons.wikimedia.org/wiki/Special:FilePath/Larry_Ellison.jpg",
-    ],
-  ];
-
-  return photos.find(([names]) =>
-    names.some((item) => n.includes(item))
-  )?.[1] ?? null;
-}
-
-function initials(name: string) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] ?? "")
-    .join("");
-}
-
-export default function BillionairesPage() {
-  const [people, setPeople] = useState<Billionaire[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [animatedTotal, setAnimatedTotal] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadPeople() {
-      try {
-        const response = await fetch(
-          `${SUPABASE_URL}/rest/v1/billionaires?select=id,rank,name,company,country,net_worth_billions,daily_change_pct,updated_at,source_url,source_checked_at&order=rank.asc&limit=50`,
-          {
-            headers: {
-              apikey: SUPABASE_KEY,
-              Authorization: `Bearer ${SUPABASE_KEY}`,
-            },
-            cache: "no-store",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `خطا در دریافت اطلاعات دیتابیس (${response.status})`
-          );
-        }
-
-        const data: Billionaire[] = await response.json();
-
-        if (!cancelled) {
-          setPeople(data);
-          setError("");
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "دریافت اطلاعات ناموفق بود."
-          );
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    loadPeople();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const topFive = people.slice(0, 5);
-
-  const topTenTotal = people
-    .filter((person) => person.rank <= 10)
-    .reduce(
-      (total, person) =>
-        total + (Number(person.net_worth_billions) || 0),
-      0
-    );
-
-  // انیمیشن شمارش مجموع ثروت ۱۰ نفر اول
-  useEffect(() => {
-    let frame = 0;
-    let startTime: number | null = null;
-    const duration = 1400;
-
-    setAnimatedTotal(0);
-
-    if (topTenTotal <= 0) return;
-
-    const animate = (timestamp: number) => {
-      if (startTime === null) startTime = timestamp;
-
-      const progress = Math.min(
-        (timestamp - startTime) / duration,
-        1
-      );
-
-      const eased = 1 - Math.pow(1 - progress, 3);
-
-      setAnimatedTotal(topTenTotal * eased);
-
-      if (progress < 1) {
         frame = requestAnimationFrame(animate);
       }
     };
 
     frame = requestAnimationFrame(animate);
-
     return () => cancelAnimationFrame(frame);
   }, [topTenTotal]);
 
@@ -181,30 +11,59 @@ export default function BillionairesPage() {
     <main className="econova-page">
       <div className="econova-container">
         <header className="page-header">
-          <p className="eyebrow">
-            ECONOVA • WEALTH TRACKER
-          </p>
-
+          <p className="eyebrow">ECONOVA • WEALTH TRACKER</p>
           <h1>ثروتمندترین افراد جهان</h1>
-
           <p className="subtitle">
-            رتبه‌بندی میلیاردرهای جهان بر اساس اطلاعات دیتابیس
+            رتبه‌بندی میلیاردرها بر اساس اطلاعات ثبت‌شده در دیتابیس
           </p>
         </header>
 
         <section className="total-card">
-          <p className="total-label">
-            مجموع ثروت ۱۰ نفر اول
-          </p>
-
+          <p className="total-label">مجموع ثروت ۱۰ نفر اول</p>
           <p className="total-value" dir="ltr">
             ${money(animatedTotal)} میلیارد
           </p>
-
+          <div
+            className="total-progress"
+            role="progressbar"
+            aria-label="نمایش پیشرفت شمارش مجموع ثروت"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={
+              topTenTotal > 0
+                ? Math.min(100, (animatedTotal / topTenTotal) * 100)
+                : 0
+            }
+          >
+            <span
+              style={{
+                width:
+                  topTenTotal > 0
+                    ? `${Math.min(100, (animatedTotal / topTenTotal) * 100)}%`
+                    : "0%",
+              }}
+            />
+          </div>
           <p className="total-note">
-            محاسبه‌شده از اطلاعات موجود در دیتابیس
+            مجموع ثروت ثبت‌شده برای رتبه‌های ۱ تا ۱۰؛ در صورت ناقص بودن دیتابیس،
+            ممکن است همهٔ ده رتبه در محاسبه موجود نباشند.
           </p>
         </section>
+
+        {!loading && !error && topTen.length > 0 && (
+          <section className="wealth-ticker" aria-label="مجموع ثروت ده نفر اول">
+            <div className="ticker-track">
+              <span>
+                ECONOVA WEALTH INDEX ✦ مجموع ثروت ۱۰ نفر اول: $
+                {money(topTenTotal)} میلیارد ✦
+              </span>
+              <span aria-hidden="true">
+                ECONOVA WEALTH INDEX ✦ مجموع ثروت ۱۰ نفر اول: $
+                {money(topTenTotal)} میلیارد ✦
+              </span>
+            </div>
+          </section>
+        )}
 
         {loading && (
           <div className="status-message">
@@ -217,9 +76,7 @@ export default function BillionairesPage() {
           <div className="error-message">
             <h2>دریافت اطلاعات ناموفق بود</h2>
             <p>{error}</p>
-            <p>
-              اتصال Supabase، مجوز دسترسی و تنظیمات دیتابیس را بررسی کن.
-            </p>
+            <p>اتصال Supabase و مجوز دسترسی به جدول را بررسی کن.</p>
           </div>
         )}
 
@@ -236,7 +93,7 @@ export default function BillionairesPage() {
                 <span className="section-number">01</span>
                 <div>
                   <h2>پنج نفر ثروتمند برتر</h2>
-                  <p>بررسی ثروت و اطلاعات هر فرد</p>
+                  <p>برای مشاهدهٔ کارت‌ها به چپ و راست بکش</p>
                 </div>
               </div>
 
@@ -244,15 +101,15 @@ export default function BillionairesPage() {
                 {topFive.map((person) => {
                   const photo =
                     person.image_url || photoFor(person.name);
-
                   const change =
                     Number(person.daily_change_pct ?? 0);
+                  const wealth =
+                    Number(person.net_worth_billions) || 0;
+                  const estimatedChange =
+                    wealth * (change / 100);
 
                   return (
-                    <article
-                      key={person.id}
-                      className="person-card"
-                    >
+                    <article key={person.id} className="person-card">
                       <div className="person-rank">
                         {String(person.rank).padStart(2, "0")}
                       </div>
@@ -261,7 +118,6 @@ export default function BillionairesPage() {
                         <span className="photo-fallback">
                           {initials(person.name)}
                         </span>
-
                         {photo && (
                           <img
                             src={photo}
@@ -278,13 +134,10 @@ export default function BillionairesPage() {
                         <p className="person-label">
                           RANK #{person.rank}
                         </p>
-
                         <h3>{person.name}</h3>
-
                         <p className="person-company">
                           {person.company || "شرکت ثبت نشده"}
                         </p>
-
                         <p className="person-country">
                           {person.country || "کشور ثبت نشده"}
                         </p>
@@ -292,11 +145,9 @@ export default function BillionairesPage() {
 
                       <div className="person-wealth">
                         <p>ارزش خالص دارایی</p>
-
                         <strong dir="ltr">
-                          ${money(Number(person.net_worth_billions))}B
+                          ${money(wealth)}B
                         </strong>
-
                         <span
                           className={
                             change > 0
@@ -310,14 +161,19 @@ export default function BillionairesPage() {
                           {change.toFixed(2)}%
                           <small> تغییر روزانه</small>
                         </span>
+                        <p className="estimated-change">
+                          تغییر تقریبی ارزش:{" "}
+                          <b dir="ltr">
+                            {estimatedChange > 0 ? "+" : ""}
+                            ${money(estimatedChange)}B
+                          </b>
+                        </p>
                       </div>
 
                       {person.updated_at && (
                         <p className="person-updated">
                           آخرین به‌روزرسانی:{" "}
-                          {new Date(
-                            person.updated_at
-                          ).toLocaleString("fa-IR")}
+                          {new Date(person.updated_at).toLocaleString("fa-IR")}
                         </p>
                       )}
                     </article>
@@ -330,14 +186,11 @@ export default function BillionairesPage() {
               <div className="table-heading">
                 <div>
                   <h2>فهرست میلیاردرها</h2>
-                  <p>
-                    {people.length} نفر از اطلاعات ثبت‌شده
-                  </p>
+                  <p>{people.length} رکورد دریافت‌شده از دیتابیس</p>
                 </div>
-
                 <span className="live-indicator">
                   <span />
-                  داده‌های دیتابیس
+                  اطلاعات دیتابیس
                 </span>
               </div>
 
@@ -353,7 +206,6 @@ export default function BillionairesPage() {
                       <th>تغییر روزانه</th>
                     </tr>
                   </thead>
-
                   <tbody>
                     {people.map((person) => {
                       const change =
@@ -366,25 +218,12 @@ export default function BillionairesPage() {
                               {person.rank}
                             </span>
                           </td>
-
-                          <td className="table-name">
-                            {person.name}
-                          </td>
-
-                          <td>
-                            {person.company || "—"}
-                          </td>
-
-                          <td>
-                            {person.country || "—"}
-                          </td>
-
+                          <td className="table-name">{person.name}</td>
+                          <td>{person.company || "—"}</td>
+                          <td>{person.country || "—"}</td>
                           <td className="table-wealth" dir="ltr">
-                            ${money(
-                              Number(person.net_worth_billions)
-                            )}
+                            ${money(Number(person.net_worth_billions))}
                           </td>
-
                           <td
                             className={
                               change > 0
@@ -417,10 +256,13 @@ export default function BillionairesPage() {
                   Forbes Real-Time Billionaires
                 </a>
               </p>
-
               <p>
-                اطلاعات این صفحه از دیتابیس دریافت می‌شود؛
-                نمایش آن به‌تنهایی به معنی به‌روزرسانی خودکار ثروت‌ها نیست.
+                اطلاعات این صفحه از دیتابیس دریافت می‌شود و به‌تنهایی
+                نشان‌دهندهٔ به‌روزرسانی خودکار یا لحظه‌ای نیست.
+              </p>
+              <p>
+                تغییر دلاری نمایش‌داده‌شده تخمینی است و از درصد تغییر ثبت‌شده
+                محاسبه می‌شود.
               </p>
             </footer>
           </>
@@ -440,16 +282,12 @@ export default function BillionairesPage() {
         .econova-page {
           min-height: 100vh;
           padding: 36px 18px 56px;
-          background:
-            radial-gradient(
-              ellipse at 50% 0%,
-              #123b3a 0%,
-              transparent 45%
-            ),
-            linear-gradient(145deg, #07111f, #101d32 55%, #07111f);
           color: #f8fafc;
-          font-family: Arial, sans-serif;
           direction: rtl;
+          font-family: Arial, sans-serif;
+          background:
+            radial-gradient(ellipse at 50% 0%, #123b3a 0%, transparent 45%),
+            linear-gradient(145deg, #07111f, #101d32 55%, #07111f);
         }
 
         .econova-container {
@@ -483,16 +321,12 @@ export default function BillionairesPage() {
         }
 
         .total-card {
-          margin-bottom: 42px;
+          margin-bottom: 24px;
           padding: 28px 18px;
           text-align: center;
           border: 1px solid #10b98155;
           border-radius: 22px;
-          background: linear-gradient(
-            135deg,
-            #064e3b80,
-            #0f172aee
-          );
+          background: linear-gradient(135deg, #064e3b80, #0f172aee);
           box-shadow: 0 18px 45px #00000025;
         }
 
@@ -510,10 +344,64 @@ export default function BillionairesPage() {
           overflow-wrap: anywhere;
         }
 
+        .total-progress {
+          max-width: 540px;
+          height: 7px;
+          margin: 18px auto;
+          overflow: hidden;
+          border-radius: 20px;
+          background: #ffffff12;
+        }
+
+        .total-progress span {
+          display: block;
+          height: 100%;
+          border-radius: inherit;
+          background: linear-gradient(90deg, #10b981, #a7f3d0);
+          transition: width 0.08s linear;
+        }
+
         .total-note {
           margin: 0;
           color: #94a3b8;
           font-size: 12px;
+          line-height: 1.9;
+        }
+
+        .wealth-ticker {
+          margin: 0 0 38px;
+          overflow: hidden;
+          border: 1px solid #10b98140;
+          border-radius: 12px;
+          background: #064e3b40;
+        }
+
+        .ticker-track {
+          display: flex;
+          width: max-content;
+          animation: econova-marquee 24s linear infinite;
+        }
+
+        .ticker-track span {
+          flex-shrink: 0;
+          padding: 13px 22px;
+          color: #a7f3d0;
+          font-size: 13px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .wealth-ticker:hover .ticker-track {
+          animation-play-state: paused;
+        }
+
+        @keyframes econova-marquee {
+          from {
+            transform: translateX(0);
+          }
+          to {
+            transform: translateX(50%);
+          }
         }
 
         .section-heading,
@@ -553,54 +441,66 @@ export default function BillionairesPage() {
           margin: 6px 0 0;
           color: #94a3b8;
           font-size: 13px;
+          line-height: 1.8;
         }
 
         .top-section {
           margin-bottom: 42px;
         }
 
+        /* کارت‌های پنج نفر اول به‌صورت افقی و قابل ورق‌زدن */
         .top-list {
           display: flex;
-          flex-direction: column;
-          gap: 14px;
+          gap: 16px;
+          overflow-x: auto;
+          padding: 4px 2px 18px;
+          scroll-snap-type: x mandatory;
+          scrollbar-width: thin;
+          scrollbar-color: #10b981 #142238;
+          -webkit-overflow-scrolling: touch;
         }
 
         .person-card {
           position: relative;
-          display: grid;
-          grid-template-columns: 42px 76px minmax(0, 1fr) auto;
-          align-items: center;
-          gap: 18px;
+          display: flex;
+          flex: 0 0 330px;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 14px;
+          min-width: 0;
           padding: 22px;
+          scroll-snap-align: start;
           border: 1px solid #2b405b;
           border-radius: 20px;
-          background: linear-gradient(135deg, #16253b, #0d1728);
+          background: linear-gradient(145deg, #16253b, #0d1728);
           box-shadow: 0 10px 28px #00000020;
           transition: border-color 0.2s, transform 0.2s;
         }
 
         .person-card:hover {
           border-color: #10b981;
-          transform: translateY(-2px);
+          transform: translateY(-3px);
         }
 
         .person-rank {
+          position: absolute;
+          top: 16px;
+          left: 18px;
           color: #34d399;
           font-size: 23px;
           font-weight: 900;
           direction: ltr;
-          text-align: center;
         }
 
         .person-photo {
           position: relative;
           display: grid;
           place-items: center;
-          width: 76px;
-          height: 76px;
+          width: 94px;
+          height: 94px;
           overflow: hidden;
           border: 2px solid #10b98166;
-          border-radius: 18px;
+          border-radius: 22px;
           background: linear-gradient(135deg, #064e3b, #1e293b);
         }
 
@@ -614,11 +514,12 @@ export default function BillionairesPage() {
 
         .photo-fallback {
           color: #a7f3d0;
-          font-size: 21px;
+          font-size: 24px;
           font-weight: 800;
         }
 
         .person-info {
+          width: 100%;
           min-width: 0;
         }
 
@@ -651,21 +552,25 @@ export default function BillionairesPage() {
         }
 
         .person-wealth {
-          min-width: 155px;
-          text-align: left;
+          width: 100%;
+          margin-top: auto;
+          padding-top: 14px;
+          border-top: 1px solid #2b405b;
           direction: ltr;
+          text-align: left;
         }
 
         .person-wealth p {
           margin: 0 0 8px;
           color: #94a3b8;
           font-size: 11px;
+          line-height: 1.8;
         }
 
         .person-wealth strong {
           display: block;
           color: #6ee7b7;
-          font-size: 25px;
+          font-size: 27px;
           overflow-wrap: anywhere;
         }
 
@@ -680,11 +585,22 @@ export default function BillionairesPage() {
           font-size: 10px;
         }
 
+        .person-wealth .estimated-change {
+          margin-top: 10px;
+          color: #94a3b8;
+          direction: rtl;
+          text-align: right;
+        }
+
+        .estimated-change b {
+          color: #e2e8f0;
+        }
+
         .person-updated {
-          grid-column: 2 / -1;
           margin: 0;
           color: #64748b;
           font-size: 11px;
+          line-height: 1.8;
         }
 
         .change-positive {
@@ -721,11 +637,9 @@ export default function BillionairesPage() {
           white-space: nowrap;
         }
 
-        .live-indicator span,
-        .loading-dot {
+        .live-indicator span {
           width: 8px;
           height: 8px;
-          flex-shrink: 0;
           border-radius: 50%;
           background: #34d399;
         }
@@ -765,7 +679,6 @@ export default function BillionairesPage() {
         }
 
         .table-name {
-    
           color: #f8fafc;
           font-weight: 700;
         }
@@ -789,10 +702,10 @@ export default function BillionairesPage() {
 
         .page-footer {
           margin-top: 28px;
-          text-align: center;
           color: #94a3b8;
           font-size: 12px;
           line-height: 2;
+          text-align: center;
         }
 
         .page-footer a {
@@ -811,16 +724,19 @@ export default function BillionairesPage() {
           color: #cbd5e1;
           text-align: center;
           line-height: 1.9;
-        }
-
-        .status-message {
+    }
+    .status-message {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 10px;
         }
-
-        .loading-dot {
+    .loading-dot {
+          width: 8px;
+          height: 8px;
+          flex-shrink: 0;
+          border-radius: 50%;
+          background: #34d399;
           animation: econova-pulse 1s infinite alternate;
         }
 
@@ -844,46 +760,17 @@ export default function BillionairesPage() {
           }
         }
 
-        @media (max-width: 700px) {
+        @media (max-width: 600px) {
           .econova-page {
             padding: 24px 12px 40px;
           }
 
           .person-card {
-            grid-template-columns: 34px 60px minmax(0, 1fr);
-            gap: 12px;
+            flex-basis: min(86vw, 330px);
+            padding: 18px;
+          }
+          .table-heading {
             padding: 16px 12px;
-          }
-
-          .person-photo {
-            width: 60px;
-            height: 60px;
-            border-radius: 15px;
-          }
-
-          .person-rank {
-            font-size: 19px;
-          }
-
-          .person-info h3 {
-            font-size: 16px;
-          }
-
-          .person-wealth {
-            grid-column: 2 / -1;
-            min-width: 0;
-            padding-top: 12px;
-            border-top: 1px solid #2b405b;
-            text-align: right;
-          }
-
-          .person-wealth strong {
-            font-size: 24px;
-            text-align: right;
-          }
-
-          .person-updated {
-            grid-column: 1 / -1;
           }
 
           .section-heading h2,
@@ -891,8 +778,8 @@ export default function BillionairesPage() {
             font-size: 19px;
           }
 
-          .table-heading {
-            padding: 16px 12px;
+          .live-indicator {
+            font-size: 10px;
           }
         }
 
@@ -901,11 +788,12 @@ export default function BillionairesPage() {
           *::before,
           *::after {
             animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
           }
         }
       `}</style>
     </main>
   );
 }
-
