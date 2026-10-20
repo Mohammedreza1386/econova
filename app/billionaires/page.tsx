@@ -1950,7 +1950,248 @@ export default function BillionairesPage() {
         }
 
         .eco-table-tools {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: 
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.eco-search {
+  min-width: min(100%, 310px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  border: 1px solid var(--eco-border);
+  border-radius: 10px;
+  background: var(--eco-panel);
+  color: var(--eco-muted);
+}
+
+.eco-search input {
+  width: 100%;
+  min-height: 43px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--eco-text);
+  font-size: 11px;
+}
+
+.eco-search button {
+  border: 0;
+  background: transparent;
+  color: var(--eco-muted);
+  cursor: pointer;
+}
+
+.eco-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--eco-border);
+  border-radius: 13px;
+  background: rgba(13, 27, 23, 0.76);
+}
+
+.eco-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.eco-table th {
+  padding: 17px 15px;
+  background: rgba(185, 242, 124, 0.035);
+  color: var(--eco-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.eco-table td {
+  padding: 13px 15px;
+  border-top: 1px solid rgba(206, 245, 214, 0.07);
+}
+
+.eco-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.eco-table tbody tr:hover {
+  background: rgba(185, 242, 124, 0.035);
+}
+
+.eco-table-rank {
+  color: var(--eco-green);
+  font-family: Arial, sans-serif;
+}
+
+.eco-table-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: right;
+  cursor: pointer;
+}
+
+.eco-table-person img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--eco-panel-2);
+}
+
+.eco-table-person strong {
+  font-size: 11px;
+}
+
+.eco-table-money {
+  color: var(--eco-green);
+  font-family: Arial, sans-serif;
+}
+
+.eco-show-more {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 49px;
+  border: 0;
+  border-top: 1px solid var(--eco-border);
+  background: transparent;
+  color: var(--eco-green);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.eco-data-note {
+  margin-top: 14px;
+  color: var(--eco-muted);
+  font-size: 10px;
+  line-height: 2;
+}
+
+.eco-news-tabs {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 3px 0 15px;
+  scrollbar-width: thin;
+  scrollbar-color: #355240 transparent;
+}
+
+.eco-news-tabs button {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 13px;
+  border: 1px solid var(--eco-border);
+  border-radius: 10px;
+  background: var(--eco-panel);
+  color: var(--eco-muted);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.eco-news-tabs button.is-active {
+  border-color: var(--eco-green);
+  background: rgba(185, 242, 124, 0.08);
+  color: var(--eco-text);
+}
+
+.eco-news-tabs img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--eco-panel-2);
+}
+
+.eco-news-card {
+  display: grid;
+  grid-template-columns: 85px 1fr;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--eco-border);
+  border-radius: 15px;
+  background: linear-gradient(130deg, #10231a, #0b1713);
+}
+
+.eco-news-avatar img {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--eco-panel-2);
+}
+
+.eco-news-main h3 {
+  margin: 8px 0 12px;
+  font-size: 19px;
+  line-height: 1.8;
+}
+
+.eco-news-main p {
+  color: var(--eco-muted);
+  font-size: 12px;
+  line-height: 2.2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.eco-news-main .eco-button {
+  margin-top: 10px;
+}
+
+.eco-admin-section {
+  padding: 25px;
+  border: 1px solid var(--eco-border);
+  border-radius: 16px;
+  background: rgba(13, 27, 23, 0.76);
+}
+
+.eco-admin-badge {
+  padding: 8px 10px;
+  border: 1px solid rgba(185, 242, 124, 0.25);
+  border-radius: 8px;
+  color: var(--eco-green);
+  font-size: 10px;
+}
+
+.eco-admin-form,
+.eco-login-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.eco-admin-form label,
+.eco-login-modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  color: #b5c7ba;
+  font-size: 11px;
+}
+
+.eco-admin-form input,
+.eco-admin-form textarea,
+.eco-admin-form select,
+.eco-login-modal input {
+  width: 100%;
+  min-height: 43px;
+  padding: 12px;
+  border: 1px solid var(--eco-border);
+  border-radius: 9px;
+  outline: 0;
+  background: #08130f;
+  color: var(--eco-text);
+  font-size: 
