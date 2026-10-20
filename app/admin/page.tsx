@@ -330,7 +330,7 @@ export default function AdminPage() {
 
                 <Field label="رتبه" value={String(person.rank)}
                   onChange={(v) => changeField(person.id, "rank", v)}
-                  type="number" />
+                  text="number" />
                 <Field label="نام" value={person.name}
                   onChange={(v) => changeField(person.id, "name", v)} />
                 <Field label="شرکت" value={person.company ?? ""}
