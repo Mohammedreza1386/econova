@@ -334,8 +334,16 @@ function changeField(
                 <Field label="ثروت (میلیارد دلار)" type="number"
                   value={String(person.net_worth_billions)}
                   onChange={(v) => changeField(person.id, "net_worth_billions", v)} />
-                <Field label="تغییر روزانه (درصد؛ منفی هم مجاز است)"
-                  type="number" value={String(person.daily_change_pct)}
+                
+<Field
+  label="تغییر روزانه (درصد؛ مثبت و منفی)"
+  type="text"
+  value={String(person.daily_change_pct)}
+  onChange={(v) =>
+    changeField(person.id, "daily_change_pct", v)
+  }
+/>
+
                   onChange={(v) => changeField(person.id, "daily_change_pct", v)} />
 
                 <button
