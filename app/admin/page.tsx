@@ -344,8 +344,6 @@ function changeField(
   }
 />
 
-                  onChange={(v) => changeField(person.id, "daily_change_pct", v)} />
-
                 <button
                   onClick={() => savePerson(person)}
                   disabled={busy}
