@@ -1,182 +1,226 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-type Person = {
+type Billionaire = {
+  id: number;
+  rank: number;
   name: string;
-  company: string;
-  wealth: string;
-  source: string;
+  company: string | null;
+  country: string | null;
+  net_worth_billions: number;
+  daily_change_pct: number | null;
+  updated_at: string | null;
+  source_url: string | null;
+  source_checked_at: string | null;
 };
 
-type Company = {
-  name: string;
-  field: string;
-  value: string;
-  source: string;
-};
-
-const initialPeople: Person[] = [];
-const initialCompanies: Company[] = [];
+const money = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 1,
+  }).format(value);
 
 export default function BillionairesPage() {
-  const [tab, setTab] = useState<"people" | "companies">("people");
-  const [people] = useState(initialPeople);
-  const [companies] = useState(initialCompanies);
+  const [people, setPeople] = useState<Billionaire[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadPeople() {
+      try {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!url || !key) {
+          throw new Error(
+            "تنظیمات اتصال به دیتابیس در سایت کامل نیست."
+          );
+        }
+
+        const response = await fetch(
+          `${url}/rest/v1/billionaires?select=id,rank,name,company,country,net_worth_billions,daily_change_pct,updated_at,source_url,source_checked_at&order=rank.asc&limit=50`,
+          {
+            headers: {
+              apikey: key,
+              Authorization: `Bearer ${key}`,
+            },
+            cache: "no-store",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `خطا در دریافت اطلاعات (${response.status})`
+          );
+        }
+
+        const data: Billionaire[] = await response.json();
+        setPeople(data);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "دریافت اطلاعات ناموفق بود."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadPeople();
+  }, []);
+
+  const topFive = people.slice(0, 5);
+  const topTenTotal = people
+    .filter((person) => person.rank <= 10)
+    .reduce(
+      (total, person) => total + Number(person.net_worth_billions || 0),
+      0
+    );
 
   return (
-    <main
-      dir="rtl"
-      style={{
-        minHeight: "100vh",
-        background: "#07111f",
-        color: "#f1f5f9",
-        fontFamily: "Arial, sans-serif",
-        padding: "24px",
-      }}
-    >
-      <header style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <a href="/" style={{ color: "#60a5fa", textDecoration: "none" }}>
-          ← بازگشت به Econova
-        </a>
+    <main className="min-h-screen bg-slate-950 px-4 py-8 text-white">
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-8 text-center">
+          <p className="mb-2 text-sm font-semibold tracking-widest text-emerald-400">
+            ECONOVA • WEALTH TRACKER
+          </p>
+          <h1 className="text-3xl font-bold md:text-5xl">
+            ثروتمندترین افراد جهان
+          </h1>
+          <p className="mt-3 text-slate-400">
+            رتبه‌بندی میلیاردرهای جهان بر اساس اطلاعات دیتابیس
+          </p>
+        </header>
 
-        <p style={{ color: "#38bdf8", marginTop: 32 }}>
-          ECONOVA • GLOBAL WEALTH
-        </p>
-
-        <h1 style={{ fontSize: 34, marginBottom: 12 }}>
-          میلیاردرها و شرکت‌های بزرگ
-        </h1>
-
-        <p style={{ color: "#94a3b8", lineHeight: 2 }}>
-          اطلاعات ثروت، شرکت‌ها و ارزش بازار با ذکر منبع معتبر.
-        </p>
-
-        <div
-          style={{
-            background: "#172337",
-            border: "1px solid #334155",
-            borderRadius: 12,
-            padding: 14,
-            marginTop: 24,
-            lineHeight: 2,
-          }}
-        >
-          این صفحه هنوز به منابع داده زنده متصل نشده است.
-          اطلاعات تا زمان اتصال منبع معتبر نمایش داده نمی‌شوند.
-        </div>
-
-        <nav
-          style={{
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
-            marginTop: 24,
-          }}
-        >
-          <button
-            onClick={() => setTab("people")}
-            style={{
-              padding: "12px 18px",
-              borderRadius: 10,
-              border: "1px solid #334155",
-              background: tab === "people" ? "#2563eb" : "#111c2d",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
-            میلیاردرها
-          </button>
-
-          <button
-            onClick={() => setTab("companies")}
-            style={{
-              padding: "12px 18px",
-              borderRadius: 10,
-              border: "1px solid #334155",
-              background: tab === "companies" ? "#2563eb" : "#111c2d",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
-            شرکت‌ها
-          </button>
-        </nav>
-
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
-            gap: 16,
-            marginTop: 24,
-          }}
-        >
-          {tab === "people" &&
-            (people.length ? (
-              people.map((person) => (
-                <article
-                  key={person.name}
-                  style={cardStyle}
-                >
-                  <h2>{person.name}</h2>
-                  <p>{person.company}</p>
-                  <p>ثروت: {person.wealth}</p>
-                  <a href={person.source} target="_blank" rel="noreferrer">
-                    مشاهده منبع
-                  </a>
-                </article>
-              ))
-            ) : (
-              <p style={{ color: "#94a3b8", lineHeight: 2 }}>
-                هنوز اطلاعات تأییدشده‌ای برای نمایش ثبت نشده است.
-              </p>
-            ))}
-
-          {tab === "companies" &&
-            (companies.length ? (
-              companies.map((company) => (
-                <article
-                  key={company.name}
-                  style={cardStyle}
-                >
-                  <h2>{company.name}</h2>
-                  <p>حوزه فعالیت: {company.field}</p>
-                  <p>ارزش بازار: {company.value}</p>
-                  <a href={company.source} target="_blank" rel="noreferrer">
-                    مشاهده منبع
-                  </a>
-                </article>
-              ))
-            ) : (
-              <p style={{ color: "#94a3b8", lineHeight: 2 }}>
-                هنوز اطلاعات تأییدشده‌ای برای نمایش ثبت نشده است.
-              </p>
-            ))}
+        <section className="mb-8 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-center">
+          <p className="text-sm text-emerald-300">
+            مجموع ثروت ۱۰ نفر اول
+          </p>
+          <p className="mt-2 text-3xl font-bold">
+            ${money(topTenTotal)} میلیارد
+          </p>
+          <p className="mt-2 text-xs text-slate-400">
+            این عدد از اطلاعات ثبت‌شده در دیتابیس محاسبه می‌شود.
+          </p>
         </section>
 
-        <footer
-          style={{
-            marginTop: 48,
-            paddingTop: 20,
-            borderTop: "1px solid #334155",
-            color: "#64748b",
-            fontSize: 13,
-          }}
-        >
-          Econova • اطلاعات مالی باید همراه با منبع و تاریخ به‌روزرسانی باشند.
-        </footer>
-      </header>
+        {loading && (
+          <p className="py-10 text-center text-slate-300">
+            در حال دریافت اطلاعات...
+          </p>
+        )}
+
+        {!loading && error && (
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-5 text-center text-red-300">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && people.length === 0 && (
+          <p className="rounded-xl bg-slate-900 p-6 text-center text-slate-300">
+            هنوز اطلاعاتی در جدول میلیاردرها موجود نیست.
+          </p>
+        )}
+
+        {!loading && !error && people.length > 0 && (
+          <>
+            <section className="mb-8">
+              <h2 className="mb-4 text-2xl font-bold">
+                پنج نفر ثروتمند برتر
+              </h2>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                {topFive.map((person) => (
+                  <article
+                    key={person.id}
+                    className="rounded-2xl border border-slate-700 bg-slate-900 p-5"
+                  >
+                    <p className="text-sm text-emerald-400">
+                      رتبهٔ {person.rank}
+                    </p>
+                    <h3 className="mt-3 text-lg font-bold">
+                      {person.name}
+                    </h3>
+                    <p className="mt-2 text-2xl font-bold">
+                      ${money(Number(person.net_worth_billions))}B
+                    </p>
+                    <p className="mt-2 text-sm text-slate-400">
+                      {person.company || "شرکت ثبت نشده"}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {person.country || "کشور ثبت نشده"}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+              <div className="border-b border-slate-800 p-5">
+                <h2 className="text-2xl font-bold">
+                  فهرست میلیاردرها
+                </h2>
+                <p className="mt-1 text-sm text-slate-400">
+                  {people.length} نفر از اطلاعات ثبت‌شده
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[620px] text-right">
+                  <thead className="bg-slate-800 text-sm text-slate-300">
+                    <tr>
+                      <th className="p-4">رتبه</th>
+                      <th className="p-4">نام</th>
+                      <th className="p-4">شرکت</th>
+                      <th className="p-4">کشور</th>
+                      <th className="p-4">ثروت (میلیارد دلار)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {people.map((person) => (
+                      <tr
+                        key={person.id}
+                        className="border-t border-slate-800 hover:bg-slate-800/60"
+                      >
+                        <td className="p-4">{person.rank}</td>
+                        <td className="p-4 font-semibold">
+                          {person.name}
+                        </td>
+                        <td className="p-4 text-slate-300">
+                          {person.company || "—"}
+                        </td>
+                        <td className="p-4 text-slate-300">
+                          {person.country || "—"}
+                        </td>
+                        <td className="p-4 font-semibold text-emerald-400">
+                          ${money(Number(person.net_worth_billions))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <footer className="mt-6 text-center text-sm text-slate-400">
+              منبع مرجع:{" "}
+              <a
+                href="https://www.forbes.com/real-time-billionaires/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-emerald-400 underline"
+              >
+                Forbes Real-Time Billionaires
+              </a>
+              <p className="mt-2">
+                نمایش اطلاعات دیتابیس به معنی به‌روزرسانی خودکار ثروت‌ها نیست.
+              </p>
+            </footer>
+          </>
+        )}
+      </div>
     </main>
   );
 }
-
-const cardStyle = {
-  background: "#111c2d",
-  border: "1px solid #334155",
-  borderRadius: 14,
-  padding: 20,
-  lineHeight: 1.8,
-  overflowWrap: "anywhere" as const,
-};
-          
