@@ -1052,6 +1052,121 @@ const saveNews = async () => {
             <span className="eco-admin-status">مدیر وارد شده</span>
           </div>
 
+<form
+  className="eco-admin-form"
+  onSubmit={(event) => {
+    event.preventDefault();
+    void savePerson();
+  }}
+>
+  <h3>ویرایش اطلاعات ثروتمندان</h3>
+
+  <label htmlFor="eco-person-select">انتخاب فرد</label>
+  <select
+    id="eco-person-select"
+    value={editingPersonId}
+    onChange={(event) => {
+      const selected = people.find(
+        (person) => String(person.id) === event.target.value
+      );
+      if (selected) openPersonEditor(selected);
+    }}
+    required
+  >
+    <option value="">یک فرد را انتخاب کن</option>
+    {people.map((person) => (
+      <option key={person.id} value={String(person.id)}>
+        رتبه {person.rank} — {person.name}
+      </option>
+    ))}
+  </select>
+
+  <label htmlFor="eco-person-name">نام</label>
+  <input
+    id="eco-person-name"
+    value={personName}
+    onChange={(event) => setPersonName(event.target.value)}
+    required
+  />
+
+  <label htmlFor="eco-person-rank">رتبه</label>
+  <input
+    id="eco-person-rank"
+    type="number"
+    min="1"
+    value={personRank}
+    onChange={(event) => setPersonRank(event.target.value)}
+    required
+  />
+
+  <label htmlFor="eco-person-company">شرکت</label>
+  <input
+    id="eco-person-company"
+    value={personCompany}
+    onChange={(event) => setPersonCompany(event.target.value)}
+  />
+
+  <label htmlFor="eco-person-country">کشور</label>
+  <input
+    id="eco-person-country"
+    value={personCountry}
+    onChange={(event) => setPersonCountry(event.target.value)}
+  />
+
+  <label htmlFor="eco-person-worth">ثروت (میلیارد دلار)</label>
+  <input
+    id="eco-person-worth"
+    type="number"
+    min="0"
+    step="0.1"
+    value={personWorth}
+    onChange={(event) => setPersonWorth(event.target.value)}
+    required
+  />
+
+  <label htmlFor="eco-person-change">تغییر روزانه (درصد)</label>
+  <input
+    id="eco-person-change"
+    type="number"
+    step="0.01"
+    value={personDailyChange}
+    onChange={(event) => setPersonDailyChange(event.target.value)}
+    required
+  />
+
+  <label htmlFor="eco-person-bio">توضیحات</label>
+  <textarea
+    id="eco-person-bio"
+    value={personBio}
+    onChange={(event) => setPersonBio(event.target.value)}
+    rows={4}
+  />
+
+  <label htmlFor="eco-person-image">لینک عکس</label>
+  <input
+    id="eco-person-image"
+    type="url"
+    value={personImageUrl}
+    onChange={(event) => setPersonImageUrl(event.target.value)}
+  />
+
+  <label htmlFor="eco-person-source">لینک منبع اطلاعات</label>
+  <input
+    id="eco-person-source"
+    type="url"
+    value={personSource}
+    onChange={(event) => setPersonSource(event.target.value)}
+  />
+
+  <button
+    className="eco-button eco-button-primary eco-submit-button"
+    type="submit"
+    disabled={saving || !editingPersonId}
+  >
+    {saving ? "در حال ذخیره..." : "ذخیره اطلاعات ثروتمند"}
+  </button>
+</form>
+          
           <form
             className="eco-admin-form eco-news-editor"
             onSubmit={(event) => {
