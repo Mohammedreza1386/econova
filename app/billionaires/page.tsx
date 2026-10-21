@@ -269,7 +269,7 @@ export default function BillionairesPage() {
     sortedPeople[0];
 
   const newsForRank = (rank: number) =>
-    news.find((item) => Number(item.rank) === rank);
+  news.find((item) => Number(item.billionaire_rank) === rank);
 
   const changeIsPositive = (person: Billionaire) =>
     Number(person.daily_change_pct || 0) >= 0;
