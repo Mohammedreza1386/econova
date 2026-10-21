@@ -419,7 +419,7 @@ export default function BillionairesPage() {
             }
           }}
         >
-          {isAdmin ? "خروج مدیر" : "ورود مدیر"}
+          {isAdmin ? "خروج از حساب" : "حساب کاربری"}
         </button>
       </header>
 
