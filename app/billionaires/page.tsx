@@ -448,8 +448,9 @@ const saveNews = async () => {
         { method: "GET" },
         adminToken
       );
-
-      const previousRows = await previousResponse.json();
+const previousRows = Array.isArray(previousResponse)
+  ? previousResponse
+  : [];
       const previousPerson = previousRows?.[0];
 
       if (!previousPerson) {
