@@ -1613,21 +1613,35 @@ export default function BillionairesPage() {
           flex-direction: column;
           gap: 10px;
         }
+      
+.eco-person-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  color: #e8f0ea;
+  text-align: right;
+  background: linear-gradient(135deg, #101b15, #0c1511);
+  border: 1px solid #294333;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
 
-        .eco-person-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          width: 100%;
-          padding: 12px;
-          color: #e8f0ea;
-          text-align: right;
-          background: #0c1511;
-          border: 1px solid #23372b;
-          border-radius: 14px;
-          cursor: pointer;
-          transition: border-color 0.2s, background 0.2s, transform 0.2s;
-        }
+.eco-person-row:hover {
+  border-color: #4c9b60;
+  background: linear-gradient(135deg, #15251a, #0d1912);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px #0003;
+}
+
+.eco-person-row.active,
+.eco-person-row.is-active {
+  border-color: #70e88c;
+  background: linear-gradient(135deg, #193522, #101d15);
+  box-shadow: 0 0 0 1px #70e88c25, 0 8px 24px #0003;
+}
 
         .eco-person-row:hover {
           background: #13231a;
