@@ -142,7 +142,17 @@ export default function BillionairesPage() {
   const [newsContent, setNewsContent] = useState("");
   const [newsSource, setNewsSource] = useState("");
   const [saving, setSaving] = useState(false);
-
+  const [editingPersonId, setEditingPersonId] = useState("");
+  const [personName, setPersonName] = useState("");
+  const [personRank, setPersonRank] = useState("1");
+  const [personCompany, setPersonCompany] = useState("");
+  const [personCountry, setPersonCountry] = useState("");
+  const [personBio, setPersonBio] = useState("");
+  const [personImageUrl, setPersonImageUrl] = useState("");
+  const [personWorth, setPersonWorth] = useState("");
+  const [personDailyChange, setPersonDailyChange] = useState("0");
+  const [personSource, setPersonSource] = useState("");
+  
   const loadData = useCallback(async () => {
     setLoading(true);
     setErrorMessage("");
