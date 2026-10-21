@@ -493,11 +493,6 @@ const previousRows = previousResponse as {
       ? ((worth - yesterdayWorth) / yesterdayWorth) * 100
       : 0;
 
-      // اگر قبلاً امروز ثبت شده، مقدار پایه همان مقدار ذخیره‌شدهٔ دیروز است.
-      // اگر روز جدید است، مقدار فعلی به‌عنوان ثروت روز قبل نگه داشته می‌شود.
-      const yesterdayWorth =
-  last
-
       await apiRequest(
         `/rest/v1/billionaires?id=eq.${encodeURIComponent(editingPersonId)}`,
         {
