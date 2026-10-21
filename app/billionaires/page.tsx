@@ -1635,7 +1635,8 @@ export default function BillionairesPage() {
           transform: translateY(-2px);
         }
 
-        .eco-person-row.active {
+        .eco-person-row.active,
+.eco-person-row.is-active {
           background: linear-gradient(110deg, #173b25, #102019);
           border-color: #46c66b;
           box-shadow: 0 0 20px #1b9b4720;
