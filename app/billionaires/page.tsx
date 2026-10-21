@@ -160,7 +160,7 @@ export default function BillionairesPage() {
           "/rest/v1/billionaires?select=*&order=rank.asc&limit=100"
         ),
         apiRequest<BillionaireNews[]>(
-          "/rest/v1/billionaire_news?select=*&order=rank.asc"
+          "/rest/v1/billionaire_news?select=*&order=billionaire_rank.asc"
         ).catch(() => [] as BillionaireNews[]),
       ]);
 
