@@ -31,6 +31,63 @@ h2{font-size:25px}
 .news{background:linear-gradient(135deg,#102c43,#101d30);border:1px solid var(--line);border-radius:18px;padding:25px}
 footer{text-align:center;padding:25px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
 </style>
+  <style id="econova-luxury-theme">
+:root {
+  --bg: #070b12;
+  --panel: #0e1521;
+  --panel2: #141e2c;
+  --line: #263448;
+  --text: #f1f5f9;
+  --muted: #9aaabd;
+  --gold: #d8b45a;
+  --gold2: #f5d989;
+  --green: #37d6a0;
+  --red: #ff737e;
+  --radius: 18px;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+}
+
+body {
+  background:
+    radial-gradient(
+      ellipse at 85% 0%,
+      rgba(30, 91, 79, .17),
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 5% 35%,
+      rgba(44, 75, 125, .12),
+      transparent 35%
+    ),
+    var(--bg);
+  color: var(--text);
+}
+
+::selection {
+  background: rgba(55, 214, 160, .3);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+  </style>
 </head>
 <body>
 <header>
