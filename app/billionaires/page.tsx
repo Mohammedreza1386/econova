@@ -19,12 +19,9 @@ type Billionaire = {
 };
 
 type BillionaireNews = {
-  id?: string | number;
-  rank: number;
+  billionaire_rank: number;
   title: string;
   content?: string | null;
-  body?: string | null;
-  source_url?: string | null;
   updated_at?: string | null;
 };
 
