@@ -2152,6 +2152,48 @@ export default function BillionairesPage() {
           font-size: 12px;
           line-height: 1.8;
         }
+        
+.eco-admin-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #c9d8ce;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.eco-admin-form input,
+.eco-admin-form select,
+.eco-admin-form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 13px;
+  color: #f1f7f2;
+  background: #0a130d;
+  border: 1px solid #294333;
+  border-radius: 12px;
+  outline: none;
+  font: inherit;
+}
+
+.eco-admin-form input:focus,
+.eco-admin-form select:focus,
+.eco-admin-form textarea:focus {
+  border-color: #70e88c;
+  box-shadow: 0 0 0 3px #70e88c18;
+}
+
+.eco-admin-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+@media (max-width: 600px) {
+  .eco-admin-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
         .eco-admin-form {
           display: grid;
