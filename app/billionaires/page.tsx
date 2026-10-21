@@ -396,7 +396,86 @@ export default function BillionairesPage() {
       setSaving(false);
     }
   };
+  
+  const openPersonEditor = (person: Billionaire) => {
+    setEditingPersonId(String(person.id));
+    setPersonName(person.name || "");
+    setPersonRank(String(person.rank));
+    setPersonCompany(person.company || "");
+    setPersonCountry(person.country || "");
+    setPersonBio(person.bio || "");
+    setPersonImageUrl(person.image_url || "");
+    setPersonWorth(String(person.net_worth_billions ?? 0));
+    setPersonDailyChange(String(person.daily_change_pct ?? 0));
+    setPersonSource(person.source_url || "");
+    setAdminMessage("");
+  };
 
+  const savePerson = async () => {
+    if (!isAdmin || !adminToken) {
+      setAdminMessage("برای ویرایش اطلاعات باید وارد حساب مدیر شوی.");
+      return;
+    }
+
+    const rank = Number(personRank);
+    const worth = Number(personWorth);
+    const dailyChange = Number(personDailyChange);
+
+    if (!editingPersonId || !personName.trim()) {
+      setAdminMessage("فرد و نام او را مشخص کن.");
+      return;
+    }
+
+    if (
+      !Number.isInteger(rank) ||
+      rank < 1 ||
+      !Number.isFinite(worth) ||
+      worth < 0 ||
+      !Number.isFinite(dailyChange)
+    ) {
+      setAdminMessage("رتبه، ثروت یا تغییر روزانه معتبر نیست.");
+      return;
+    }
+
+    setSaving(true);
+    setAdminMessage("");
+
+    try {
+      await apiRequest(
+        `/rest/v1/billionaires?id=eq.${encodeURIComponent(editingPersonId)}`,
+        {
+          method: "PATCH",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify({
+            name: personName.trim(),
+            rank,
+            company: personCompany.trim() || null,
+            country: personCountry.trim() || null,
+            bio: personBio.trim() || null,
+            image_url: personImageUrl.trim() || null,
+            net_worth_billions: worth,
+            daily_change_pct: dailyChange,
+            source_url: personSource.trim() || null,
+            updated_at: new Date().toISOString(),
+            daily_change_date: new Date().toISOString().slice(0, 10),
+          }),
+        },
+        adminToken
+      );
+
+      await loadData();
+      setAdminMessage("اطلاعات ثروتمند با موفقیت ذخیره شد.");
+    } catch (error) {
+      setAdminMessage(
+        error instanceof Error
+          ? `ذخیره اطلاعات ناموفق بود: ${error.message}`
+          : "ذخیره اطلاعات ناموفق بود."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+  
   // پارت ۲ از این خط ادامه پیدا می‌کند.
   return (
     <main className="eco-page" dir="rtl">
