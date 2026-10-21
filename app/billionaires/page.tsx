@@ -941,14 +941,6 @@ const saveNews = async () => {
                   </span>
                 )}
     
-                    className="eco-source-link"
-                    href={item.source_url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    مطالعه منبع خبر ↗
-                  </a>
-                )}
               </>
             ) : (
               <div className="eco-news-empty">
