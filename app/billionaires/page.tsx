@@ -1799,14 +1799,18 @@ export default function BillionairesPage() {
           font-size: 12px;
         }
 
-        .eco-featured-wealth {
-          color: #70e88c;
-          font-size: clamp(25px, 3vw, 38px);
-          font-weight: 900;
-          direction: ltr;
-          text-align: right;
-          letter-spacing: -1px;
-        }
+.eco-featured-wealth {
+  color: #70e88c;
+  font-size: clamp(27px, 3.2vw, 40px);
+  font-weight: 900;
+  direction: ltr;
+  text-align: right;
+  letter-spacing: -0.8px;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 22px #70e88c20;
+  overflow-wrap: anywhere;
+}
 
         .eco-featured-description {
           margin-top: 16px;
