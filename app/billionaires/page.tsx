@@ -503,11 +503,6 @@ const previousRows = previousResponse as {
       )
     : oldWorth;
 
-      const dailyChange =
-        yesterdayWorth > 0
-          ? ((worth - yesterdayWorth) / yesterdayWorth) * 100
-          : 0;
-
       await apiRequest(
         `/rest/v1/billionaires?id=eq.${encodeURIComponent(editingPersonId)}`,
         {
