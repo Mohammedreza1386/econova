@@ -442,6 +442,37 @@ const saveNews = async () => {
     setAdminMessage("");
 
     try {
+      // خواندن ثروت فعلی از دیتابیس، پیش از ثبت مقدار جدید
+      const previousResponse = await apiRequest(
+        `/rest/v1/billionaires?id=eq.${encodeURIComponent(editingPersonId)}&select=net_worth_billions,daily_change_date,yesterday_net_worth_billions`,
+        { method: "GET" },
+        adminToken
+      );
+
+      const previousRows = await previousResponse.json();
+      const previousPerson = previousRows?.[0];
+
+      if (!previousPerson) {
+        throw new Error("اطلاعات قبلی این فرد پیدا نشد.");
+      }
+
+      const oldWorth = Number(previousPerson.net_worth_billions);
+      const today = new Date().toISOString().slice(0, 10);
+      const lastDate = previousPerson.daily_change_date;
+
+      // اگر قبلاً امروز ثبت شده، مقدار پایه همان مقدار ذخیره‌شدهٔ دیروز است.
+      // اگر روز جدید است، مقدار فعلی به‌عنوان ثروت روز قبل نگه داشته می‌شود.
+      const yesterdayWorth =
+        lastDate === today &&
+        previousPerson.yesterday_net_worth_billions != null
+          ? Number(previousPerson.yesterday_net_worth_billions)
+          : oldWorth;
+
+      const dailyChange =
+        yesterdayWorth > 0
+          ? ((worth - yesterdayWorth) / yesterdayWorth) * 100
+          : 0;
+
       await apiRequest(
         `/rest/v1/billionaires?id=eq.${encodeURIComponent(editingPersonId)}`,
         {
@@ -455,10 +486,11 @@ const saveNews = async () => {
             bio: personBio.trim() || null,
             image_url: personImageUrl.trim() || null,
             net_worth_billions: worth,
-            daily_change_pct: dailyChange,
+            daily_change_pct: Number(dailyChange.toFixed(2)),
+            yesterday_net_worth_billions: yesterdayWorth,
             source_url: personSource.trim() || null,
             updated_at: new Date().toISOString(),
-            daily_change_date: new Date().toISOString().slice(0, 10),
+            daily_change_date: today,
           }),
         },
         adminToken
