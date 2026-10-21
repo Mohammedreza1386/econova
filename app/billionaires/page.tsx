@@ -336,63 +336,67 @@ export default function BillionairesPage() {
     setAdminMessage("");
   };
 
-  const saveNews = async () => {
-    if (!isAdmin || !adminToken) {
-      setAdminMessage("برای ذخیره خبر باید وارد حساب مدیر شوی.");
-      return;
-    }
+  
+const saveNews = async () => {
+  if (!isAdmin || !adminToken) {
+    setAdminMessage("برای ذخیره خبر باید وارد حساب مدیر شوی.");
+    return;
+  }
 
-    if (!newsTitle.trim() || !newsContent.trim()) {
-      setAdminMessage("عنوان و متن خبر را وارد کن.");
-      return;
-    }
+  if (!newsTitle.trim() || !newsContent.trim()) {
+    setAdminMessage("عنوان و متن خبر را وارد کن.");
+    return;
+  }
 
-    setSaving(true);
-    setAdminMessage("");
+  setSaving(true);
+  setAdminMessage("");
 
-    try {
-      const existing = newsForRank(editingNewsRank);
+  try {
+    const existing = newsForRank(editingNewsRank);
 
-      const payload = {
-        rank: editingNewsRank,
-        title: newsTitle.trim(),
-        content: newsContent.trim(),
-        source_url: newsSource.trim() || null,
-        updated_at: new Date().toISOString(),
-      };
+    const payload = {
+      billionaire_rank: editingNewsRank,
+      title: newsTitle.trim(),
+      content: newsContent.trim(),
+      updated_at: new Date().toISOString(),
+    };
 
-      if (existing?.id != null) {
-        await apiRequest(
-          `/rest/v1/billionaire_news?id=eq.${encodeURIComponent(
-            String(existing.id)
-          )}`,
-          {
-            method: "PATCH",
-            headers: { Prefer: "return=minimal" },
-            body: JSON.stringify(payload),
-          },
-          adminToken
-        );
-      } else {
-        await apiRequest("/rest/v1/billionaire_news", {
+    if (existing) {
+      await apiRequest(
+        `/rest/v1/billionaire_news?billionaire_rank=eq.${encodeURIComponent(
+          String(editingNewsRank)
+        )}`,
+        {
+          method: "PATCH",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify(payload),
+        },
+        adminToken
+      );
+    } else {
+      await apiRequest(
+        "/rest/v1/billionaire_news",
+        {
           method: "POST",
           headers: { Prefer: "return=minimal" },
           body: JSON.stringify(payload),
-        }, adminToken);
-      }
-
-      await loadData();
-      setAdminMessage("خبر ذخیره شد.");
-    } catch (error) {
-      setAdminMessage(
-        error instanceof Error
-          ? `ذخیره خبر ناموفق بود: ${error.message}`
-          : "ذخیره خبر ناموفق بود."
+        },
+        adminToken
       );
-    } finally {
-      setSaving(false);
     }
-  };
+
+    await loadData();
+    setAdminMessage("خبر ذخیره شد.");
+  } catch (error) {
+    setAdminMessage(
+      error instanceof Error
+        ? `ذخیره خبر ناموفق بود: ${error.message}`
+        : "ذخیره خبر ناموفق بود."
+    );
+  } finally {
+    setSaving(false);
+  }
+};
   
   const openPersonEditor = (person: Billionaire) => {
     setEditingPersonId(String(person.id));
