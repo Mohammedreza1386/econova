@@ -1771,14 +1771,16 @@ export default function BillionairesPage() {
           font-size: 12px;
           font-weight: 800;
         }
-
-        .eco-featured-name {
-          margin: 0 0 8px;
-          color: #f1f7f2;
-          font-size: 25px;
-          font-weight: 900;
-          line-height: 1.4;
-        }
+   
+.eco-featured-name {
+  margin: 0 0 10px;
+  color: #f1f7f2;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.35;
+  letter-spacing: -0.4px;
+  overflow-wrap: anywhere;
+}
 
         .eco-featured-company {
           color: #a0b2a4;
