@@ -2417,6 +2417,97 @@ export default function BillionairesPage() {
             width: 100%;
           }
         }
+.eco-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.eco-login-modal {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 32px 24px 26px;
+  color: #f1f7f2;
+  background: linear-gradient(145deg, #142219, #0a100c);
+  border: 1px solid #345640;
+  border-radius: 24px;
+  box-shadow: 0 24px 80px #0009;
+}
+
+.eco-modal-close {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 36px;
+  height: 36px;
+  color: #c9d8ce;
+  background: #ffffff0b;
+  border: 1px solid #ffffff16;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.eco-modal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  color: #07120a;
+  background: linear-gradient(135deg, #8bf5a0, #45b967);
+  border-radius: 15px;
+  font-size: 24px;
+  font-weight: 900;
+  box-shadow: 0 8px 24px #70e88c25;
+}
+
+.eco-login-modal h2 {
+  margin: 10px 0;
+  color: #f1f7f2;
+  font-size: 27px;
+  font-weight: 900;
+}
+
+.eco-login-modal p {
+  margin: 0 0 20px;
+  color: #a8b9ad;
+  line-height: 1.9;
+}
+
+.eco-login-modal input,
+.eco-login-modal select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 13px;
+  color: #f1f7f2;
+  background: #0a130d;
+  border: 1px solid #294333;
+  border-radius: 12px;
+  outline: none;
+}
+
+.eco-login-modal input:focus,
+.eco-login-modal select:focus {
+  border-color: #70e88c;
+  box-shadow: 0 0 0 3px #70e88c18;
+}
+
+@media (max-width: 480px) {
+  .eco-login-modal {
+    padding: 28px 18px 22px;
+    border-radius: 20px;
+  }
+}
       `}</style>
     </main>
   );
