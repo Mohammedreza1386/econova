@@ -460,8 +460,38 @@ const previousRows = previousResponse as {
       }
 
       const oldWorth = Number(previousPerson.net_worth_billions);
-      const today = new Date().toISOString().slice(0, 10);
-      const lastDate = previousPerson.daily_change_date;
+
+  // تاریخ روز بر اساس ساعت ایران
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tehran",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  const lastDate = previousPerson.daily_change_date;
+  const storedYesterday = previousPerson.yesterday_net_worth_billions;
+
+  let yesterdayWorth: number;
+
+  if (lastDate === today) {
+    // در ثبت‌های بعدی همان روز، مبنای دیروز ثابت می‌ماند.
+    if (storedYesterday === null || storedYesterday === undefined) {
+      throw new Error(
+        "مقدار ثروت روز قبل ثبت نشده است؛ برای جلوگیری از محاسبه اشتباه، ابتدا باید مبنای روز قبل تکمیل شود."
+      );
+    }
+
+    yesterdayWorth = Number(storedYesterday);
+  } else {
+    // اولین ثبت روز جدید: ثروت قبلی، مبنای امروز است.
+    yesterdayWorth = oldWorth;
+  }
+
+  const dailyChange =
+    yesterdayWorth > 0
+      ? ((worth - yesterdayWorth) / yesterdayWorth) * 100
+      : 0;
 
       // اگر قبلاً امروز ثبت شده، مقدار پایه همان مقدار ذخیره‌شدهٔ دیروز است.
       // اگر روز جدید است، مقدار فعلی به‌عنوان ثروت روز قبل نگه داشته می‌شود.
