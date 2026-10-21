@@ -331,8 +331,8 @@ export default function BillionairesPage() {
 
     setEditingNewsRank(rank);
     setNewsTitle(item?.title || "");
-    setNewsContent(item?.content || item?.body || "");
-    setNewsSource(item?.source_url || "");
+    setNewsContent(item?.content || "");
+setNewsSource("");
     setAdminMessage("");
   };
 
