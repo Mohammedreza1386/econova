@@ -448,9 +448,11 @@ const saveNews = async () => {
         { method: "GET" },
         adminToken
       );
-const previousRows = Array.isArray(previousResponse)
-  ? previousResponse
-  : [];
+const previousRows = previousResponse as {
+  net_worth_billions: number | string;
+  daily_change_date: string | null;
+  yesterday_net_worth_billions: number | string | null;
+}[];
       const previousPerson = previousRows?.[0];
 
       if (!previousPerson) {
