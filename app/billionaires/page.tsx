@@ -940,9 +940,7 @@ const saveNews = async () => {
                     {new Date(item.updated_at).toLocaleDateString("fa-IR")}
                   </span>
                 )}
-
-                {item.source_url && (
-                  <a
+    
                     className="eco-source-link"
                     href={item.source_url}
                     target="_blank"
