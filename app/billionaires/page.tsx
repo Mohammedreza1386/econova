@@ -1858,6 +1858,52 @@ export default function BillionairesPage() {
           gap: 12px;
           margin-bottom: 18px;
         }
+        
+.eco-search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  min-height: 48px;
+  padding: 0 14px;
+  color: #e8f0ea;
+  background: linear-gradient(135deg, #101b15, #0b120e);
+  border: 1px solid #294333;
+  border-radius: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.eco-search-box:focus-within {
+  border-color: #70e88c;
+  box-shadow: 0 0 0 3px #70e88c18;
+}
+
+.eco-search-box input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 0;
+  color: #f1f7f2;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font: inherit;
+}
+
+.eco-search-box input::placeholder {
+  color: #84958a;
+}
+
+.eco-search-box button {
+  padding: 4px 8px;
+  color: #b8c9bd;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 22px;
+}
+
 
         .eco-search-input {
           width: min(100%, 340px);
