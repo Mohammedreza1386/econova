@@ -466,10 +466,12 @@ const previousRows = previousResponse as {
       // اگر قبلاً امروز ثبت شده، مقدار پایه همان مقدار ذخیره‌شدهٔ دیروز است.
       // اگر روز جدید است، مقدار فعلی به‌عنوان ثروت روز قبل نگه داشته می‌شود.
       const yesterdayWorth =
-        lastDate === today &&
-        previousPerson.yesterday_net_worth_billions != null
-          ? Number(previousPerson.yesterday_net_worth_billions)
-          : oldWorth;
+  lastDate === today
+    ? Number(
+        previousPerson.yesterday_net_worth_billions ??
+          previousPerson.net_worth_billions
+      )
+    : oldWorth;
 
       const dailyChange =
         yesterdayWorth > 0
