@@ -932,7 +932,7 @@ const saveNews = async () => {
                   <>
                     <h3>{item.title}</h3>
                     <p className="eco-news-content">
-                      {item.content || item.body || "متن خبر ثبت نشده است."}
+                      {item.content || "متن خبر ثبت نشده است."}
                     </p>
 
                                     {item.updated_at && (
