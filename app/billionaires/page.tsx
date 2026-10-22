@@ -3508,55 +3508,75 @@ const previousRows = previousResponse as {
 }
 
 @media (max-width: 700px) {
+  .eco-ranking-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   .eco-ranking-table {
+    width: 100%;
     table-layout: fixed;
+    white-space: normal;
     font-size: 10px;
   }
 
   .eco-ranking-table th,
   .eco-ranking-table td {
     padding: 8px 3px;
-    line-height: 1.6;
+    line-height: 1.5;
     white-space: normal;
     overflow-wrap: anywhere;
     vertical-align: middle;
+    box-sizing: border-box;
   }
 
-  .eco-ranking-table .eco-table-person {
-    min-width: 0;
-    gap: 5px;
-  }
+  .eco-ranking-table th:nth-child(1),
+  .eco-ranking-table td:nth-child(1) { width: 10%; }
 
-  .eco-ranking-table .eco-table-person img {
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    max-width: 30px;
-    min-height: 30px;
-    max-height: 30px;
-    flex: 0 0 30px;
-  }
-}
+  .eco-ranking-table th:nth-child(2),
+  .eco-ranking-table td:nth-child(2) { width: 29%; }
 
-@media (max-width: 700px) {
+  .eco-ranking-table th:nth-child(3),
+  .eco-ranking-table td:nth-child(3) { width: 17%; }
+
+  .eco-ranking-table th:nth-child(4),
+  .eco-ranking-table td:nth-child(4) { width: 14%; }
+
+  .eco-ranking-table th:nth-child(5),
+  .eco-ranking-table td:nth-child(5) { width: 17%; }
+
+  .eco-ranking-table th:nth-child(6),
+  .eco-ranking-table td:nth-child(6) { width: 13%; }
+
   .eco-ranking-table .eco-table-person {
     display: flex;
     align-items: center;
-    gap: 6px;
-    min-width: 0;
+    gap: 5px;
     width: 100%;
-  }
-
-  .eco-ranking-table .eco-table-person span,
-  .eco-ranking-table .eco-table-person a {
-    white-space: normal;
-    word-break: keep-all;
-    overflow-wrap: normal;
     min-width: 0;
+    padding: 0;
+    white-space: normal;
   }
 
   .eco-ranking-table .eco-table-person img {
-    flex-shrink: 0;
+    width: 27px;
+    height: 27px;
+    min-width: 27px;
+    max-width: 27px;
+    flex: 0 0 27px;
+    object-fit: cover;
+    border-radius: 7px;
+  }
+
+  .eco-ranking-table .eco-table-person strong {
+    display: block;
+    min-width: 0;
+    font-size: 10px;
+    line-height: 1.4;
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
 }
       `}</style>
