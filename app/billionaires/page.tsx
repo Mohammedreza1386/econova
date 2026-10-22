@@ -3506,6 +3506,37 @@ const previousRows = previousResponse as {
     flex-direction: column;
   }
 }
+
+@media (max-width: 700px) {
+  .eco-ranking-table {
+    table-layout: fixed;
+    font-size: 10px;
+  }
+
+  .eco-ranking-table th,
+  .eco-ranking-table td {
+    padding: 8px 3px;
+    line-height: 1.6;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    vertical-align: middle;
+  }
+
+  .eco-ranking-table .eco-table-person {
+    min-width: 0;
+    gap: 5px;
+  }
+
+  .eco-ranking-table .eco-table-person img {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    max-width: 30px;
+    min-height: 30px;
+    max-height: 30px;
+    flex: 0 0 30px;
+  }
+}
       `}</style>
     </main>
   );
