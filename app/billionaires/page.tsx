@@ -2257,15 +2257,12 @@ const previousRows = previousResponse as {
   padding: 14px;
   color: #e8f0ea;
   text-align: right;
-  background: linear-gradient(135deg, #101b15, #0c1511);
+  background: linear-gradient(135deg, #101b15, #14251a);
   border: 1px solid #294333;
   border-radius: 15px;
   cursor: pointer;
-  transition:
-    border-color 0.2s,
-    background 0.2s,
-    transform 0.2s,
-    box-shadow 0.2s;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
 }
 
 .eco-person-row:hover {
