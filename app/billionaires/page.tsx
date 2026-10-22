@@ -3948,6 +3948,30 @@ const previousRows = previousResponse as {
     font-size: 15px;
   }
 }
+.eco-featured-bio {
+  margin: 18px 0 0;
+  padding: 17px 18px;
+  color: #c1d1c5;
+  background: linear-gradient(135deg, #102219, #09150f);
+  border: 1px solid #263f2e;
+  border-right: 3px solid #b9f27c;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 2;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+@media (max-width: 700px) {
+  .eco-featured-bio {
+    margin-top: 14px;
+    padding: 13px;
+    font-size: 12px;
+    line-height: 1.9;
+    border-radius: 11px;
+  }
+}
       `}</style>
     </main>
   );
