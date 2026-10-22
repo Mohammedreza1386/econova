@@ -958,37 +958,272 @@ const previousRows = previousResponse as {
                 {activePerson.bio && (
                   <p className="eco-featured-bio">{activePerson.bio}</p>
                 )}
-                
-                <div className="eco-history-panel">
-  <h3>تاریخچه ثروت</h3>
-  <p>
-    تغییرات ثبت‌شده ثروت {activePerson.name}
-  </p>
+                            
+<div className="eco-history-panel">
+  <div className="eco-chart-heading">
+    <div>
+      <span className="eco-chart-eyebrow">WEALTH PERFORMANCE</span>
+      <h3>تاریخچه ثروت</h3>
+      <p>روند تغییرات ثبت‌شده ثروت {activePerson.name}</p>
+    </div>
+
+    <div className="eco-chart-unit">USD · میلیارد</div>
+  </div>
 
   {historyLoading ? (
     <p>در حال دریافت تاریخچه...</p>
   ) : wealthHistory.length === 0 ? (
     <p>هنوز اطلاعاتی برای تاریخچه ثبت نشده است.</p>
   ) : (
-    <div className="eco-history-list">
-      {wealthHistory.map((point) => (
-        <div
-          className="eco-history-row"
-          key={point.id}
+    <>
+      {wealthHistory.length < 2 && (
+        <p className="eco-chart-note">
+          فعلاً فقط یک نقطهٔ ثبت‌شده داریم. با ثبت اطلاعات در زمان‌های بعد،
+          نمودار روند تغییرات ساخته می‌شود.
+        </p>
+      )}
+
+      <div className="eco-chart-scroll">
+        <svg
+          className="eco-wealth-chart"
+          viewBox="0 0 600 240"
+          role="img"
+          aria-label={`نمودار تاریخچه ثروت ${activePerson.name}`}
         >
-          <span>
-            {new Date(point.recorded_at).toLocaleString("fa-IR")}
-          </span>
-          <strong>
-            ${Number(point.net_worth_billions).toLocaleString("en-US", {
-              maximumFractionDigits: 2,
-            })} میلیارد
-          </strong>
+          <defs>
+            <linearGradient id="ecoWealthFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#65df86" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="#65df86" stopOpacity="0.01" />
+            </linearGradient>
+          </defs>
+
+          {[35, 80, 125, 170, 215].map((y) => (
+            <line
+              key={y}
+              x1="35"
+              y1={y}
+              x2="580"
+              y2={y}
+              stroke="#294333"
+              strokeDasharray="4 6"
+            />
+          ))}
+
+          {(() => {
+            const points = [...wealthHistory].sort(
+              (a, b) =>
+                new Date(a.recorded_at).getTime() -
+                new Date(b.recorded_at).getTime()
+            );
+
+            const values = points.map((p) => Number(p.net_worth_billions));
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const range = max - min || Math.max(Math.abs(max) * 0.01, 1);
+
+            const coords = points.map((p, i) => ({
+              x: points.length === 1 ? 307 : 40 + (i / (points.length - 1)) * 535,
+              y: 195 - ((Number(p.net_worth_billions) - min) / range) * 145,
+              value: Number(p.net_worth_billions),
+              date: p.recorded_at,
+              id: p.id,
+            }));
+
+            const line = coords
+              .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+              .join(" ");
+
+            const area =
+              coords.length > 1
+                ? `${line} L ${coords[coords.length - 1].x} 215 L ${coords[0].x} 215 Z`
+                : "";
+
+            return (
+              <>
+                {area && <path d={area} fill="url(#ecoWealthFill)" />}
+                {coords.length > 1 && (
+                  <path
+                    d={line}
+                    fill="none"
+                    stroke="#65df86"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                )}
+
+                {coords.map((p) => (
+                  <circle
+                    key={p.id}
+                    cx={p.x}
+                    cy={p.y}
+                    r="5"
+                    fill="#0b1510"
+                    stroke="#65df86"
+                    strokeWidth="3"
+                  >
+                    <title>
+                      {new Date(p.date).toLocaleString("fa-IR")} — $
+                      {p.value.toLocaleString("en-US")} میلیارد
+                    </title>
+                  </circle>
+                ))}
+
+                {coords.length > 0 && (
+                  <>
+                    <text
+                      x={coords[0].x}
+                      y={Math.max(20, coords[0].y - 16)}
+                      fill="#a9f4bb"
+                      fontSize="13"
+                      textAnchor={coords.length === 1 ? "middle" : "start"}
+                    >
+                      ${coords[0].value.toLocaleString("en-US", {
+                        maximumFractionDigits: 2,
+                      })}B
+                    </text>
+                    {coords.length > 1 && (
+                      <text
+                        x={coords[coords.length - 1].x}
+                        y={Math.max(20, coords[coords.length - 1].y - 16)}
+                        fill="#a9f4bb"
+                        fontSize="13"
+                        textAnchor="end"
+                      >
+                        ${coords[coords.length - 1].value.toLocaleString("en-US", {
+                          maximumFractionDigits: 2,
+                        })}B
+                      </text>
+                    )}
+                  </>
+                )}
+              </>
+            );
+          })()}
+        </svg>
+      </div>
+
+      <div className="eco-chart-footer">
+        <span>تعداد ثبت‌ها: {wealthHistory.length}</span>
+        <span>آخرین ثبت: {new Date(
+          Math.max(...wealthHistory.map((p) => new Date(p.recorded_at).getTime()))
+        ).toLocaleDateString("fa-IR")}</span>
+      </div>
+
+      <details className="eco-history-details">
+        <summary>مشاهده سوابق ثبت‌شده</summary>
+        <div className="eco-history-list">
+          {[...wealthHistory]
+            .sort(
+              (a, b) =>
+                new Date(b.recorded_at).getTime() -
+                new Date(a.recorded_at).getTime()
+            )
+            .map((point) => (
+              <div className="eco-history-row" key={point.id}>
+                <span>
+                  {new Date(point.recorded_at).toLocaleString("fa-IR")}
+                </span>
+                <strong>
+                  ${Number(point.net_worth_billions).toLocaleString("en-US", {
+                    maximumFractionDigits: 2,
+                  })} میلیارد
+                </strong>
+              </div>
+            ))}
         </div>
-      ))}
-    </div>
+      </details>
+    </>
   )}
 </div>
+                
+.eco-chart-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.eco-chart-eyebrow {
+  color: #70e88c;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.eco-chart-heading h3 {
+  margin: 8px 0;
+  color: #f1f7f2;
+  font-size: 21px;
+}
+
+.eco-chart-heading p,
+.eco-chart-note {
+  color: #a3b8a8;
+  font-size: 12px;
+  line-height: 1.9;
+}
+
+.eco-chart-unit {
+  padding: 8px 10px;
+  color: #a9f4bb;
+  background: #14281b;
+  border: 1px solid #294333;
+  border-radius: 9px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.eco-chart-scroll {
+  width: 100%;
+  overflow-x: auto;
+  background: linear-gradient(180deg, #0d1a12, #0a120d);
+  border: 1px solid #203a2a;
+  border-radius: 14px;
+}
+
+.eco-wealth-chart {
+  display: block;
+  width: 100%;
+  min-width: 320px;
+  height: auto;
+}
+
+.eco-chart-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  color: #8da695;
+  font-size: 11px;
+}
+
+.eco-chart-note {
+  padding: 10px 12px;
+  background: #122219;
+  border-right: 3px solid #65df86;
+  border-radius: 8px;
+}
+
+.eco-history-details {
+  margin-top: 16px;
+  color: #cbd8ce;
+  font-size: 12px;
+}
+
+.eco-history-details summary {
+  padding: 12px 0;
+  cursor: pointer;
+  color: #a9f4bb;
+}
+
+@media (max-width: 480px) {
+  .eco-chart-heading {
+    flex-direction: column;
+  }
+                }
 
                 {activePerson.source_url && (
                   <a
