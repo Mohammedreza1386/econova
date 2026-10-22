@@ -2538,14 +2538,49 @@ const previousRows = previousResponse as {
   flex-direction: column;
   overflow: hidden;
   isolation: isolate;
-  padding: 26px;
+  padding: 28px;
   background:
-    radial-gradient(ellipse at 70% 15%, #17634455, transparent 48%),
-    radial-gradient(ellipse at 30% 100%, #063b2b44, transparent 55%),
-    linear-gradient(145deg, #071c17 0%, #04120f 55%, #020a08 100%);
-  border: 1px solid #176c4d;
-  border-radius: 22px;
-  box-shadow: inset 0 1px 0 #8cffc01a, 0 18px 50px #00000045;
+    radial-gradient(ellipse at 85% 5%, #38e98b20, transparent 42%),
+    radial-gradient(ellipse at 10% 100%, #0a694522, transparent 48%),
+    linear-gradient(145deg, #0a2118 0%, #06150f 52%, #030b07 100%);
+  border: 1px solid #287a50;
+  border-radius: 24px;
+  box-shadow:
+    inset 0 1px 0 #b9f27c18,
+    0 20px 55px #00000050,
+    0 0 30px #21d8750a;
+}
+
+.eco-featured-person::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(115deg, transparent 25%, #55f39b0a 55%, transparent 80%);
+  content: "";
+  pointer-events: none;
+}
+
+.eco-featured-person::after {
+  position: absolute;
+  top: 0;
+  right: 28px;
+  left: 28px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #b9f27c, #55f39b, transparent);
+  content: "";
+}
+
+@media (max-width: 700px) {
+  .eco-featured-person {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .eco-featured-person::after {
+    right: 18px;
+    left: 18px;
+  }
 }
 
 .eco-featured-person::before {
