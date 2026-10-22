@@ -1226,14 +1226,11 @@ const previousRows = previousResponse as {
 
                   <td>
                     <button
-                      className="eco-table-person"
-                      onClick={() => {
-                        setActiveRank(person.rank);
-                        document
-                          .getElementById("top-five")
-                          ?.scrollIntoView({ behavior: "smooth" });
-                      }}
-                    >
+  className="eco-table-person"
+  onClick={() => {
+    window.location.href = `/billionaires/${person.id}`;
+  }}
+>
                       <img
                         src={photoFor(person)}
                         alt=""
