@@ -2454,16 +2454,24 @@ const previousRows = previousResponse as {
           margin-bottom: 20px;
         }
 
-        .eco-featured-avatar {
-          width: 112px;
-          height: 112px;
-          flex-shrink: 0;
-          object-fit: cover;
-          background: #203126;
-          border: 2px solid #4c9b60;
-          border-radius: 18px;
-          box-shadow: 0 8px 32px #0005;
-        }
+        .eco-person-avatar {
+  grid-area: avatar;
+  display: block;
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  max-width: 52px;
+  min-height: 52px;
+  max-height: 52px;
+  flex-shrink: 0;
+  object-fit: cover;
+  object-position: center;
+  overflow: hidden;
+  background: #1b2920;
+  border: 1px solid #344c3a;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
 
         .eco-featured-rank {
           margin-bottom: 8px;
