@@ -3843,6 +3843,26 @@ const previousRows = previousResponse as {
     overflow-wrap: break-word;
   }
 }
+.eco-featured-worth {
+  display: block;
+  margin: 8px 0 18px;
+  color: #b9f27c;
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 26px #b9f27c25;
+}
+
+@media (max-width: 700px) {
+  .eco-featured-worth {
+    margin: 6px 0 14px;
+    font-size: clamp(26px, 7vw, 34px);
+    letter-spacing: -0.5px;
+  }
+}
       `}</style>
     </main>
   );
