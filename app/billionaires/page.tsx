@@ -124,7 +124,9 @@ async function apiRequest<T>(
 export default function BillionairesPage() {
   const [people, setPeople] = useState<Billionaire[]>([]);
   const [news, setNews] = useState<BillionaireNews[]>([]);
-
+const [wealthHistory, setWealthHistory] = useState<WealthHistoryPoint[]>([]);
+const [historyLoading, setHistoryLoading] = useState(false);
+  
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
