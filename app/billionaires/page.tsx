@@ -3863,6 +3863,56 @@ const previousRows = previousResponse as {
     letter-spacing: -0.5px;
   }
 }
+.eco-featured-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 15px 17px;
+  background: linear-gradient(110deg, #10271b, #0a1710);
+  border: 1px solid #294b34;
+  border-radius: 15px;
+}
+
+.eco-featured-details > span {
+  color: #b0c4b5;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.eco-featured-details > strong {
+  direction: ltr;
+  font-size: 17px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.eco-featured-details .eco-positive {
+  color: #72f0a0;
+  text-shadow: 0 0 16px #72f0a020;
+}
+
+.eco-featured-details .eco-negative {
+  color: #ff8585;
+  text-shadow: 0 0 16px #ff858520;
+}
+
+@media (max-width: 700px) {
+  .eco-featured-details {
+    margin-top: 12px;
+    padding: 13px;
+    border-radius: 12px;
+  }
+
+  .eco-featured-details > span {
+    font-size: 12px;
+  }
+
+  .eco-featured-details > strong {
+    font-size: 15px;
+  }
+}
       `}</style>
     </main>
   );
