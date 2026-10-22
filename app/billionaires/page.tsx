@@ -2633,13 +2633,24 @@ const previousRows = previousResponse as {
     overflow-x: hidden;
   }
 }
+        
+.eco-ranking-table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: right;
+  white-space: normal;
+  box-sizing: border-box;
+}
 
-        .eco-ranking-table {
-          width: 100%;
-          border-collapse: collapse;
-          text-align: right;
-          white-space: nowrap;
-        }
+.eco-ranking-table th,
+.eco-ranking-table td {
+  padding: 8px 5px;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  box-sizing: border-box;
+}
 
         .eco-ranking-table th {
           padding: 15px 16px;
