@@ -2709,14 +2709,25 @@ const previousRows = previousResponse as {
         }
    
 .eco-featured-name {
-  margin: 0 0 12px;
+  margin: 0 0 14px;
   color: #f3fff6;
-  font-size: clamp(26px, 3vw, 36px);
+  font-size: clamp(28px, 3.2vw, 38px);
   font-weight: 900;
-  line-height: 1.25;
-  letter-spacing: -0.7px;
+  line-height: 1.3;
+  letter-spacing: -0.8px;
   overflow-wrap: anywhere;
-  text-shadow: 0 0 24px #5af49b20;
+  text-shadow:
+    0 0 18px #5af49b20,
+    0 2px 12px #00000040;
+}
+
+@media (max-width: 700px) {
+  .eco-featured-name {
+    margin-bottom: 10px;
+    font-size: clamp(23px, 6vw, 30px);
+    line-height: 1.35;
+    letter-spacing: -0.3px;
+  }
 }
   
 .eco-featured-company {
