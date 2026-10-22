@@ -2740,6 +2740,19 @@ const previousRows = previousResponse as {
           padding: 28px;
         }
 
+.eco-person-row .eco-person-avatar {
+  display: block !important;
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  max-width: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  object-fit: cover !important;
+  flex: 0 0 52px !important;
+  align-self: center;
+}
+
         @media (max-width: 700px) {
           .eco-news-card img {
             height: 200px;
