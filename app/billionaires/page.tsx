@@ -204,47 +204,6 @@ const [historyLoading, setHistoryLoading] = useState(false);
   useEffect(() => {
     void loadData();
   }, [loadData]);
-  
-  useEffect(() => {
-  if (!activePerson?.id) {
-    setWealthHistory([]);
-    return;
-  }
-
-  let cancelled = false;
-
-  async function loadWealthHistory() {
-    setHistoryLoading(true);
-
-    try {
-      const rows = await apiRequest<WealthHistoryPoint[]>(
-        `/rest/v1/billionaire_wealth_history?billionaire_id=eq.${encodeURIComponent(
-          String(activePerson.id)
-        )}&select=id,billionaire_id,billionaire_name,net_worth_billions,recorded_at,source_url&order=recorded_at.asc&limit=100`
-      );
-
-      if (!cancelled) {
-        setWealthHistory(Array.isArray(rows) ? rows : []);
-      }
-    } catch (error) {
-      console.error("Wealth history loading failed:", error);
-
-      if (!cancelled) {
-        setWealthHistory([]);
-      }
-    } finally {
-      if (!cancelled) {
-        setHistoryLoading(false);
-      }
-    }
-  }
-
-  void loadWealthHistory();
-
-  return () => {
-    cancelled = true;
-  };
-}, [activePerson?.id]);
 
   const sortedPeople = useMemo(
     () => [...people].sort((a, b) => a.rank - b.rank),
@@ -320,6 +279,47 @@ const [historyLoading, setHistoryLoading] = useState(false);
   const activePerson =
     sortedPeople.find((person) => person.rank === activeRank) ||
     sortedPeople[0];
+  
+  useEffect(() => {
+  if (!activePerson?.id) {
+    setWealthHistory([]);
+    return;
+  }
+
+  let cancelled = false;
+
+  async function loadWealthHistory() {
+    setHistoryLoading(true);
+
+    try {
+      const rows = await apiRequest<WealthHistoryPoint[]>(
+        `/rest/v1/billionaire_wealth_history?billionaire_id=eq.${encodeURIComponent(
+          String(activePerson.id)
+        )}&select=id,billionaire_id,billionaire_name,net_worth_billions,recorded_at,source_url&order=recorded_at.asc&limit=100`
+      );
+
+      if (!cancelled) {
+        setWealthHistory(Array.isArray(rows) ? rows : []);
+      }
+    } catch (error) {
+      console.error("Wealth history loading failed:", error);
+
+      if (!cancelled) {
+        setWealthHistory([]);
+      }
+    } finally {
+      if (!cancelled) {
+        setHistoryLoading(false);
+      }
+    }
+  }
+
+  void loadWealthHistory();
+
+  return () => {
+    cancelled = true;
+  };
+}, [activePerson?.id]);
 
   const newsForRank = (rank: number) =>
   news.find((item) => Number(item.billionaire_rank) === rank);
