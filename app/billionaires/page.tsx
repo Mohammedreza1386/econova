@@ -2621,11 +2621,16 @@ const previousRows = previousResponse as {
   letter-spacing: -0.4px;
   overflow-wrap: anywhere;
 }
-
-        .eco-featured-company {
-          color: #a0b2a4;
-          font-size: 13px;
-        }
+   
+.eco-featured-company {
+  color: #a9c7b4;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  line-height: 1.8;
+  margin-top: 5px;
+  margin-bottom: 18px;
+}
 
         .eco-featured-divider {
           height: 1px;
