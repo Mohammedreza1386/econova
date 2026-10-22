@@ -1888,10 +1888,15 @@ const previousRows = previousResponse as {
         }
       
 .eco-person-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 42px 52px minmax(0, 1fr);
+  grid-template-areas: "rank avatar info" "rank avatar worth";
   align-items: center;
-  gap: 12px;
+  column-gap: 12px;
+  row-gap: 8px;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 14px;
   color: #e8f0ea;
   text-align: right;
