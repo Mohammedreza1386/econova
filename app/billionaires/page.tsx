@@ -2508,20 +2508,43 @@ const previousRows = previousResponse as {
           direction: ltr;
           text-align: left;
         }
+        
+.eco-featured-person {
+  position: relative;
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  isolation: isolate;
+  padding: 26px;
+  background:
+    radial-gradient(ellipse at 70% 15%, #17634455, transparent 48%),
+    radial-gradient(ellipse at 30% 100%, #063b2b44, transparent 55%),
+    linear-gradient(145deg, #071c17 0%, #04120f 55%, #020a08 100%);
+  border: 1px solid #176c4d;
+  border-radius: 22px;
+  box-shadow: inset 0 1px 0 #8cffc01a, 0 18px 50px #00000045;
+}
 
-        .eco-featured-person {
-          position: relative;
-          display: flex;
-          min-height: 100%;
-          flex-direction: column;
-          overflow: hidden;
-          padding: 24px;
-          background:
-            radial-gradient(ellipse at 80% 0%, #245f373d, transparent 52%),
-            linear-gradient(145deg, #15251b, #0b120e 75%);
-          border: 1px solid #31583a;
-          border-radius: 20px;
-        }
+.eco-featured-person::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(115deg, transparent 30%, #37e68b0b 58%, transparent 78%);
+  content: "";
+  pointer-events: none;
+}
+
+.eco-featured-person::after {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  left: 24px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #55f39b, transparent);
+  content: "";
+}
 
         .eco-featured-person::before {
           position: absolute;
