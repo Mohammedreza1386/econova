@@ -1295,13 +1295,44 @@ const previousRows = previousResponse as {
     rows={4}
   />
 
-  <label htmlFor="eco-person-image">لینک عکس</label>
-  <input
-    id="eco-person-image"
-    type="url"
-    value={personImageUrl}
-    onChange={(event) => setPersonImageUrl(event.target.value)}
+  <label htmlFor="eco-person-photo-file">
+  انتخاب عکس از گالری گوشی
+</label>
+<input
+  id="eco-person-photo-file"
+  type="file"
+  accept="image/jpeg,image/png,image/webp"
+  disabled={uploadingPhoto || !editingPersonId}
+  onChange={(event) => {
+    void uploadPersonPhoto(event.currentTarget.files?.[0]);
+    event.currentTarget.value = "";
+  }}
+/>
+
+<small>JPG، PNG یا WebP؛ حداکثر ۵ مگابایت</small>
+
+{uploadingPhoto && <p>در حال آپلود عکس...</p>}
+
+{personImageUrl && (
+  <img
+    src={personImageUrl}
+    alt="پیش‌نمایش عکس ثروتمند"
+    style={{
+      width: 96,
+      height: 96,
+      objectFit: "cover",
+      borderRadius: 12,
+    }}
   />
+)}
+
+<label htmlFor="eco-person-image">یا لینک عکس را وارد کن</label>
+<input
+  id="eco-person-image"
+  type="url"
+  value={personImageUrl}
+  onChange={(event) => setPersonImageUrl(event.target.value)}
+/>
 
   <label htmlFor="eco-person-source">لینک منبع اطلاعات</label>
   <input
