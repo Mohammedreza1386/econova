@@ -776,11 +776,6 @@ const previousRows = previousResponse as {
               ))}
             </div>
 
-                  <span className="eco-person-arrow">←</span>
-                </button>
-              ))}
-            </div>
-
             {activePerson ? (
               <article className="eco-featured-person">
                 <div className="eco-featured-topline">
