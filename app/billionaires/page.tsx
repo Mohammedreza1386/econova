@@ -2640,13 +2640,20 @@ const previousRows = previousResponse as {
 }
 
         .eco-featured-badge {
-          padding: 6px 10px;
-          color: #7be995;
-          background: #173824;
-          border: 1px solid #2f7042;
-          border-radius: 20px;
-          font-size: 11px;
-        }
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 7px 12px;
+  color: #b9f27c;
+  background: linear-gradient(135deg, #1b432b, #10271a);
+  border: 1px solid #4d995c;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  box-shadow: inset 0 1px 0 #ffffff0c, 0 0 18px #b9f27c0b;
+}
     
 .eco-featured-main {
   display: grid;
