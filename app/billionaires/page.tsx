@@ -25,6 +25,15 @@ type BillionaireNews = {
   updated_at?: string | null;
 };
 
+type WealthHistoryPoint = {
+  id: number;
+  billionaire_id: string;
+  billionaire_name: string;
+  net_worth_billions: number | string;
+  recorded_at: string;
+  source_url: string | null;
+};
+
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") ||
   "https://zusbebjskchgehdjvpsm.supabase.co";
