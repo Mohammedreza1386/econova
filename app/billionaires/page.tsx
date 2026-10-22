@@ -2587,10 +2587,22 @@ const previousRows = previousResponse as {
         }
 
         .eco-featured-label {
-          color: #a3b8a8;
-          font-size: 12px;
-          font-weight: 700;
-        }
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin-bottom: 10px;
+  padding: 7px 12px;
+  color: #b9f27c;
+  background: linear-gradient(135deg, #b9f27c18, #55e88a08);
+  border: 1px solid #b9f27c35;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  line-height: 1.5;
+  box-shadow: inset 0 1px 0 #ffffff08;
+}
 
         .eco-featured-badge {
           padding: 6px 10px;
