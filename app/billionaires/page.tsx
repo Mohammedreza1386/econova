@@ -2757,10 +2757,38 @@ const previousRows = previousResponse as {
 }
 
         .eco-featured-divider {
-          height: 1px;
-          margin: 4px 0 18px;
-          background: #2a3b2e;
-        }
+  position: relative;
+  height: 1px;
+  margin: 8px 0 20px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #28543a 15%,
+    #b9f27c 50%,
+    #28543a 85%,
+    transparent
+  );
+  opacity: 0.85;
+}
+
+.eco-featured-divider::after {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: #b9f27c;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #b9f27c80;
+  content: "";
+  transform: translateX(-50%);
+}
+
+@media (max-width: 700px) {
+  .eco-featured-divider {
+    margin: 6px 0 16px;
+  }
+}
 
         .eco-featured-wealth-label {
           margin-bottom: 8px;
