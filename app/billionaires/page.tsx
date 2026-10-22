@@ -3537,6 +3537,28 @@ const previousRows = previousResponse as {
     flex: 0 0 30px;
   }
 }
+
+@media (max-width: 700px) {
+  .eco-ranking-table .eco-table-person {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .eco-ranking-table .eco-table-person span,
+  .eco-ranking-table .eco-table-person a {
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    min-width: 0;
+  }
+
+  .eco-ranking-table .eco-table-person img {
+    flex-shrink: 0;
+  }
+}
       `}</style>
     </main>
   );
