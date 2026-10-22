@@ -2433,6 +2433,60 @@ const previousRows = previousResponse as {
           grid-template-columns: repeat(3, minmax(0, 1fr));
           gap: 16px;
         }
+        
+        .eco-news-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        /* کنترل اندازه تصاویر اخبار */
+        .eco-news-card img {
+          display: block;
+          width: 100%;
+          max-width: 100%;
+          height: 220px;
+          object-fit: cover;
+          object-position: center 25%;
+          border-radius: 12px;
+        }
+
+        /* بزرگ‌تر و برجسته‌تر شدن پنج ثروتمند اول */
+        .eco-top-five-layout {
+          gap: 24px;
+        }
+
+        .eco-top-five-list {
+          gap: 14px;
+        }
+
+        .eco-person-avatar {
+          width: 62px;
+          height: 62px;
+        }
+
+        .eco-person-row {
+          padding: 17px;
+        }
+
+        .eco-featured-person {
+          padding: 28px;
+        }
+
+        @media (max-width: 700px) {
+          .eco-news-card img {
+            height: 200px;
+          }
+
+          .eco-person-avatar {
+            width: 58px;
+            height: 58px;
+          }
+
+          .eco-featured-person {
+            padding: 18px;
+          }
+        }
 
         .eco-news-card {
           display: flex;
