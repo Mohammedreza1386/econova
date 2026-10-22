@@ -1068,36 +1068,38 @@ const previousRows = previousResponse as {
                     </title>
                   </circle>
                 ))}
+              
+{coords.length > 0 && (
+  <>
+    {coords.map((p, i) => {
+      const isFirst = i === 0;
+      const isLast = i === coords.length - 1;
 
-                {coords.length > 0 && (
-                  <>
-                    <text
-                      x={coords[0].x}
-                      y={Math.max(20, coords[0].y - 16)}
-                      fill="#a9f4bb"
-                      fontSize="13"
-                      textAnchor={coords.length === 1 ? "middle" : "start"}
-                    >
-                      ${coords[0].value.toLocaleString("en-US", {
-                        maximumFractionDigits: 2,
-                      })}B
-                    </text>
-                    {coords.length > 1 && (
-                      <text
-                        x={coords[coords.length - 1].x}
-                        y={Math.max(20, coords[coords.length - 1].y - 16)}
-                        fill="#a9f4bb"
-                        fontSize="13"
-                        textAnchor="end"
-                      >
-                        ${coords[coords.length - 1].value.toLocaleString("en-US", {
-                          maximumFractionDigits: 2,
-                        })}B
-                      </text>
-                    )}
-                  </>
-                )}
-              </>
+      return (
+        <text
+          key={`label-${p.id}`}
+          x={Math.max(85, Math.min(530, p.x))}
+          y={Math.max(24, p.y - 17)}
+          fill="#a9f4bb"
+          fontSize="12"
+          textAnchor={
+            coords.length === 1
+              ? "middle"
+              : isFirst
+                ? "start"
+                : isLast
+                  ? "end"
+                  : "middle"
+          }
+        >
+          ${p.value.toLocaleString("en-US", {
+            maximumFractionDigits: 2,
+          })}B
+        </text>
+      );
+    })}
+  </>
+)}
             );
           })()}
         </svg>
