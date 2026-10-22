@@ -486,30 +486,6 @@ const saveNews = async () => {
       setUploadingPhoto(false);
     }
   };
-
-  if (!isAdmin || !adminToken) {
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      throw new Error(responseText || "آپلود عکس ناموفق بود.");
-    }
-
-    const publicUrl =
-      `${SUPABASE_URL}/storage/v1/object/public/billionaire-photos/${path}`;
-
-    setPersonImageUrl(publicUrl);
-    setAdminMessage("عکس آپلود شد؛ حالا ذخیره اطلاعات ثروتمند را بزن.");
-  } catch (error) {
-    setAdminMessage(
-      error instanceof Error
-        ? `آپلود ناموفق بود: ${error.message}`
-        : "آپلود عکس ناموفق بود."
-    );
-  } finally {
-    setUploadingPhoto(false);
-  }
-};
   
   const savePerson = async () => {
     if (!isAdmin || !adminToken) {
