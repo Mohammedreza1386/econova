@@ -2613,15 +2613,16 @@ const previousRows = previousResponse as {
         }
    
 .eco-featured-name {
-  margin: 0 0 10px;
-  color: #f1f7f2;
-  font-size: 26px;
+  margin: 0 0 12px;
+  color: #f3fff6;
+  font-size: clamp(26px, 3vw, 36px);
   font-weight: 900;
-  line-height: 1.35;
-  letter-spacing: -0.4px;
+  line-height: 1.25;
+  letter-spacing: -0.7px;
   overflow-wrap: anywhere;
+  text-shadow: 0 0 24px #5af49b20;
 }
-   
+  
 .eco-featured-company {
   color: #a9c7b4;
   font-size: 13px;
