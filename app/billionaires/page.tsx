@@ -2668,6 +2668,22 @@ const previousRows = previousResponse as {
           gap: 10px;
           min-width: 190px;
         }
+        
+.eco-table-person img {
+  display: block;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  max-width: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  flex: 0 0 48px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
 
         .eco-table-avatar {
           width: 36px;
