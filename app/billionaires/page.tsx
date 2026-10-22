@@ -2578,13 +2578,40 @@ const previousRows = previousResponse as {
           border-radius: 20px;
           font-size: 11px;
         }
+    
+.eco-featured-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 24px;
+  padding: 18px;
+  background: linear-gradient(120deg, #10251b, #09150f);
+  border: 1px solid #244b34;
+  border-radius: 18px;
+}
 
-        .eco-featured-main {
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          margin-bottom: 20px;
-        }
+.eco-featured-avatar {
+  width: 112px;
+  height: 112px;
+  object-fit: cover;
+  border: 2px solid #56e88a;
+  border-radius: 18px;
+  box-shadow: 0 0 28px #48ed8625;
+}
+
+@media (max-width: 700px) {
+  .eco-featured-main {
+    grid-template-columns: minmax(0, 1fr) 82px;
+    gap: 13px;
+    padding: 13px;
+  }
+
+  .eco-featured-avatar {
+    width: 82px;
+    height: 82px;
+  }
+}
 
         .eco-person-avatar {
   grid-area: avatar;
