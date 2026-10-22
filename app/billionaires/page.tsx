@@ -2619,12 +2619,20 @@ const previousRows = previousResponse as {
           font-size: 12px;
         }
 
-        .eco-ranking-table-wrap {
-          width: 100%;
-          overflow-x: auto;
-          border: 1px solid #23372a;
-          border-radius: 14px;
-        }
+.eco-ranking-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #23372a;
+  border-radius: 14px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+  .eco-ranking-table-wrap {
+    overflow-x: hidden;
+  }
+}
 
         .eco-ranking-table {
           width: 100%;
