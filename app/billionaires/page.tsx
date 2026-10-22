@@ -734,6 +734,7 @@ const previousRows = previousResponse as {
                     <strong>
                       {formatBillions(person.net_worth_billions)}
                     </strong>
+
                     <small
                       className={
                         changeIsPositive(person)
@@ -743,7 +744,37 @@ const previousRows = previousResponse as {
                     >
                       {formatChange(person.daily_change_pct)}
                     </small>
+
+                    <small
+                      className={
+                        Number(person.net_worth_billions) -
+                          Number(
+                            person.yesterday_net_worth_billions ??
+                              person.net_worth_billions
+                          ) >= 0
+                          ? "eco-positive"
+                          : "eco-negative"
+                      }
+                    >
+                      {(() => {
+                        const difference =
+                          Number(person.net_worth_billions) -
+                          Number(
+                            person.yesterday_net_worth_billions ??
+                              person.net_worth_billions
+                          );
+
+                        return `${difference >= 0 ? "+" : "−"}$${Math.abs(
+                          difference
+                        ).toFixed(2)} میلیارد`;
+                      })()}
+                    </small>
                   </span>
+
+                  <span className="eco-person-arrow">←</span>
+                </button>
+              ))}
+            </div>
 
                   <span className="eco-person-arrow">←</span>
                 </button>
