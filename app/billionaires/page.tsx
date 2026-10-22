@@ -2228,9 +2228,124 @@ const previousRows = previousResponse as {
            
 .eco-top-five-layout {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 24px;
   align-items: stretch;
+  width: 100%;
+}
+
+.eco-top-five-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.eco-person-row {
+  display: grid;
+  grid-template-columns: 34px 54px minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 14px;
+  text-align: right;
+  background: linear-gradient(135deg, #141b17, #0c110e);
+  border: 1px solid #28382d;
+  border-radius: 14px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  cursor: pointer;
+}
+
+.eco-person-row:hover,
+.eco-person-row.is-active {
+  background: linear-gradient(135deg, #1b2b20, #101712);
+  border-color: #7be995;
+}
+
+.eco-person-rank {
+  color: #b9f27c;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.eco-person-avatar {
+  width: 54px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #1a2a20;
+}
+
+.eco-person-info,
+.eco-person-worth {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.eco-person-info strong {
+  overflow: hidden;
+  color: #f2f5f0;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eco-person-info small {
+  overflow: hidden;
+  color: #91a196;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eco-person-worth {
+  text-align: left;
+}
+
+.eco-person-worth strong {
+  color: #f2f5f0;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.eco-person-worth small {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.eco-person-arrow {
+  color: #b9f27c;
+  font-size: 18px;
+}
+
+@media (max-width: 760px) {
+  .eco-top-five-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .eco-person-row {
+    grid-template-columns: 26px 46px minmax(0, 1fr) auto 12px;
+    gap: 9px;
+    padding: 12px 9px;
+  }
+
+  .eco-person-avatar {
+    width: 46px;
+    height: 46px;
+  }
+
+  .eco-person-info strong,
+  .eco-person-worth strong {
+    font-size: 12px;
+  }
+
+  .eco-person-info small,
+  .eco-person-worth small {
+    font-size: 10px;
+  }
 }
 
 .eco-top-five-list {
