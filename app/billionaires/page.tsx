@@ -3972,6 +3972,41 @@ const previousRows = previousResponse as {
     border-radius: 11px;
   }
 }
+.eco-featured-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  margin-bottom: 22px;
+}
+
+.eco-featured-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  color: #b9f27c;
+  background: linear-gradient(135deg, #1b3b27, #0b1b11);
+  border: 1px solid #376647;
+  border-radius: 12px;
+  font-size: 22px;
+  box-shadow: 0 0 20px #b9f27c12;
+}
+
+@media (max-width: 700px) {
+  .eco-featured-topline {
+    margin-bottom: 17px;
+  }
+
+  .eco-featured-star {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 20px;
+  }
+}
       `}</style>
     </main>
   );
