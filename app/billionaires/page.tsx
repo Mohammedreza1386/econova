@@ -1100,8 +1100,6 @@ const previousRows = previousResponse as {
     })}
   </>
 )}
-            );
-          })()}
         </svg>
       </div>
 
