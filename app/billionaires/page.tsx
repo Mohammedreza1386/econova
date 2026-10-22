@@ -488,6 +488,72 @@ const saveNews = async () => {
     }
   };
   
+const uploadPersonPhoto = async (file: File | undefined) => {
+  if (!file) return;
+
+  if (!isAdmin || !adminToken) {
+    setAdminMessage("ابتدا وارد حساب مدیر شو.");
+    return;
+  }
+
+  if (!editingPersonId) {
+    setAdminMessage("ابتدا یک ثروتمند را برای ویرایش انتخاب کن.");
+    return;
+  }
+
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    setAdminMessage("فقط عکس JPG، PNG یا WebP مجاز است.");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    setAdminMessage("حجم عکس باید حداکثر ۵ مگابایت باشد.");
+    return;
+  }
+
+  setUploadingPhoto(true);
+  setAdminMessage("");
+
+  try {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${editingPersonId}/${Date.now()}-${safeName}`;
+
+    const response = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/billionaire-photos/${path}`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": file.type,
+          "x-upsert": "false",
+        },
+        body: file,
+      }
+    );
+
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      throw new Error(responseText || "آپلود عکس ناموفق بود.");
+    }
+
+    const publicUrl =
+      `${SUPABASE_URL}/storage/v1/object/public/billionaire-photos/${path}`;
+
+    setPersonImageUrl(publicUrl);
+    setAdminMessage("عکس آپلود شد؛ حالا ذخیره اطلاعات ثروتمند را بزن.");
+  } catch (error) {
+    setAdminMessage(
+      error instanceof Error
+        ? `آپلود ناموفق بود: ${error.message}`
+        : "آپلود عکس ناموفق بود."
+    );
+  } finally {
+    setUploadingPhoto(false);
+  }
+};
+  
   const savePerson = async () => {
     if (!isAdmin || !adminToken) {
       setAdminMessage("برای ویرایش اطلاعات باید وارد حساب مدیر شوی.");
