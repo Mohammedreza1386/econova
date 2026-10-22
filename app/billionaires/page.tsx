@@ -1940,8 +1940,24 @@ const previousRows = previousResponse as {
         }
 
         .eco-section {
-          padding: 65px 0 20px;
-          scroll-margin-top: 35px;
+          padding: 38px 0 18px;
+          scroll-margin-top: 24px;
+        }
+
+        #top-five {
+          padding-top: 18px;
+        }
+
+        #top-five .eco-section-heading {
+          margin-bottom: 30px;
+        }
+
+        #top-five .eco-section-heading h2 {
+          font-size: clamp(28px, 4vw, 36px);
+        }
+
+        #top-five .eco-top-five-layout {
+          gap: 26px;
         }
 
         .eco-section-heading {
