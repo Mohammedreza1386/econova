@@ -2078,24 +2078,26 @@ const previousRows = previousResponse as {
           font-size: 11px;
           direction: ltr;
         }
-        
-        .eco-top-five-layout {
-          display: grid;
-          grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-          gap: 22px;
-          align-items: stretch;
-        }
+           
+.eco-top-five-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 22px;
+  align-items: stretch;
+}
 
-        .eco-top-five-list {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-      
+.eco-top-five-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .eco-person-row {
   display: grid;
   grid-template-columns: 42px 52px minmax(0, 1fr);
-  grid-template-areas: "rank avatar info" "rank avatar worth";
+  grid-template-areas:
+    "rank avatar info"
+    "rank avatar worth";
   align-items: center;
   column-gap: 12px;
   row-gap: 8px;
@@ -2109,7 +2111,11 @@ const previousRows = previousResponse as {
   border: 1px solid #294333;
   border-radius: 15px;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .eco-person-row:hover {
@@ -2124,6 +2130,13 @@ const previousRows = previousResponse as {
   border-color: #70e88c;
   background: linear-gradient(135deg, #193522, #101d15);
   box-shadow: 0 0 0 1px #70e88c25, 0 8px 24px #0003;
+}
+
+@media (max-width: 760px) {
+  .eco-top-five-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
 }
 
         .eco-person-row:hover {
