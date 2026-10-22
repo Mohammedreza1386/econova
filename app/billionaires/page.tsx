@@ -1933,38 +1933,78 @@ const previousRows = previousResponse as {
           border-color: #46c66b;
           box-shadow: 0 0 20px #1b9b4720;
         }
+    
+.eco-person-rank {
+  grid-area: rank;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: #a7e8b4;
+  background: #1c3525;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 800;
+  direction: ltr;
+}
 
-        .eco-person-rank {
-          display: grid;
-          flex-shrink: 0;
-          place-items: center;
-          width: 30px;
-          height: 30px;
-          color: #a7e8b4;
-          background: #1c3525;
-          border-radius: 9px;
-          font-size: 13px;
-          font-weight: 800;
-          direction: ltr;
-        }
+.eco-person-avatar {
+  grid-area: avatar;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: #1b2920;
+  border: 1px solid #344c3a;
+  border-radius: 12px;
+}
 
-        .eco-person-avatar {
-          width: 54px;
-          height: 54px;
-          flex-shrink: 0;
-          object-fit: cover;
-          background: #1b2920;
-          border: 1px solid #344c3a;
-          border-radius: 12px;
-        }
+.eco-person-info {
+  grid-area: info;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
 
-        .eco-person-info {
-          display: flex;
-          flex: 1;
-          min-width: 0;
-          flex-direction: column;
-          gap: 5px;
-        }
+.eco-person-info strong {
+  color: #f1f7f2;
+  font-size: 14px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.eco-person-info small {
+  color: #879b8c;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.eco-person-worth {
+  grid-area: worth;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  direction: ltr;
+  text-align: left;
+}
+
+.eco-person-worth strong {
+  color: #65df86;
+  font-size: 13px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.eco-person-worth small {
+  max-width: 100%;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
 
         .eco-person-name {
           overflow: hidden;
