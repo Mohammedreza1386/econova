@@ -486,9 +486,6 @@ const saveNews = async () => {
       setUploadingPhoto(false);
     }
   };
-  
-const uploadPersonPhoto = async (file: File | undefined) => {
-  if (!file) return;
 
   if (!isAdmin || !adminToken) {
     setAdminMessage("ابتدا وارد حساب مدیر شو.");
