@@ -2731,13 +2731,29 @@ const previousRows = previousResponse as {
 }
   
 .eco-featured-company {
+  display: block;
+  margin-top: 6px;
+  margin-bottom: 20px;
   color: #a9c7b4;
   font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
-  line-height: 1.8;
-  margin-top: 5px;
-  margin-bottom: 18px;
+  font-weight: 600;
+  letter-spacing: 0.25px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+
+.eco-featured-company strong {
+  color: #b9f27c;
+  font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .eco-featured-company {
+    margin-top: 4px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    line-height: 1.8;
+  }
 }
 
         .eco-featured-divider {
