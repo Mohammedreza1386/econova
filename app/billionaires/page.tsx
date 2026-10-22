@@ -958,6 +958,37 @@ const previousRows = previousResponse as {
                 {activePerson.bio && (
                   <p className="eco-featured-bio">{activePerson.bio}</p>
                 )}
+                
+                <div className="eco-history-panel">
+  <h3>تاریخچه ثروت</h3>
+  <p>
+    تغییرات ثبت‌شده ثروت {activePerson.name}
+  </p>
+
+  {historyLoading ? (
+    <p>در حال دریافت تاریخچه...</p>
+  ) : wealthHistory.length === 0 ? (
+    <p>هنوز اطلاعاتی برای تاریخچه ثبت نشده است.</p>
+  ) : (
+    <div className="eco-history-list">
+      {wealthHistory.map((point) => (
+        <div
+          className="eco-history-row"
+          key={point.id}
+        >
+          <span>
+            {new Date(point.recorded_at).toLocaleString("fa-IR")}
+          </span>
+          <strong>
+            ${Number(point.net_worth_billions).toLocaleString("en-US", {
+              maximumFractionDigits: 2,
+            })} میلیارد
+          </strong>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
                 {activePerson.source_url && (
                   <a
