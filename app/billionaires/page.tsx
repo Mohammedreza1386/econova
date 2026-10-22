@@ -147,7 +147,6 @@ export default function BillionairesPage() {
   const [personBio, setPersonBio] = useState("");
   const [personImageUrl, setPersonImageUrl] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [personWorth, setPersonWorth] = useState("");
   const [personDailyChange, setPersonDailyChange] = useState("0");
   const [personSource, setPersonSource] = useState("");
