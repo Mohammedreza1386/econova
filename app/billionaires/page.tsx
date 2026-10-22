@@ -1671,6 +1671,28 @@ const previousRows = previousResponse as {
           color-scheme: dark;
         }
 
+.eco-featured-image {
+  display: block;
+  width: 112px;
+  height: 112px;
+  flex-shrink: 0;
+  object-fit: cover;
+  object-position: center;
+  border: 2px solid #56e88a;
+  border-radius: 18px;
+  background: #10251b;
+  box-shadow:
+    0 0 0 5px #56e88a12,
+    0 0 28px #48ed8630;
+}
+
+@media (max-width: 700px) {
+  .eco-featured-image {
+    width: 82px;
+    height: 82px;
+    border-radius: 14px;
+  }
+}
         * {
           box-sizing: border-box;
         }
