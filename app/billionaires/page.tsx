@@ -237,6 +237,8 @@ const [historyLoading, setHistoryLoading] = useState(false);
 
   const [animatedTotal, setAnimatedTotal] = useState(0);
   const [lastUpdated, setLastUpdated] = useState("");
+  const [dailyTotalChange, setDailyTotalChange] = useState<number | null>(null);
+const [dailyTotalStatus, setDailyTotalStatus] = useState("در انتظار ثبت آمار روزانه");
 
   const [loginOpen, setLoginOpen] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
