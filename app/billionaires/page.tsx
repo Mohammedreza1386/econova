@@ -315,6 +315,53 @@ const [historyLoading, setHistoryLoading] = useState(false);
     () => sortedPeople.slice(0, 5),
     [sortedPeople]
   );
+  const dailyMovers = useMemo(() => {
+  const comparable = sortedPeople
+    .map((person) => {
+      const previous = Number(person.yesterday_net_worth_billions);
+      const current = Number(person.net_worth_billions);
+
+      if (
+        person.yesterday_net_worth_billions == null ||
+        !Number.isFinite(previous) ||
+        previous <= 0 ||
+        !Number.isFinite(current)
+      ) {
+        return null;
+      }
+
+      const delta = current - previous;
+
+      return {
+        person,
+        delta,
+        pct: (delta / previous) * 100,
+      };
+    })
+    .filter(
+      (
+        item
+      ): item is {
+        person: Billionaire;
+        delta: number;
+        pct: number;
+      } => item !== null
+    );
+
+  return {
+    gainers: comparable
+      .filter((item) => item.delta > 0)
+      .sort((a, b) => b.delta - a.delta)
+      .slice(0, 5),
+
+    losers: comparable
+      .filter((item) => item.delta < 0)
+      .sort((a, b) => a.delta - b.delta)
+      .slice(0, 5),
+
+    comparableCount: comparable.length,
+  };
+}, [sortedPeople]);
 
   const topTenTotal = useMemo(
     () =>
