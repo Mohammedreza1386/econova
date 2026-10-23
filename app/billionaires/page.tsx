@@ -788,6 +788,44 @@ const saveNews = async () => {
 
     try {
       // خواندن ثروت فعلی از دیتابیس، پیش از ثبت مقدار جدید
+            if (editingPersonId === "__new__") {
+        const createResponse = await apiRequest(
+          "/rest/v1/billionaires",
+          {
+            method: "POST",
+            headers: {
+              Prefer: "return=representation",
+            },
+            body: JSON.stringify({
+              name: personName.trim(),
+              rank,
+              company: personCompany.trim() || null,
+              country: personCountry.trim() || null,
+              bio: personBio.trim() || null,
+              image_url: personImageUrl.trim() || null,
+              net_worth_billions: worth,
+              daily_change_pct: 0,
+              yesterday_net_worth_billions: worth,
+              source_url: personSource.trim() || null,
+              updated_at: new Date().toISOString(),
+              daily_change_date: today,
+            }),
+          },
+          adminToken
+        );
+
+        const createdRows = createResponse as { id: string }[];
+        const createdPerson = createdRows?.[0];
+
+        if (!createdPerson?.id) {
+          throw new Error("فرد ثبت شد، اما شناسه او دریافت نشد.");
+        }
+
+        await loadData();
+        setEditingPersonId(String(createdPerson.id));
+        setAdminMessage("فرد جدید با موفقیت اضافه شد.");
+        return;
+            }
       const previousResponse = await apiRequest(
         `/rest/v1/billionaires?id=eq.${encodeURIComponent(editingPersonId)}&select=net_worth_billions,daily_change_date,yesterday_net_worth_billions`,
         { method: "GET" },
