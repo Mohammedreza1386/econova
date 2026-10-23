@@ -1869,11 +1869,33 @@ const previousRows = previousResponse as {
     id="eco-person-select"
     value={editingPersonId}
     onChange={(event) => {
-      const selected = people.find(
-        (person) => String(person.id) === event.target.value
-      );
-      if (selected) openPersonEditor(selected);
-    }}
+  const value = event.target.value;
+
+  if (value === "__new__") {
+    setEditingPersonId("__new__");
+    setPersonName("");
+    setPersonRank(String(Math.min(people.length + 1, 500)));
+    setPersonCompany("");
+    setPersonCountry("");
+    setPersonBio("");
+    setPersonImageUrl("");
+    setPersonWorth("");
+    setPersonDailyChange("0");
+    setPersonSource("");
+    setAdminMessage("");
+    return;
+  }
+
+  const selected = people.find(
+    (person) => String(person.id) === value
+  );
+
+  if (selected) {
+    openPersonEditor(selected);
+  } else {
+    setEditingPersonId("");
+  }
+}}
     required
   >
     <option value="">یک فرد را انتخاب کن</option>
