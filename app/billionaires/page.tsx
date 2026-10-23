@@ -307,6 +307,74 @@ const [dailyTotalStatus, setDailyTotalStatus] = useState("در انتظار ثب
   useEffect(() => {
     void loadData();
   }, [loadData]);
+  
+    useEffect(() => {
+    let cancelled = false;
+
+    async function loadDailyTotalChange() {
+      try {
+        const rows = await apiRequest<
+          Array<{
+            snapshot_date: string;
+            total_net_worth_billions: number | string;
+          }>
+        >(
+          "/rest/v1/billionaire_daily_totals?select=snapshot_date,total_net_worth_billions&order=snapshot_date.desc&limit=2"
+        );
+
+        if (cancelled) return;
+
+        if (!rows || rows.length < 2) {
+          setDailyTotalChange(null);
+          setDailyTotalStatus("در انتظار ثبت آمار روز قبل");
+          return;
+        }
+
+        const latest = rows[0];
+        const previous = rows[1];
+
+        const latestDate = new Date(
+          `${latest.snapshot_date}T00:00:00Z`
+        ).getTime();
+
+        const previousDate = new Date(
+          `${previous.snapshot_date}T00:00:00Z`
+        ).getTime();
+
+        const oneDay = 24 * 60 * 60 * 1000;
+
+        if (latestDate - previousDate !== oneDay) {
+          setDailyTotalChange(null);
+          setDailyTotalStatus("در انتظار تکمیل آمار روزانه");
+          return;
+        }
+
+        const change =
+          Number(latest.total_net_worth_billions) -
+          Number(previous.total_net_worth_billions);
+
+        if (!Number.isFinite(change)) {
+          setDailyTotalChange(null);
+          setDailyTotalStatus("آمار روزانه معتبر نیست");
+          return;
+        }
+
+        setDailyTotalChange(change);
+        setDailyTotalStatus("تغییر مجموع ثروت در یک روز");
+      } catch {
+        if (!cancelled) {
+          setDailyTotalChange(null);
+          setDailyTotalStatus("دریافت آمار روزانه ناموفق بود");
+        }
+      }
+    }
+
+    void loadDailyTotalChange();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const sortedPeople = useMemo(
     () => [...people].sort((a, b) => a.rank - b.rank),
