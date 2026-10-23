@@ -4483,7 +4483,23 @@ const previousRows = previousResponse as {
 .eco-logo strong { font-size:clamp(20px,2vw,29px)!important; }
 .eco-hero,.eco-stats-grid { display:none!important; }
 .eco-status-line { margin:0 0 12px!important; }
-.eco-global-ticker { display:flex; align-items:center; gap:clamp(12px,2vw,28px); margin:0 0 22px; padding:13px 18px; border:1px solid rgba(185,242,124,.2); border-radius:14px; background:linear-gradient(100deg,#0e1711,#09100c); }
+.eco-global-ticker {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:0 0 16px;
+  padding:8px 12px;
+  border:1px solid rgba(185,242,124,.2);
+  border-radius:12px;
+  background:linear-gradient(100deg,#0e1711,#09100c);
+}
+.eco-ticker-item { gap:8px; }
+.eco-ticker-icon { width:32px; height:32px; font-size:18px; }
+.eco-ticker-copy { gap:2px; }
+.eco-ticker-copy small { font-size:10px; }
+.eco-ticker-copy strong { font-size:clamp(14px,1.5vw,20px); }
+.eco-ticker-copy em { font-size:9px; }
+.eco-ticker-separator { height:32px; }
 .eco-ticker-item { display:flex; align-items:center; gap:12px; min-width:0; }
 .eco-ticker-icon { display:grid;place-items:center;width:42px;height:42px;flex-shrink:0;border:1px solid #b9f27c35;border-radius:50%;color:#b9f27c;font-size:24px;background:#b9f27c0a; }
 .eco-ticker-copy { display:flex;flex-direction:column;gap:3px; }
