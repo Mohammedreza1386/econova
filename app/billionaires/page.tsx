@@ -1862,7 +1862,11 @@ const previousRows = previousResponse as {
     void savePerson();
   }}
 >
-  <h3>ویرایش اطلاعات ثروتمندان</h3>
+<h3>
+  {editingPersonId === "__new__"
+    ? "افزودن ثروتمند جدید"
+    : "ویرایش اطلاعات ثروتمندان"}
+</h3>
 
   <label htmlFor="eco-person-select">انتخاب فرد</label>
   <select
