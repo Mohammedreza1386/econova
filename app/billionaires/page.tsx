@@ -794,6 +794,13 @@ const saveNews = async () => {
     setSaving(true);
     setAdminMessage("");
 
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Tehran",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
     try {
       // خواندن ثروت فعلی از دیتابیس، پیش از ثبت مقدار جدید
             if (editingPersonId === "__new__") {
