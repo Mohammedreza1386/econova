@@ -4144,7 +4144,7 @@ const previousRows = previousResponse as {
   .eco-person-arrow { display:none; }
   .eco-featured-person { padding:22px 17px!important; }
 }
-      </style>
+   `}</style>
     </main>
   );
 }
