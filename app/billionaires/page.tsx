@@ -1029,6 +1029,75 @@ const previousRows = previousResponse as {
           <div className="eco-trillionaire-empty">در انتظار دریافت اطلاعات ثروتمندان از پایگاه داده…</div>
         )}
       </section>
+      
+            <section className="eco-daily-movers" id="daily-movers">
+        <div className="eco-daily-movers-heading">
+          <div>
+            <span>DAILY WEALTH MOVERS</span>
+            <h2>برندگان و بازندگان امروز</h2>
+            <p>بیشترین تغییر ثروت در میان افراد ثبت‌شده</p>
+          </div>
+          <small>
+            {dailyMovers.comparableCount} رکورد قابل مقایسه
+          </small>
+        </div>
+
+        <div className="eco-daily-movers-grid">
+          <div className="eco-mover-panel eco-mover-gainers">
+            <h3><span>↗</span> بیشترین افزایش ثروت</h3>
+
+            {dailyMovers.gainers.length > 0 ? (
+              dailyMovers.gainers.map(({ person, delta, pct }, index) => (
+                <div className="eco-mover-row" key={person.id}>
+                  <span className="eco-mover-rank">{index + 1}</span>
+                  <img src={photoFor(person)} alt={person.name} loading="lazy" />
+                  <div className="eco-mover-person">
+                    <strong>{person.name}</strong>
+                    <small>{person.company || person.country || "—"}</small>
+                  </div>
+                  <div className="eco-mover-values">
+                    <strong>+{formatBillions(delta)}</strong>
+                    <small>+{pct.toFixed(2)}%</small>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="eco-movers-empty">
+                هنوز اطلاعات معتبر افزایش روزانه ثبت نشده است.
+              </p>
+            )}
+          </div>
+
+          <div className="eco-mover-panel eco-mover-losers">
+            <h3><span>↘</span> بیشترین کاهش ثروت</h3>
+
+            {dailyMovers.losers.length > 0 ? (
+              dailyMovers.losers.map(({ person, delta, pct }, index) => (
+                <div className="eco-mover-row" key={person.id}>
+                  <span className="eco-mover-rank">{index + 1}</span>
+                  <img src={photoFor(person)} alt={person.name} loading="lazy" />
+                  <div className="eco-mover-person">
+                    <strong>{person.name}</strong>
+                    <small>{person.company || person.country || "—"}</small>
+                  </div>
+                  <div className="eco-mover-values">
+                    <strong>{formatBillions(delta)}</strong>
+                    <small>{pct.toFixed(2)}%</small>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="eco-movers-empty">
+                هنوز اطلاعات معتبر کاهش روزانه ثبت نشده است.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <p className="eco-movers-footnote">
+          رتبه‌بندی براساس مقایسه ثروت فعلی با ثروت روز قبل محاسبه می‌شود.
+        </p>
+      </section>
 
       <section className="eco-trillionaire-section" id="trillionaires" aria-label="تریلیونرها">
         <div className="eco-trillionaire-heading">
