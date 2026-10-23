@@ -1877,6 +1877,7 @@ const previousRows = previousResponse as {
     required
   >
     <option value="">یک فرد را انتخاب کن</option>
+    <option value="__new__">＋ افزودن فرد جدید</option>
     {people.map((person) => (
       <option key={person.id} value={String(person.id)}>
         رتبه {person.rank} — {person.name}
