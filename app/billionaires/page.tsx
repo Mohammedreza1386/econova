@@ -4509,7 +4509,7 @@ const previousRows = previousResponse as {
 .eco-person-row { align-items:center; }
 .eco-ranking-table td .eco-change-amount { direction:ltr; text-align:right; }
 @media(max-width:640px) {
- .eco-mini-chart { max-width:none; height:48px; }
+.eco-mini-chart { max-width:none; height:42px; }
  .eco-person-worth { min-width:105px; }
 }
 `}
