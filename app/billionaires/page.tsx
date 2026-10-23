@@ -4488,7 +4488,14 @@ const previousRows = previousResponse as {
 .eco-mini-chart-empty { display:flex; align-items:center; max-width:260px; min-height:58px; margin:12px 0 2px; padding:8px 10px; color:#89958d; background:linear-gradient(90deg,rgba(255,255,255,.025),transparent); border-top:1px solid rgba(255,255,255,.07); font-size:10px; line-height:1.6; }
 .eco-change-percent { display:block; font-weight:800; }
 .eco-change-amount { display:block; margin-top:4px; font-size:11px; font-weight:700; direction:ltr; text-align:right; white-space:nowrap; }
-.eco-forbes-card .eco-mini-chart { display:block; width:100%; max-width:none; height:174px; margin:12px 0 0; }
+.eco-forbes-card .eco-mini-chart {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 110px;
+  margin: 6px 0 0;
+  stroke-width: 1.5;
+}
 .eco-forbes-card .eco-mini-chart-empty { display:flex; max-width:none; min-height:58px; margin-top:12px; font-size:10px; line-height:1.6; }
 .eco-person-worth { min-width:120px; }
 .eco-person-row { align-items:center; }
