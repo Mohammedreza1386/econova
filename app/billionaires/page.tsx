@@ -4628,6 +4628,185 @@ const previousRows = previousResponse as {
 .eco-mini-chart { max-width:none; height:42px; }
  .eco-person-worth { min-width:105px; }
 }
+/* Daily wealth movers - luxury style */
+.eco-daily-movers {
+  margin: 0 0 28px;
+  padding: 22px;
+  border: 1px solid rgba(185, 242, 124, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #0c1510, #080d0a);
+}
+
+.eco-daily-movers-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.eco-daily-movers-heading span {
+  color: #b9f27c;
+  font-size: 10px;
+  letter-spacing: 1.3px;
+  font-weight: 800;
+}
+
+.eco-daily-movers-heading h2 {
+  margin: 6px 0;
+  color: #f1f7f2;
+  font-size: clamp(20px, 3vw, 28px);
+}
+
+.eco-daily-movers-heading p,
+.eco-movers-footnote {
+  margin: 0;
+  color: #89978e;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.eco-daily-movers-heading > small {
+  color: #a4b3a8;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.eco-daily-movers-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.eco-mover-panel {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.eco-mover-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #eaf2ec;
+}
+
+.eco-mover-panel h3 span {
+  font-size: 19px;
+}
+
+.eco-mover-gainers h3 span,
+.eco-mover-gainers .eco-mover-values strong,
+.eco-mover-gainers .eco-mover-values small {
+  color: #65df91;
+}
+
+.eco-mover-losers h3 span,
+.eco-mover-losers .eco-mover-values strong,
+.eco-mover-losers .eco-mover-values small {
+  color: #f17b83;
+}
+
+.eco-mover-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.eco-mover-rank {
+  width: 18px;
+  color: #819087;
+  font-size: 11px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.eco-mover-row img {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 50%;
+  background: #14271d;
+  flex-shrink: 0;
+}
+
+.eco-mover-person {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.eco-mover-person strong {
+  overflow: hidden;
+  color: #eaf2ec;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eco-mover-person small {
+  overflow: hidden;
+  color: #849188;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eco-mover-values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.eco-mover-values strong {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.eco-mover-values small {
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.eco-movers-empty {
+  margin: 0;
+  padding: 18px 8px;
+  color: #8c9a90;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.eco-movers-footnote {
+  margin-top: 12px;
+  font-size: 10px;
+}
+
+@media (max-width: 680px) {
+  .eco-daily-movers {
+    padding: 15px;
+  }
+
+  .eco-daily-movers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .eco-daily-movers-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 `}
 </style>
     </main>
