@@ -1033,6 +1033,24 @@ const previousRows = previousResponse as {
           <span className="eco-ticker-icon">♛</span>
           <span className="eco-ticker-copy"><small>میلیاردرهای جهان · Forbes Real-Time</small><strong>۳٬۴۲۸ نفر</strong><em>فهرست سالانه Forbes · ۱۰ مارس ۲۰۲۶</em></span>
         </div>
+                <div className="eco-ticker-separator" />
+        <div className="eco-ticker-item">
+          <span className="eco-ticker-icon">
+            {dailyTotalChange === null
+              ? "◷"
+              : dailyTotalChange >= 0
+                ? "↗"
+                : "↘"}
+          </span>
+          <span className="eco-ticker-copy">
+            <small>{dailyTotalStatus}</small>
+            <strong>
+              {dailyTotalChange === null
+                ? "در انتظار آمار"
+                : `${dailyTotalChange > 0 ? "+" : dailyTotalChange < 0 ? "−" : ""}${formatBillions(Math.abs(dailyTotalChange))}`}
+            </strong>
+          </span>
+        </div>
         <a className="eco-ticker-source" href="https://www.forbes.com/real-time-billionaires/" target="_blank" rel="noreferrer">منبع آمار جهانی ↗</a>
       </section>
 
