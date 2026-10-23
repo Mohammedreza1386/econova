@@ -4482,7 +4482,15 @@ const previousRows = previousResponse as {
 .eco-mini-chart-tooltip strong { color:#e7f5ec; font-size:11px; white-space:nowrap; }
 .eco-mini-chart { touch-action:pan-y; cursor:crosshair; }
 .eco-forbes-card .eco-mini-chart-tooltip { max-width:none; }
-.eco-mini-chart { display:block; width:100%; max-width:260px; height:58px; margin:12px 0 2px; color:#58d889; overflow:visible; }
+.eco-mini-chart {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  height: 48px;
+  margin: 6px 0 2px;
+  color: #58d889;
+  overflow: visible;
+}
 .eco-mini-chart.is-down { color:#f16e78; }
 .eco-mini-chart-grid { opacity:.8; }
 .eco-mini-chart-empty { display:flex; align-items:center; max-width:260px; min-height:58px; margin:12px 0 2px; padding:8px 10px; color:#89958d; background:linear-gradient(90deg,rgba(255,255,255,.025),transparent); border-top:1px solid rgba(255,255,255,.07); font-size:10px; line-height:1.6; }
