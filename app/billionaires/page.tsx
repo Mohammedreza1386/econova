@@ -621,6 +621,14 @@ const saveNews = async () => {
 
   setSaving(true);
   setAdminMessage("");
+  
+ // تاریخ روز بر اساس ساعت ایران
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tehran",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 
   try {
     const existing = newsForRank(editingNewsRank);
@@ -843,14 +851,6 @@ const previousRows = previousResponse as {
       }
 
       const oldWorth = Number(previousPerson.net_worth_billions);
-
-  // تاریخ روز بر اساس ساعت ایران
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Tehran",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
 
   const lastDate = previousPerson.daily_change_date;
   const storedYesterday = previousPerson.yesterday_net_worth_billions;
