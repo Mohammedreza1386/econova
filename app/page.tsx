@@ -85,6 +85,152 @@ const money = (value: number | null, digits = 0) =>
     ? "قیمت موجود نیست"
     : `${number(value, digits)} تومان`;
 
+type HistoryRange = 7 | 30 | 90;
+
+function HistoryChart({
+  title,
+  subtitle,
+  points,
+  range,
+}: {
+  title: string;
+  subtitle: string;
+  points: HistoryPoint[];
+  range: HistoryRange;
+}) {
+  const visible = points.slice(-range);
+
+  const minPrice = visible.length
+    ? Math.min(...visible.map((point) => point.price))
+    : 0;
+
+  const maxPrice = visible.length
+    ? Math.max(...visible.map((point) => point.price))
+    : 0;
+
+  const width = 680;
+  const height = 230;
+  const padding = 30;
+  const priceRange = maxPrice - minPrice || 1;
+
+  const plotted = visible.map((point, index) => {
+    const x =
+      visible.length <= 1
+        ? width / 2
+        : padding +
+          (index * (width - padding * 2)) /
+            (visible.length - 1);
+
+    const y =
+      height -
+      padding -
+      ((point.price - minPrice) / priceRange) *
+        (height - padding * 2);
+
+    return { ...point, x, y };
+  });
+
+  const linePoints = plotted
+    .map((point) => `${point.x},${point.y}`)
+    .join(" ");
+
+  return (
+    <article className="history-card">
+      <div className="history-heading">
+        <div>
+          <div className="name">{title}</div>
+          <div className="muted">{subtitle}</div>
+        </div>
+
+        <span className="coin-mark">↗</span>
+      </div>
+
+      <div className="history-summary">
+        <span className="muted">آخرین قیمت در بازه</span>
+        <strong>
+          {visible.length
+            ? money(visible[visible.length - 1].price)
+            : "داده موجود نیست"}
+        </strong>
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="status">
+          تاریخچه از API دریافت نشد. اتصال منبع داده را بررسی کن.
+        </p>
+      ) : (
+        <>
+          <div className="history-chart">
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              role="img"
+              aria-label={`نمودار تاریخی ${title}`}
+              className="history-svg"
+            >
+              {[0, 1, 2, 3].map((step) => {
+                const y =
+                  padding +
+                  (step * (height - padding * 2)) / 3;
+
+                return (
+                  <line
+                    key={step}
+                    x1={padding}
+                    y1={y}
+                    x2={width - padding}
+                    y2={y}
+                    stroke="#263342"
+                    strokeWidth="1"
+                  />
+                );
+              })}
+
+              {plotted.length > 1 && (
+                <polyline
+                  points={linePoints}
+                  fill="none"
+                  stroke="#d9bd77"
+                  strokeWidth="3"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              )}
+
+              {plotted.map((point) => (
+                <circle
+                  key={point.timestamp}
+                  cx={point.x}
+                  cy={point.y}
+                  r={visible.length > 30 ? 2 : 3}
+                  fill="#d9bd77"
+                >
+                  <title>
+                    {point.date}: {money(point.price)}
+                  </title>
+                </circle>
+              ))}
+            </svg>
+          </div>
+
+          <div className="history-labels">
+            <span>{visible[0].date}</span>
+            <span>
+              {visible[Math.floor((visible.length - 1) / 2)].date}
+            </span>
+            <span>{visible[visible.length - 1].date}</span>
+          </div>
+
+          <div className="history-range-values">
+            <span>کمترین: {money(minPrice)}</span>
+            <span>بیشترین: {money(maxPrice)}</span>
+          </div>
+        </>
+      )}
+    </article>
+  );
+}
+
+
 export default function Home() {
   const [data, setData] = useState<ApiData | null>(null);
   const [error, setError] = useState("");
