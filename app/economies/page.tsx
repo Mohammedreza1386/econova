@@ -27,6 +27,8 @@ export default function EconomiesPage() {
   const [economies, setEconomies] = useState<Economy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     let active = true;
