@@ -1129,20 +1129,21 @@ const [historyRange, setHistoryRange] =
   </div>
 
   <div className="history-grid">
-    <HistoryChart
-      title="قیمت دلار"
-      points={data?.dollarHistory ?? []}
-      days={historyRange}
-      color="#b9f27c"
-    />
+  <div className="history-grid">
+  <HistoryChart
+    title="قیمت دلار"
+    subtitle="تغییرات تاریخی قیمت دلار"
+    points={data?.dollarHistory ?? []}
+    range={historyRange}
+  />
 
-    <HistoryChart
-      title="طلای ۱۸ عیار"
-      points={data?.goldHistory ?? []}
-      days={historyRange}
-      color="#d9bd77"
-    />
-  </div>
+  <HistoryChart
+    title="طلای ۱۸ عیار"
+    subtitle="تغییرات تاریخی قیمت طلای ۱۸ عیار"
+    points={data?.goldHistory ?? []}
+    range={historyRange}
+  />
+</div>
 </section>
             <section className="wrap section" id="parsian">
         <div className="gold-panel">
