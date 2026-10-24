@@ -88,6 +88,7 @@ const latestByCountry = new Map<string, Economy>();
             !row?.country?.id ||
             !row?.country?.value ||
             !row?.countryiso3code ||
+            !countryCodes.has(row.countryiso3code) ||
             row.value === null
           ) {
             continue;
