@@ -268,6 +268,56 @@ export default function Home() {
           <div className="toman" style={{ fontSize: 20 }}>{money(currency.toman, 2)}</div>
         </article>)}</div>}
       </section>
+      {data?.oilPrices && (
+  <>
+    <div className="section-head" style={{ marginTop: 30, marginBottom: 14 }}>
+      <div>
+        <p className="eyebrow">OIL MARKET</p>
+        <h2>قیمت جهانی نفت</h2>
+        <p className="section-sub">قیمت هر بشکه به دلار آمریکا</p>
+      </div>
+    </div>
+
+    <div className="grid">
+      {data.oilPrices.map((oil) => (
+        <article className="card" key={oil.code}>
+          <div className="card-top">
+            <div>
+              <div className="name">{oil.name}</div>
+              <div className="symbol">{oil.code}</div>
+            </div>
+            <div className="coin-mark">🛢️</div>
+          </div>
+
+          <div className="price">
+            {oil.usd !== null
+              ? `$${Number(oil.usd).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
+              : "قیمت در دسترس نیست"}
+          </div>
+
+          <div className="price-label">{oil.unit}</div>
+
+          {oil.changePct !== null && (
+            <div className={`change ${oil.changePct >= 0 ? "up" : "down"}`}>
+              {oil.changePct > 0 ? "+" : ""}
+              {oil.changePct.toLocaleString("fa-IR")}٪
+            </div>
+          )}
+
+          <div className="muted" style={{ marginTop: 12 }}>
+            آخرین داده:{" "}
+            {oil.updatedAt
+              ? new Date(oil.updatedAt).toLocaleString("fa-IR")
+              : "نامشخص"}
+          </div>
+        </article>
+      ))}
+    </div>
+  </>
+)}
             <section className="wrap section" id="gold">
         <div className="section-head"><div><p className="eyebrow">03 / GOLD & COIN MARKET</p><h2>طلا و سکه</h2><p className="section-sub">قیمت‌های اعلام‌شده توسط API بازار</p></div><span className="tiny-label">GOLD WATCH</span></div>
         {!loading && !data?.goldAndCoins?.length && <p className="status">قیمت طلا و سکه فعلاً در دسترس نیست.</p>}
