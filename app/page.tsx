@@ -1128,8 +1128,7 @@ const [historyRange, setHistoryRange] =
     ))}
   </div>
 
-  <div className="history-grid">
-  <div className="history-grid">
+<div className="history-grid">
   <HistoryChart
     title="قیمت دلار"
     subtitle="تغییرات تاریخی قیمت دلار"
@@ -1145,7 +1144,9 @@ const [historyRange, setHistoryRange] =
   />
 </div>
 </section>
-            <section className="wrap section" id="parsian">
+
+<section className="wrap section" id="parsian">
+
         <div className="gold-panel">
           <div className="section-head" style={{ marginBottom: 0 }}>
             <div>
