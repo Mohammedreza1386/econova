@@ -131,7 +131,15 @@ const latestByCountry = new Map<string, Economy>();
     };
   }, []);
 
-  const top20 = economies.slice(0, 20);
+const top20 = economies.slice(0, 20);
+
+const visibleEconomies = (
+  showAll ? economies : top20
+).filter((economy) =>
+  `${economy.country} ${economy.code}`
+    .toLowerCase()
+    .includes(searchTerm.trim().toLowerCase())
+);
 
   return (
     <main className="min-h-screen bg-[#070b12] text-[#f4f2ec]">
