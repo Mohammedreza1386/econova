@@ -36,9 +36,19 @@ type MarketTrend = {
   updatedAt: string | null;
 };
 
+type OilPrice = {
+  code: string;
+  name: string;
+  usd: number | null;
+  unit: string;
+  changePct: number | null;
+  updatedAt: string | null;
+};
+
 type ApiData = {
   items: Coin[];
   currencies: Currency[];
+  oilPrices?: OilPrice[];
   goldAndCoins: GoldCoin[];
   updatedAt: string | null;
   marketTrend?: MarketTrend[];
