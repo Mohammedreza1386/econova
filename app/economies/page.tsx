@@ -289,7 +289,18 @@ const visibleEconomies = (
                 );
 
                 return (
-                  <div key={economy.code}>
+                  <div
+  key={economy.code}
+  className={`rounded-2xl border p-4 transition-all duration-300 ${
+    index === 0
+      ? "border-[#d9bd77]/40 bg-[#d9bd77]/[0.07]"
+      : index === 1
+        ? "border-gray-300/20 bg-white/[0.035]"
+        : index === 2
+          ? "border-[#b97845]/30 bg-[#b97845]/[0.04]"
+          : "border-white/[0.06] bg-white/[0.015]"
+  }`}
+>
                     <div className="mb-2 flex items-center justify-between gap-3 text-sm">
                       <span className="font-semibold">
                         <span className="ml-2 text-gray-400">
