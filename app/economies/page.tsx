@@ -287,7 +287,10 @@ const visibleEconomies = (
                       {economies.findIndex((item) => item.code === economy.code) + 1}
                     </td>
                     <td className="p-4">
-                      <div className="font-bold">{economy.country}</div>
+                    <div className="flex items-center gap-2 font-bold">
+  <span className="text-xl">{getFlag(economy.code)}</span>
+  <span>{economy.country}</span>
+</div>
                       <div className="mt-1 text-xs text-gray-500">
                         {economy.code}
                       </div>
