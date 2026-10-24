@@ -163,6 +163,24 @@ const visibleEconomies = (
       </header>
 
       <section className="mx-auto max-w-7xl px-5 py-8 md:px-10">
+        
+<div className="mb-5 flex flex-col gap-3 sm:flex-row">
+  <input
+    type="search"
+    value={searchTerm}
+    onChange={(event) => setSearchTerm(event.target.value)}
+    placeholder="جست‌وجوی نام کشور یا کد آن..."
+    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none focus:border-[#b9f27c]"
+  />
+
+  <button
+    onClick={() => setShowAll((current) => !current)}
+    className="shrink-0 rounded-xl border border-[#d9bd77]/40 px-4 py-3 text-sm text-[#d9bd77]"
+  >
+    {showAll ? "نمایش ۲۰ اقتصاد برتر" : "نمایش فهرست کامل"}
+  </button>
+</div>
+        
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-bold">۲۰ اقتصاد بزرگ</h2>
