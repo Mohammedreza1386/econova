@@ -36,20 +36,50 @@ export default function EconomiesPage() {
         setLoading(true);
         setError("");
 
-        const response = await fetch(
-          `https://api.worldbank.org/v2/country/all/indicator/${GDP_INDICATOR}?format=json&per_page=20000&date=2020:2026`
-        );
+        
+const [countriesResponse, response] = await Promise.all([
+  fetch(
+    "https://api.worldbank.org/v2/country?format=json&per_page=400"
+  ),
+  fetch(
+    `https://api.worldbank.org/v2/country/all/indicator/${GDP_INDICATOR}?format=json&per_page=20000&date=2020:2026`
+  ),
+]);
 
-        if (!response.ok) {
-          throw new Error("دریافت اطلاعات بانک جهانی ناموفق بود.");
-        }
+if (!countriesResponse.ok || !response.ok) {
+  throw new Error("دریافت اطلاعات بانک جهانی ناموفق بود.");
+}
 
-        const result = await response.json();
-        const rows = result?.[1];
+const countriesResult = await countriesResponse.json();
+const countryRows = countriesResult?.[1];
 
-        if (!Array.isArray(rows)) {
-          throw new Error("ساختار داده دریافتی معتبر نیست.");
-        }
+if (!Array.isArray(countryRows)) {
+  throw new Error("فهرست کشورهای بانک جهانی معتبر نیست.");
+}
+
+const countryCodes = new Set<string>(
+  countryRows
+    .filter(
+      (country: {
+        id?: string;
+        region?: { value?: string };
+      }) =>
+        country.id &&
+        country.region?.value &&
+        country.region.value !== "Aggregates"
+    )
+    .map((country: { id: string }) => country.id)
+);
+
+const result = await response.json();
+const rows = result?.[1];
+
+if (!Array.isArray(rows)) {
+  throw new Error("داده‌های GDP معتبر نیستند.");
+}
+
+const latestByCountry = new Map<string, Economy>();
+
 
         const latestByCountry = new Map<string, Economy>();
 
