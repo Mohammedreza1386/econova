@@ -267,7 +267,7 @@ const visibleEconomies = (
         )}
         
         {!loading && !error && top20.length > 0 && (
-          <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5 md:p-7">
+          <section className="mb-8 overflow-hidden rounded-3xl border border-[#b9f27c]/20 bg-gradient-to-br from-[#111b20] via-[#0b1119] to-[#17150e] p-5 shadow-2xl shadow-black/30 md:p-8">
             <div className="mb-6">
               <p className="text-xs tracking-widest text-[#b9f27c]">
                 ECONOVA • GDP COMPARISON
