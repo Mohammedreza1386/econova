@@ -265,6 +265,60 @@ const visibleEconomies = (
             برای این بازه، داده اقتصادی قابل نمایش دریافت نشد.
           </p>
         )}
+        
+        {!loading && !error && top20.length > 0 && (
+          <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5 md:p-7">
+            <div className="mb-6">
+              <p className="text-xs tracking-widest text-[#b9f27c]">
+                ECONOVA • GDP COMPARISON
+              </p>
+              <h2 className="mt-2 text-xl font-black">
+                مقایسه ۱۰ اقتصاد بزرگ جهان
+              </h2>
+              <p className="mt-2 text-sm text-gray-400">
+                تولید ناخالص داخلی اسمی به دلار آمریکا
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              {top20.slice(0, 10).map((economy, index) => {
+                const maximum = top20[0]?.gdp ?? 1;
+                const percentage = Math.max(
+                  1,
+                  ((economy.gdp ?? 0) / maximum) * 100
+                );
+
+                return (
+                  <div key={economy.code}>
+                    <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+                      <span className="font-semibold">
+                        <span className="ml-2 text-gray-400">
+                          {index + 1}.
+                        </span>
+                        {getFlag(economy.code)} {economy.country}
+                      </span>
+                      <span className="shrink-0 font-bold text-[#b9f27c]">
+                        {formatMoney(economy.gdp)}
+                      </span>
+                    </div>
+
+                    <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-[#b9f27c] transition-all duration-700"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="mt-5 text-xs leading-6 text-gray-500">
+              منبع: بانک جهانی. سال آخرین داده موجود برای هر کشور ممکن است متفاوت باشد.
+            </p>
+          </section>
+        )}
+        
 
         {!loading && !error && top20.length > 0 && (
           <div className="overflow-x-auto rounded-2xl border border-white/10">
