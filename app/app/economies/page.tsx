@@ -80,9 +80,6 @@ if (!Array.isArray(rows)) {
 
 const latestByCountry = new Map<string, Economy>();
 
-
-        const latestByCountry = new Map<string, Economy>();
-
         for (const row of rows) {
           if (
             !row?.country?.id ||
