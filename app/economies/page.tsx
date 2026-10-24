@@ -315,7 +315,7 @@ const visibleEconomies = (
 
                     <div className="h-3 overflow-hidden rounded-full border border-white/[0.06] bg-[#05080d]">
                       <div
-                        className="h-full rounded-full bg-[#b9f27c] transition-all duration-700"
+                        className="h-full rounded-full bg-gradient-to-r from-[#8bbd54] via-[#b9f27c] to-[#e0d59a] shadow-[0_0_12px_rgba(185,242,124,0.2)] transition-all duration-700"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
