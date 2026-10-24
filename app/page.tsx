@@ -669,6 +669,102 @@ const [historyRange, setHistoryRange] =
       flex-wrap: wrap;
     }
     .footer-brand { color: #d9bd77; font-weight: 900; letter-spacing: 1px; }
+    
+    .history-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .history-button {
+      padding: 9px 15px;
+      border: 1px solid rgba(217,189,119,.25);
+      border-radius: 8px;
+      background: #101823;
+      color: #aab4c0;
+      cursor: pointer;
+    }
+
+    .history-button.active {
+      background: linear-gradient(135deg, #d9bd77, #a8843e);
+      color: #11140f;
+      border-color: transparent;
+      font-weight: 800;
+    }
+
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .history-card {
+      min-width: 0;
+      padding: 20px;
+      border: 1px solid rgba(217,189,119,.2);
+      border-radius: 15px;
+      background: linear-gradient(145deg, #121b27, #0b1119);
+    }
+
+    .history-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .history-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .history-summary strong {
+      color: #e2c77f;
+      font-size: 18px;
+      overflow-wrap: anywhere;
+    }
+
+    .history-chart {
+      margin-top: 18px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .history-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    .history-labels,
+    .history-range-values {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #8794a4;
+      font-size: 10px;
+      direction: ltr;
+    }
+
+    .history-range-values {
+      margin-top: 14px;
+      direction: rtl;
+    }
+
+    @media (max-width: 560px) {
+      .history-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .history-card {
+        padding: 15px;
+      }
+    }
+    
     @media (max-width: 850px) {
       .nav { padding: 15px 0; align-items: flex-start; flex-direction: column; }
       .navlinks { gap: 14px; }
