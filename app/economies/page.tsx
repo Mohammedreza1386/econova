@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,141 +6,93 @@ type Economy = {
   country: string;
   code: string;
   gdp: number | null;
-  year: string | null;
+  gdpYear: string | null;
+  growth: number | null;
+  growthYear: string | null;
+  gdpPerCapita: number | null;
+  gdpPerCapitaYear: string | null;
+  population: number | null;
+  populationYear: string | null;
 };
 
-const GDP_INDICATOR = "NY.GDP.MKTP.CD";
+type IndicatorRow = {
+  country?: { id?: string; value?: string; region?: { value?: string } };
+  countryiso3code?: string;
+  date?: string;
+  value?: number | string | null;
+};
+
+const INDICATORS = {
+  gdp: "NY.GDP.MKTP.CD",
+  growth: "NY.GDP.MKTP.KD.ZG",
+  gdpPerCapita: "NY.GDP.PCAP.CD",
+  population: "SP.POP.TOTL",
+};
 
 const styles = `
-  * { box-sizing: border-box; }
-  .economies-page {
-    min-height: 100vh;
-    background:
-      radial-gradient(ellipse at 85% 0%, rgba(44,90,65,.19), transparent 38%),
-      #070b12;
-    color: #f4f2ec;
-    font-family: Tahoma, Arial, sans-serif;
-    direction: rtl;
-  }
-  .economies-page a { color: inherit; text-decoration: none; }
-  .eco-wrap { width: min(1160px, calc(100% - 36px)); margin: auto; }
-  .eco-header {
-    padding: 25px 0 45px;
-    border-bottom: 1px solid rgba(217,189,119,.16);
-    background: rgba(7,11,18,.65);
-  }
-  .eco-topline {
-    height: 3px;
-    background: linear-gradient(90deg,#947039,#d9bd77,#b9f27c,#947039);
-  }
-  .eco-back { color: #d9bd77 !important; font-size: 12px; }
-  .eco-eyebrow {
-    margin: 34px 0 10px;
-    color: #b9f27c;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 2px;
-    direction: ltr;
-    text-align: right;
-  }
-  .eco-title { margin: 0; font-size: clamp(32px,5vw,54px); line-height: 1.5; }
-  .eco-description {
-    max-width: 680px;
-    color: #9ba7b5;
-    font-size: 13px;
-    line-height: 2.2;
-  }
-  .eco-main { padding: 30px 0 55px; }
-  .eco-toolbar { display: flex; gap: 12px; margin-bottom: 30px; }
-  .eco-search {
-    min-width: 0; flex: 1; padding: 14px 16px;
-    border: 1px solid rgba(255,255,255,.12);
-    border-radius: 10px; background: #101823; color: #fff;
-    outline: none; font: inherit; font-size: 12px;
-  }
-  .eco-search:focus { border-color: #b9f27c; }
-  .eco-button {
-    padding: 12px 17px; border: 1px solid rgba(217,189,119,.4);
-    border-radius: 10px; background: rgba(217,189,119,.06);
-    color: #e2c77f; font: inherit; font-size: 12px; cursor: pointer;
-  }
-  .eco-button:hover { background: rgba(217,189,119,.13); }
-  .eco-section-head {
-    display: flex; align-items: end; justify-content: space-between;
-    flex-wrap: wrap; gap: 14px; margin-bottom: 20px;
-  }
-  .eco-section-head h2 { margin: 0; font-size: 23px; }
-  .eco-muted { color: #8794a4; font-size: 11px; line-height: 2; }
-  .eco-source {
-    padding: 8px 12px; border: 1px solid rgba(255,255,255,.1);
-    border-radius: 30px; color: #b8c1ca; font-size: 10px;
-  }
-  .eco-panel {
-    margin-bottom: 28px; padding: 25px;
-    border: 1px solid rgba(185,242,124,.19);
-    border-radius: 18px;
-    background: linear-gradient(140deg,#111b20,#0b1119 65%,#17150e);
-    box-shadow: 0 20px 55px rgba(0,0,0,.2);
-  }
-  .eco-panel-title { margin: 0 0 8px; font-size: 20px; }
-  .eco-bars { display: grid; gap: 13px; margin-top: 25px; }
-  .eco-bar-card {
-    padding: 15px; border: 1px solid rgba(255,255,255,.07);
-    border-radius: 12px; background: rgba(255,255,255,.018);
-  }
-  .eco-bar-card.first { border-color: rgba(217,189,119,.4); background: rgba(217,189,119,.06); }
-  .eco-bar-card.second { border-color: rgba(210,220,230,.2); }
-  .eco-bar-card.third { border-color: rgba(185,120,69,.3); }
-  .eco-bar-label {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 12px; margin-bottom: 11px; font-size: 12px;
-  }
-  .eco-country { font-weight: 700; overflow-wrap: anywhere; }
-  .eco-money { color: #b9f27c; font-weight: 800; direction: ltr; text-align: left; }
-  .eco-track {
-    height: 9px; overflow: hidden; border-radius: 30px;
-    background: #05080d; border: 1px solid rgba(255,255,255,.06);
-  }
-  .eco-fill {
-    height: 100%; border-radius: inherit;
-    background: linear-gradient(90deg,#8bbd54,#b9f27c,#e0d59a);
-    box-shadow: 0 0 12px rgba(185,242,124,.2);
-    transition: width .7s ease;
-  }
-  .eco-table-wrap { overflow-x: auto; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; }
-  .eco-table { width: 100%; min-width: 600px; border-collapse: collapse; text-align: right; font-size: 12px; }
-  .eco-table th { padding: 16px; background: rgba(255,255,255,.04); color: #9ba7b5; font-weight: 500; }
-  .eco-table td { padding: 15px 16px; border-top: 1px solid rgba(255,255,255,.07); }
-  .eco-table tbody tr:hover { background: rgba(255,255,255,.035); }
-  .eco-rank { color: #b9f27c; font-weight: 800; }
-  .eco-country-cell { display: flex; align-items: center; gap: 9px; font-weight: 700; }
-  .eco-flag { font-size: 21px; }
-  .eco-code { margin-top: 5px; color: #738091; font-size: 10px; direction: ltr; text-align: right; }
-  .eco-status {
-    padding: 18px; border: 1px solid rgba(255,255,255,.1);
-    border-radius: 12px; color: #c4cbd2; font-size: 12px; line-height: 2;
-  }
-  .eco-error { border-color: rgba(240,100,100,.35); background: rgba(120,20,20,.13); }
-  .eco-footer {
-    margin-top: 35px; padding-top: 20px;
-    border-top: 1px solid rgba(255,255,255,.1);
-    color: #7e8b99; font-size: 10px; line-height: 2.4;
-  }
-  .eco-footer a { color: #d9bd77; text-decoration: underline; }
-  @media (max-width: 600px) {
-    .eco-wrap { width: calc(100% - 26px); }
-    .eco-header { padding-bottom: 30px; }
-    .eco-toolbar { flex-direction: column; }
-    .eco-button { width: 100%; }
-    .eco-panel { padding: 15px; }
-    .eco-bar-label { font-size: 11px; }
-    .eco-section-head h2 { font-size: 20px; }
-  }
+* { box-sizing: border-box; }
+.economies-page {
+  min-height:100vh;
+  background:radial-gradient(ellipse at 85% 0%,rgba(44,90,65,.19),transparent 38%),#070b12;
+  color:#f4f2ec;font-family:Tahoma,Arial,sans-serif;direction:rtl;
+}
+.economies-page a {color:inherit;text-decoration:none}
+.eco-wrap {width:min(1160px,calc(100% - 36px));margin:auto}
+.eco-topline {height:3px;background:linear-gradient(90deg,#947039,#d9bd77,#b9f27c,#947039)}
+.eco-header {padding:25px 0 38px;border-bottom:1px solid rgba(217,189,119,.16);background:rgba(7,11,18,.65)}
+.eco-back {color:#d9bd77!important;font-size:12px}
+.eco-eyebrow {margin:30px 0 10px;color:#b9f27c;font-size:10px;font-weight:800;letter-spacing:2px;direction:ltr;text-align:right}
+.eco-title {margin:0;font-size:clamp(32px,5vw,54px);line-height:1.5}
+.eco-description {max-width:700px;color:#9ba7b5;font-size:13px;line-height:2.2}
+.eco-main {padding:30px 0 55px}
+.eco-toolbar {display:flex;gap:12px;margin-bottom:28px}
+.eco-search {min-width:0;flex:1;padding:14px 16px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:#101823;color:#fff;outline:none;font:inherit;font-size:12px}
+.eco-search:focus {border-color:#b9f27c}
+.eco-button {padding:12px 17px;border:1px solid rgba(217,189,119,.4);border-radius:10px;background:rgba(217,189,119,.06);color:#e2c77f;font:inherit;font-size:12px;cursor:pointer}
+.eco-button:hover {background:rgba(217,189,119,.13)}
+.eco-section-head {display:flex;align-items:end;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:18px}
+.eco-section-head h2 {margin:0;font-size:22px}
+.eco-muted {color:#8794a4;font-size:11px;line-height:2}
+.eco-source {padding:8px 12px;border:1px solid rgba(255,255,255,.1);border-radius:30px;color:#b8c1ca;font-size:10px}
+.eco-panel {margin-bottom:28px;padding:24px;border:1px solid rgba(185,242,124,.19);border-radius:18px;background:linear-gradient(140deg,#111b20,#0b1119 65%,#17150e);box-shadow:0 20px 55px rgba(0,0,0,.2)}
+.eco-panel-title {margin:0 0 8px;font-size:20px}
+.eco-bars {display:grid;gap:13px;margin-top:25px}
+.eco-bar-card {padding:15px;border:1px solid rgba(255,255,255,.07);border-radius:12px;background:rgba(255,255,255,.018)}
+.eco-bar-card.first {border-color:rgba(217,189,119,.4);background:rgba(217,189,119,.06)}
+.eco-bar-card.second {border-color:rgba(210,220,230,.2)}
+.eco-bar-card.third {border-color:rgba(185,120,69,.3)}
+.eco-bar-label {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px;font-size:12px}
+.eco-country {font-weight:700;overflow-wrap:anywhere}
+.eco-money {color:#b9f27c;font-weight:800;direction:ltr;text-align:left;white-space:nowrap}
+.eco-track {height:9px;overflow:hidden;border-radius:30px;background:#05080d;border:1px solid rgba(255,255,255,.06)}
+.eco-fill {height:100%;border-radius:inherit;background:linear-gradient(90deg,#8bbd54,#b9f27c,#e0d59a);transition:width .7s ease}
+.eco-table-wrap {overflow-x:auto;border:1px solid rgba(255,255,255,.1);border-radius:14px}
+.eco-table {width:100%;min-width:1040px;border-collapse:collapse;text-align:right;font-size:12px}
+.eco-table th {padding:15px 12px;background:rgba(255,255,255,.04);color:#9ba7b5;font-weight:500;white-space:nowrap}
+.eco-table td {padding:14px 12px;border-top:1px solid rgba(255,255,255,.07);vertical-align:middle}
+.eco-table tbody tr:hover {background:rgba(255,255,255,.035)}
+.eco-rank {color:#b9f27c;font-weight:800}
+.eco-country-cell {display:flex;align-items:center;gap:9px;font-weight:700;min-width:130px}
+.eco-flag {font-size:21px}
+.eco-code {margin-top:5px;color:#738091;font-size:10px;direction:ltr;text-align:right}
+.eco-status {padding:18px;border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#c4cbd2;font-size:12px;line-height:2}
+.eco-error {border-color:rgba(240,100,100,.35);background:rgba(120,20,20,.13)}
+.eco-metric {direction:ltr;text-align:right;white-space:nowrap;color:#e5e9ed}
+.eco-footer {margin-top:35px;padding-top:20px;border-top:1px solid rgba(255,255,255,.1);color:#7e8b99;font-size:10px;line-height:2.4}
+.eco-footer a {color:#d9bd77;text-decoration:underline}
+@media(max-width:600px) {
+ .eco-wrap {width:calc(100% - 26px)}
+ .eco-header {padding-bottom:28px}
+ .eco-toolbar {flex-direction:column}
+ .eco-button {width:100%}
+ .eco-panel {padding:15px}
+ .eco-bar-label {font-size:11px}
+ .eco-section-head h2 {font-size:19px}
+}
 `;
 
 function formatMoney(value: number | null) {
   if (value === null) return "داده موجود نیست";
-
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -150,23 +101,55 @@ function formatMoney(value: number | null) {
   }).format(value);
 }
 
+function formatNumber(value: number | null) {
+  if (value === null) return "داده موجود نیست";
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatGrowth(value: number | null) {
+  if (value === null) return "داده موجود نیست";
+  return `${value > 0 ? "+" : ""}${value.toFixed(2)}٪`;
+}
+
 function getFlag(code: string) {
   const flags: Record<string, string> = {
-    USA: "🇺🇸", CHN: "🇨🇳", JPN: "🇯🇵", DEU: "🇩🇪",
-    IND: "🇮🇳", GBR: "🇬🇧", FRA: "🇫🇷", ITA: "🇮🇹",
-    RUS: "🇷🇺", BRA: "🇧🇷", CAN: "🇨🇦", KOR: "🇰🇷",
-    AUS: "🇦🇺", ESP: "🇪🇸", MEX: "🇲🇽", IDN: "🇮🇩",
-    TUR: "🇹🇷", SAU: "🇸🇦", NLD: "🇳🇱", CHE: "🇨🇭",
-    IRN: "🇮🇷", PAK: "🇵🇰", POL: "🇵🇱", SWE: "🇸🇪",
-    BEL: "🇧🇪", ARG: "🇦🇷", NOR: "🇳🇴", AUT: "🇦🇹",
-    THA: "🇹🇭", VNM: "🇻🇳", EGY: "🇪🇬", NGA: "🇳🇬",
-    ZAF: "🇿🇦", ARE: "🇦🇪", ISR: "🇮🇱", IRQ: "🇮🇶",
-    AFG: "🇦🇫",
+    USA:"🇺🇸",CHN:"🇨🇳",JPN:"🇯🇵",DEU:"🇩🇪",IND:"🇮🇳",
+    GBR:"🇬🇧",FRA:"🇫🇷",ITA:"🇮🇹",RUS:"🇷🇺",BRA:"🇧🇷",
+    CAN:"🇨🇦",KOR:"🇰🇷",AUS:"🇦🇺",ESP:"🇪🇸",MEX:"🇲🇽",
+    IDN:"🇮🇩",TUR:"🇹🇷",SAU:"🇸🇦",NLD:"🇳🇱",CHE:"🇨🇭",
+    IRN:"🇮🇷",PAK:"🇵🇰",POL:"🇵🇱",SWE:"🇸🇪",BEL:"🇧🇪",
+    ARG:"🇦🇷",NOR:"🇳🇴",AUT:"🇦🇹",THA:"🇹🇭",VNM:"🇻🇳",
+    EGY:"🇪🇬",NGA:"🇳🇬",ZAF:"🇿🇦",ARE:"🇦🇪",ISR:"🇮🇱",
+    IRQ:"🇮🇶",AFG:"🇦🇫",UKR:"🇺🇦",SGP:"🇸🇬",MYS:"🇲🇾",
+    PHL:"🇵🇭",BGD:"🇧🇩",CHL:"🇨🇱",COL:"🇨🇴",NZL:"🇳🇿",
+    PRT:"🇵🇹",GRC:"🇬🇷",CZE:"🇨🇿",ROU:"🇷🇴",HUN:"🇭🇺",
   };
-
   return flags[code] ?? "🌐";
 }
 
+function latestValues(rows: IndicatorRow[]) {
+  const values = new Map<string, { value: number; year: string }>();
+
+  for (const row of rows) {
+    const code = row.countryiso3code;
+    const year = row.date;
+    const value = row.value === null || row.value === undefined
+      ? NaN
+      : Number(row.value);
+
+    if (!code || !year || !Number.isFinite(value)) continue;
+
+    const previous = values.get(code);
+    if (!previous || Number(year) > Number(previous.year)) {
+      values.set(code, { value, year });
+    }
+  }
+
+  return values;
+}
 export default function EconomiesPage() {
   const [economies, setEconomies] = useState<Economy[]>([]);
   const [loading, setLoading] = useState(true);
@@ -182,51 +165,112 @@ export default function EconomiesPage() {
         setLoading(true);
         setError("");
 
-        const response = await fetch(
-          `https://api.worldbank.org/v2/country/all/indicator/${GDP_INDICATOR}?format=json&per_page=20000&date=2020:2026`
+        const api = "https://api.worldbank.org/v2";
+        const query = "format=json&per_page=20000&date=2018:2026";
+
+        // دریافت فهرست رسمی کشورها برای حذف قاره‌ها و گروه‌ها
+        const countriesResponse = await fetch(
+          `${api}/country?format=json&per_page=400`
         );
 
-        if (!response.ok) {
-          throw new Error("دریافت اطلاعات بانک جهانی ناموفق بود.");
+        if (!countriesResponse.ok) {
+          throw new Error("دریافت فهرست کشورها ناموفق بود.");
         }
 
-        const result = await response.json();
-        const rows = result?.[1];
+        const countriesResult = await countriesResponse.json();
+        const countryRows = countriesResult?.[1];
 
-        if (!Array.isArray(rows)) {
-          throw new Error("داده‌های GDP معتبر نیستند.");
+        if (!Array.isArray(countryRows)) {
+          throw new Error("فهرست رسمی کشورها معتبر نیست.");
         }
 
-        const latestByCountry = new Map<string, Economy>();
+        const countryNames = new Map<string, string>();
 
-        for (const row of rows) {
+        for (const country of countryRows) {
+          const code = country?.id;
+          const name = country?.name;
+          const region = country?.region?.value;
+
           if (
-            !row?.country?.id ||
-            !row?.country?.value ||
-            !row?.countryiso3code ||
-            row?.country?.region?.value === "Aggregates" ||
-            row.value === null ||
-            !Number.isFinite(Number(row.value))
+            !code ||
+            !name ||
+            !region ||
+            region === "Aggregates" ||
+            !/^[A-Z]{3}$/.test(code)
           ) {
             continue;
           }
 
-          const code = row.countryiso3code;
-          const previous = latestByCountry.get(code);
-
-          if (!previous || Number(row.date) > Number(previous.year)) {
-            latestByCountry.set(code, {
-              country: row.country.value,
-              code,
-              gdp: Number(row.value),
-              year: String(row.date),
-            });
-          }
+          countryNames.set(code, name);
         }
 
-        const sorted = Array.from(latestByCountry.values()).sort(
-          (a, b) => (b.gdp ?? 0) - (a.gdp ?? 0)
+        if (countryNames.size === 0) {
+          throw new Error("فهرست کشورهای معتبر خالی است.");
+        }
+
+        // دریافت چهار شاخص اقتصادی از API واقعی بانک جهانی
+        const indicatorEntries = Object.entries(INDICATORS);
+
+        const indicatorResults = await Promise.all(
+          indicatorEntries.map(async ([key, indicator]) => {
+            const response = await fetch(
+              `${api}/country/all/indicator/${indicator}?${query}`
+            );
+
+            if (!response.ok) {
+              throw new Error(
+                `دریافت شاخص ${indicator} ناموفق بود.`
+              );
+            }
+
+            const result = await response.json();
+
+            if (!Array.isArray(result?.[1])) {
+              throw new Error(
+                `داده شاخص ${indicator} معتبر نیست.`
+              );
+            }
+
+            return [
+              key,
+              latestValues(result[1] as IndicatorRow[]),
+            ] as const;
+          })
         );
+
+        const data = new Map(indicatorResults);
+
+        const gdpData = data.get("gdp");
+        const growthData = data.get("growth");
+        const perCapitaData = data.get("gdpPerCapita");
+        const populationData = data.get("population");
+
+        const merged: Economy[] = Array.from(
+          countryNames.entries()
+        ).map(([code, country]) => {
+          const gdp = gdpData?.get(code);
+          const growth = growthData?.get(code);
+          const perCapita = perCapitaData?.get(code);
+          const population = populationData?.get(code);
+
+          return {
+            country,
+            code,
+            gdp: gdp?.value ?? null,
+            gdpYear: gdp?.year ?? null,
+            growth: growth?.value ?? null,
+            growthYear: growth?.year ?? null,
+            gdpPerCapita: perCapita?.value ?? null,
+            gdpPerCapitaYear: perCapita?.year ?? null,
+            population: population?.value ?? null,
+            populationYear: population?.year ?? null,
+          };
+        });
+
+        // رتبه‌بندی فقط کشورهایی که داده GDP دارند
+        const sorted = merged
+          .filter((item) => item.gdp !== null)
+          .sort((a, b) => (b.gdp ?? 0) - (a.gdp ?? 0));
 
         if (active) setEconomies(sorted);
       } catch (err) {
@@ -257,7 +301,7 @@ export default function EconomiesPage() {
         .toLowerCase()
         .includes(searchTerm.trim().toLowerCase())
   );
-  
+
   return (
     <main className="economies-page">
       <style>{styles}</style>
@@ -265,13 +309,17 @@ export default function EconomiesPage() {
 
       <header className="eco-header">
         <div className="eco-wrap">
-          <a href="/" className="eco-back">← بازگشت به Econova</a>
+          <a href="/" className="eco-back">
+            ← بازگشت به Econova
+          </a>
 
           <p className="eco-eyebrow">ECONOVA • WORLD ECONOMIES</p>
           <h1 className="eco-title">اقتصادهای جهان</h1>
           <p className="eco-description">
-            رتبه‌بندی اقتصاد کشورها بر اساس تولید ناخالص داخلی اسمی،
-            با استفاده از داده‌های منتشرشده بانک جهانی.
+            رتبه‌بندی کشورها بر اساس تولید ناخالص داخلی اسمی،
+            همراه با رشد اقتصادی، GDP سرانه و جمعیت؛ با داده‌های
+            واقعی بانک جهانی. قاره‌ها و گروه‌های اقتصادی در
+            فهرست کشورها نمایش داده نمی‌شوند.
           </p>
         </div>
       </header>
@@ -291,21 +339,25 @@ export default function EconomiesPage() {
             onClick={() => setShowAll((current) => !current)}
             className="eco-button"
           >
-            {showAll ? "نمایش ۲۰ اقتصاد برتر" : "نمایش فهرست کامل"}
+            {showAll
+              ? "نمایش ۲۰ اقتصاد برتر"
+              : "نمایش فهرست کامل کشورها"}
           </button>
         </div>
 
         <div className="eco-section-head">
           <div>
-            <h2>۲۰ اقتصاد بزرگ</h2>
-            <p className="eco-muted">معیار: GDP اسمی به دلار آمریکا</p>
+            <h2>۲۰ اقتصاد بزرگ جهان</h2>
+            <p className="eco-muted">
+              معیار رتبه‌بندی: GDP اسمی به دلار آمریکا
+            </p>
           </div>
           <span className="eco-source">منبع: World Bank</span>
         </div>
 
         {loading && (
           <p className="eco-status">
-            در حال دریافت آمار اقتصادی واقعی...
+            در حال دریافت فهرست کشورها و شاخص‌های اقتصادی واقعی...
           </p>
         )}
 
@@ -337,7 +389,7 @@ export default function EconomiesPage() {
               مقایسه ۱۰ اقتصاد بزرگ جهان
             </h2>
             <p className="eco-muted">
-              تولید ناخالص داخلی اسمی به دلار آمریکا
+              نمودار بر اساس آخرین GDP موجود برای هر کشور
             </p>
 
             <div className="eco-bars">
@@ -363,7 +415,9 @@ export default function EconomiesPage() {
                   >
                     <div className="eco-bar-label">
                       <span className="eco-country">
-                        <span style={{ color: "#8794a4", marginLeft: 8 }}>
+                        <span
+                          style={{ color: "#8794a4", marginLeft: 8 }}
+                        >
                           {index + 1}.
                         </span>
                         {getFlag(economy.code)} {economy.country}
@@ -385,7 +439,7 @@ export default function EconomiesPage() {
             </div>
 
             <p className="eco-muted" style={{ marginTop: 20 }}>
-              سال آخرین داده موجود برای هر کشور ممکن است متفاوت باشد.
+              سال آخرین داده ممکن است بین کشورها متفاوت باشد.
             </p>
           </section>
         )}
@@ -396,7 +450,7 @@ export default function EconomiesPage() {
               <div>
                 <h2>
                   {showAll
-                    ? "فهرست اقتصادهای جهان"
+                    ? "فهرست کشورها"
                     : "رتبه‌بندی ۲۰ اقتصاد برتر"}
                 </h2>
                 <p className="eco-muted">
@@ -415,11 +469,14 @@ export default function EconomiesPage() {
                   <thead>
                     <tr>
                       <th>رتبه</th>
-                      <th>کشور / اقتصاد</th>
+                      <th>کشور</th>
                       <th>GDP اسمی</th>
-                      <th>سال داده</th>
+                      <th>رشد سالانه GDP</th>
+                      <th>GDP سرانه</th>
+                      <th>جمعیت</th>
                     </tr>
                   </thead>
+
                   <tbody>
                     {visibleEconomies.map((economy) => (
                       <tr key={economy.code}>
@@ -428,6 +485,7 @@ export default function EconomiesPage() {
                             (item) => item.code === economy.code
                           ) + 1}
                         </td>
+
                         <td>
                           <div className="eco-country-cell">
                             <span className="eco-flag">
@@ -437,11 +495,51 @@ export default function EconomiesPage() {
                           </div>
                           <div className="eco-code">{economy.code}</div>
                         </td>
-                        <td className="eco-money">
-                          {formatMoney(economy.gdp)}
+
+                        <td>
+                          <div className="eco-metric">
+                            {formatMoney(economy.gdp)}
+                          </div>
+                          <div className="eco-muted">
+                            سال: {economy.gdpYear ?? "نامشخص"}
+                          </div>
                         </td>
-                        <td className="eco-muted">
-                          {economy.year ?? "نامشخص"}
+
+                        <td>
+                          <div
+                            className="eco-metric"
+                            style={{
+                              color:
+                                economy.growth === null
+                                  ? "#8794a4"
+                                  : economy.growth >= 0
+                                    ? "#b9f27c"
+                                    : "#ff9292",
+                            }}
+                          >
+                            {formatGrowth(economy.growth)}
+                          </div>
+                          <div className="eco-muted">
+                            سال: {economy.growthYear ?? "نامشخص"}
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="eco-metric">
+                            {formatMoney(economy.gdpPerCapita)}
+                          </div>
+                          <div className="eco-muted">
+                            سال: {economy.gdpPerCapitaYear ?? "نامشخص"}
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="eco-metric">
+                            {formatNumber(economy.population)}
+                          </div>
+                          <div className="eco-muted">
+                            سال: {economy.populationYear ?? "نامشخص"}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -453,22 +551,39 @@ export default function EconomiesPage() {
         )}
 
         <footer className="eco-footer">
-          منبع: World Bank Open Data · شاخص GDP اسمی
+          منبع: World Bank Open Data
           <br />
-          کد شاخص: NY.GDP.MKTP.CD
+          GDP: NY.GDP.MKTP.CD
           <br />
-          رتبه‌بندی بر اساس جدیدترین سال موجود برای هر کشور انجام می‌شود؛
-          بنابراین سال داده‌ها ممکن است بین کشورها متفاوت باشد.
+          رشد سالانه GDP: NY.GDP.MKTP.KD.ZG
+          <br />
+          GDP سرانه: NY.GDP.PCAP.CD
+          <br />
+          جمعیت: SP.POP.TOTL
+          <br />
+          فهرست کشورها از اطلاعات رسمی بانک جهانی ساخته می‌شود؛
+          مناطق و گروه‌های تجمیعی در رتبه‌بندی کشورها قرار نمی‌گیرند.
+          <br />
+          آخرین سال موجود برای هر شاخص نمایش داده می‌شود؛ ممکن است
+          سال داده‌ها بین کشورها و شاخص‌ها متفاوت باشد.
           <br />
           <a
             href="https://data.worldbank.org/indicator/NY.GDP.MKTP.CD"
             target="_blank"
             rel="noreferrer"
           >
-            مشاهده منبع رسمی داده‌ها
+            مشاهده منبع رسمی GDP
+          </a>
+          {" · "}
+          <a
+            href="https://data.worldbank.org/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            بانک جهانی
           </a>
         </footer>
       </section>
     </main>
   );
-}
+            }
