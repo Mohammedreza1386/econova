@@ -233,7 +233,7 @@ const visibleEconomies = (
                 </tr>
               </thead>
               <tbody>
-                {top20.map((economy, index) => (
+                {visibleEconomies.map((economy, index) => (
                   <tr
                     key={economy.code}
                     className="border-t border-white/[0.07] hover:bg-white/[0.03]"
