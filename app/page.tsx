@@ -45,6 +45,13 @@ type OilPrice = {
   updatedAt: string | null;
 };
 
+type HistoryPoint = {
+  date: string;
+  timestamp: string;
+  price: number;
+};
+
+
 type ApiData = {
   items: Coin[];
   currencies: Currency[];
@@ -53,6 +60,8 @@ type ApiData = {
   updatedAt: string | null;
   marketTrend?: MarketTrend[];
   error?: string;
+    dollarHistory?: HistoryPoint[];
+  goldHistory?: HistoryPoint[];
 };
 
 const number = (value: number, digits = 2) =>
