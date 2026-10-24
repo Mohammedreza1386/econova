@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -45,6 +46,12 @@ type OilPrice = {
   updatedAt: string | null;
 };
 
+type DollarHistoryPoint = {
+  date: string;
+  timestamp: string;
+  price: number;
+};
+
 type ApiData = {
   items: Coin[];
   currencies: Currency[];
@@ -52,6 +59,7 @@ type ApiData = {
   goldAndCoins: GoldCoin[];
   updatedAt: string | null;
   marketTrend?: MarketTrend[];
+  dollarHistory?: DollarHistoryPoint[];
   error?: string;
 };
 
@@ -62,42 +70,335 @@ const number = (value: number, digits = 2) =>
 
 const normalizeDigits = (value: string) =>
   value
-    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
-    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+    .replace(/[۰-۹]/g, (digit) =>
+      String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit))
+    )
+    .replace(/[٠-٩]/g, (digit) =>
+      String("٠١٢٣٤٥٦٧٨٩".indexOf(digit))
+    );
 
 const parsianWeights = [100, 200, 300, 400, 500, 600, 700];
 
 const money = (value: number | null, digits = 0) =>
-  value === null ? "قیمت موجود نیست" : `${number(value, digits)} تومان`;
+  value === null
+    ? "قیمت موجود نیست"
+    : `${number(value, digits)} تومان`;
+
+function DollarHistoryChart({
+  points,
+}: {
+  points: DollarHistoryPoint[];
+}) {
+  const [days, setDays] = useState<7 | 30 | 90>(30);
+
+  const validPoints = points
+    .filter(
+      (point) =>
+        Number.isFinite(point.price) && point.price > 0
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() -
+        new Date(b.timestamp).getTime()
+    );
+
+  const datedPoints = validPoints.filter((point) =>
+    Number.isFinite(new Date(point.timestamp).getTime())
+  );
+
+  const cutoff =
+    Date.now() - days * 24 * 60 * 60 * 1000;
+
+  const recentPoints = datedPoints.some(
+    (point) =>
+      new Date(point.timestamp).getTime() >= cutoff
+  )
+    ? datedPoints.filter(
+        (point) =>
+          new Date(point.timestamp).getTime() >= cutoff
+      )
+    : validPoints.slice(-days);
+
+  const width = 760;
+  const height = 260;
+  const padding = {
+    top: 18,
+    right: 18,
+    bottom: 38,
+    left: 18,
+  };
+
+  const chartWidth =
+    width - padding.left - padding.right;
+
+  const chartHeight =
+    height - padding.top - padding.bottom;
+
+  const prices = recentPoints.map(
+    (point) => point.price
+  );
+
+  const minPrice = prices.length
+    ? Math.min(...prices)
+    : 0;
+
+  const maxPrice = prices.length
+    ? Math.max(...prices)
+    : 1;
+
+  const range =
+    maxPrice - minPrice ||
+    Math.max(maxPrice * 0.01, 1);
+
+  const coordinates = recentPoints.map(
+    (point, index) => ({
+      x:
+        padding.left +
+        (recentPoints.length <= 1
+          ? chartWidth / 2
+          : (index / (recentPoints.length - 1)) *
+            chartWidth),
+      y:
+        padding.top +
+        chartHeight -
+        ((point.price - minPrice) / range) *
+          chartHeight,
+      point,
+    })
+  );
+
+  const line = coordinates
+    .map(
+      (point, index) =>
+        `${index === 0 ? "M" : "L"}${point.x},${point.y}`
+    )
+    .join(" ");
+
+  const first = recentPoints[0];
+  const last = recentPoints[recentPoints.length - 1];
+
+  const change =
+    first && last && first.price !== 0
+      ? ((last.price - first.price) / first.price) * 100
+      : null;
+
+  return (
+    <div className="card" style={{ padding: 22 }}>
+      <div className="section-head">
+        <div>
+          <p className="eyebrow">USD / IRR · HISTORY</p>
+          <h2>نمودار تاریخچهٔ دلار</h2>
+          <p className="section-sub">
+            روند نرخ ثبت‌شدهٔ دلار در منبع دادهٔ متصل به سایت
+          </p>
+        </div>
+
+        <div style={{ textAlign: "left" }}>
+          <div className="tiny-label">
+            آخرین نرخ در داده‌ها
+          </div>
+
+          <div className="toman" style={{ marginTop: 5 }}>
+            {last
+              ? `${number(last.price, 0)} تومان`
+              : "داده موجود نیست"}
+          </div>
+
+          {change !== null && (
+            <div
+              className={`change ${
+                change >= 0 ? "up" : "down"
+              }`}
+            >
+              {change > 0 ? "+" : ""}
+              {number(change)}٪ در بازهٔ انتخابی
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          marginBottom: 18,
+        }}
+      >
+        {([7, 30, 90] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => setDays(option)}
+            aria-pressed={days === option}
+            style={{
+              border: `1px solid ${
+                days === option
+                  ? "#d9bd77"
+                  : "rgba(180,190,199,.2)"
+              }`,
+              background:
+                days === option
+                  ? "rgba(217,189,119,.14)"
+                  : "rgba(255,255,255,.025)",
+              color:
+                days === option
+                  ? "#e2c77f"
+                  : "#aab4c0",
+              borderRadius: 8,
+              padding: "8px 14px",
+              cursor: "pointer",
+            }}
+          >
+            {option} روز
+          </button>
+        ))}
+      </div>
+
+      {recentPoints.length < 2 ? (
+        <div className="status">
+          برای رسم نمودار، حداقل دو رکورد معتبر از تاریخچهٔ دلار لازم است.
+          بررسی کن که API آرایهٔ dollarHistory را برمی‌گرداند.
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              width: "100%",
+              overflow: "hidden",
+            }}
+          >
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              role="img"
+              aria-label="نمودار تغییرات تاریخی قیمت دلار"
+              style={{
+                display: "block",
+                width: "100%",
+                height: "auto",
+              }}
+            >
+              {[0, 1, 2, 3].map((step) => {
+                const y =
+                  padding.top +
+                  (chartHeight / 3) * step;
+
+                return (
+                  <line
+                    key={step}
+                    x1={padding.left}
+                    x2={width - padding.right}
+                    y1={y}
+                    y2={y}
+                    stroke="rgba(180,190,199,.14)"
+                    strokeDasharray="4 5"
+                  />
+                );
+              })}
+
+              <path
+                d={`${line} L${
+                  coordinates[coordinates.length - 1].x
+                },${padding.top + chartHeight} L${
+                  coordinates[0].x
+                },${padding.top + chartHeight} Z`}
+                fill="rgba(217,189,119,.10)"
+              />
+
+              <path
+                d={line}
+                fill="none"
+                stroke="#d9bd77"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {coordinates.length <= 30 &&
+                coordinates.map((point, index) => (
+                  <circle
+                    key={`${point.point.timestamp}-${index}`}
+                    cx={point.x}
+                    cy={point.y}
+                    r="3"
+                    fill="#e2c77f"
+                  />
+                ))}
+            </svg>
+          </div>
+
+          <div className="trend-range">
+            <span>{first?.date ?? ""}</span>
+            <span>{last?.date ?? ""}</span>
+          </div>
+
+          <div
+            className="muted"
+            style={{ marginTop: 12 }}
+          >
+            نمودار بر اساس رکوردهایی رسم می‌شود که API برمی‌گرداند؛
+            اگر منبع تاریخچه دادهٔ کافی نداشته باشد،
+            نمودار کامل نمایش داده نمی‌شود.
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function Home() {
   const [data, setData] = useState<ApiData | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] =
+    useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
 
     async function loadPrices() {
       try {
-        const response = await fetch("/api/crypto", { cache: "no-store" });
+        const response = await fetch("/api/crypto", {
+          cache: "no-store",
+        });
+
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "دریافت قیمت‌ها ناموفق بود");
+
+        if (!response.ok) {
+          throw new Error(
+            result.error || "دریافت قیمت‌ها ناموفق بود"
+          );
+        }
+
         if (active) {
           setData(result);
           setError("");
-          setLastUpdated(new Date().toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" }));
+
+          setLastUpdated(
+            new Date().toLocaleTimeString("fa-IR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          );
         }
       } catch {
-        if (active) setError("دریافت اطلاعات بازار ناموفق بود. اتصال API را بررسی کن و دوباره تلاش کن.");
+        if (active) {
+          setError(
+            "دریافت اطلاعات بازار ناموفق بود. اتصال API را بررسی کن و دوباره تلاش کن."
+          );
+        }
       } finally {
         if (active) setLoading(false);
       }
     }
 
     loadPrices();
-    const timer = window.setInterval(loadPrices, 300000);
+
+    const timer = window.setInterval(
+      loadPrices,
+      300000
+    );
+
     return () => {
       active = false;
       window.clearInterval(timer);
@@ -105,11 +406,22 @@ export default function Home() {
   }, []);
 
   const gold18k = data?.goldAndCoins.find((item) => {
-    const label = normalizeDigits(`${item.code} ${item.name}`).toLowerCase();
-    const isGold = label.includes("طلا") || label.includes("gold");
-    const is18K = label.includes("18") || label.includes("عیار 18") || label.includes("18k");
+    const label = normalizeDigits(
+      `${item.code} ${item.name}`
+    ).toLowerCase();
+
+    const isGold =
+      label.includes("طلا") ||
+      label.includes("gold");
+
+    const is18K =
+      label.includes("18") ||
+      label.includes("عیار 18") ||
+      label.includes("18k");
+
     return isGold && is18K;
   });
+
   const gold18kPrice = gold18k?.toman ?? null;
 
   const styles = `
@@ -130,6 +442,7 @@ export default function Home() {
     .navlinks { display: flex; flex-wrap: wrap; gap: 19px; align-items: center; color: #aab4c0; font-size: 12px; }
     .navlinks a:hover { color: #e2c77f; }
     .nav-cta { padding: 10px 14px; border: 1px solid rgba(217, 189, 119, .5); border-radius: 8px; color: #e8d59d !important; }
+    
     .hero { position: relative; padding-top: 86px; padding-bottom: 64px; }
     .hero:after { content: ""; position: absolute; z-index: 0; left: -90px; top: 50px; width: 340px; height: 340px; border: 1px solid rgba(217, 189, 119, .09); border-radius: 50%; box-shadow: 0 0 0 35px rgba(217,189,119,.018), 0 0 0 75px rgba(217,189,119,.014); pointer-events: none; }
     .hero-content { position: relative; z-index: 1; max-width: 800px; }
@@ -175,7 +488,8 @@ export default function Home() {
     .gold-panel .grid { margin-top: 22px; }
     .parsian-card { border-color: rgba(217,189,119,.24); }
     .parsian-weight { color: #e2c77f; font-size: 11px; margin-top: 8px; }
-    .trend-positive { color: #7dd8b1; } .trend-negative { color: #f3a3a3; }
+    .trend-positive { color: #7dd8b1; }
+    .trend-negative { color: #f3a3a3; }
     .news-panel { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; border: 1px solid rgba(180,190,199,.13); border-radius: 16px; padding: 25px; background: linear-gradient(110deg, rgba(30,47,42,.45), rgba(14,21,30,.95)); }
     .news-symbol { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 16px; border: 1px solid rgba(217,189,119,.28); color: #d9bd77; font-size: 24px; }
     footer { border-top: 1px solid rgba(210,190,133,.14); padding: 28px 0; color: #7e8b99; font-size: 11px; line-height: 2.1; }
@@ -183,7 +497,9 @@ export default function Home() {
     .footer-brand { color: #d9bd77; font-weight: 900; letter-spacing: 1px; }
     @media (max-width: 850px) { .nav { padding: 15px 0; align-items: flex-start; flex-direction: column; } .navlinks { gap: 14px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hero { padding-top: 60px; } }
     @media (max-width: 560px) { .wrap { width: min(100% - 28px, 1160px); } .navlinks { font-size: 11px; gap: 11px; } .nav-cta { padding: 7px 9px; } .hero { padding-top: 44px; padding-bottom: 40px; } .stats { grid-template-columns: 1fr; margin-top: 28px; } .grid, .trend-list { grid-template-columns: 1fr; } .section { padding: 25px 0 38px; } .card { padding: 17px; } .gold-panel { padding: 16px; } }
-  `;  return (
+  `;
+
+  return (
     <main className="site" dir="rtl">
       <style>{styles}</style>
       <div className="topline" />
@@ -194,12 +510,15 @@ export default function Home() {
             <span className="logo-mark">E</span>
             <span>ECO<span>NOVA</span></span>
           </a>
+
           <nav className="navlinks" aria-label="ناوبری اصلی">
             <a href="#markets">بازارها</a>
             <a href="#currencies">ارزها</a>
             <a href="#gold">طلا و سکه</a>
             <a href="#parsian">پارسیان</a>
-            <a href="/billionaires" className="nav-cta">میلیاردرها ↗</a>
+            <a href="/billionaires" className="nav-cta">
+              میلیاردرها ↗
+            </a>
             <a href="#news">اخبار</a>
           </nav>
         </div>
@@ -207,154 +526,540 @@ export default function Home() {
 
       <section className="wrap hero" id="top">
         <div className="hero-content">
-          <p className="eyebrow">ECONOMIC INTELLIGENCE · EST. ECONOVA</p>
-          <h1>نبض بازارها،<br /><span className="gold-text">با نگاهی دقیق‌تر.</span></h1>
-          <p className="hero-desc">
-            داشبورد اقتصادی Econova برای دنبال‌کردن قیمت ارزهای دیجیتال، ارزهای رایج، طلا و سکه؛
-            اطلاعات بازار را یک‌جا ببین و تغییرات را ساده‌تر دنبال کن.
+          <p className="eyebrow">
+            ECONOMIC INTELLIGENCE · EST. ECONOVA
           </p>
+
+          <h1>
+            نبض بازارها،
+            <br />
+            <span className="gold-text">
+              با نگاهی دقیق‌تر.
+            </span>
+          </h1>
+
+          <p className="hero-desc">
+            داشبورد اقتصادی Econova برای دنبال‌کردن قیمت ارزهای دیجیتال،
+            ارزهای رایج، طلا و سکه؛ اطلاعات بازار را یک‌جا ببین
+            و تغییرات را ساده‌تر دنبال کن.
+          </p>
+
           <div className="hero-actions">
-            <a className="btn btn-primary" href="#markets">مشاهده بازارها <span>↘</span></a>
-            <a className="btn btn-secondary" href="#parsian">قیمت سکه پارسیان</a>
+            <a className="btn btn-primary" href="#markets">
+              مشاهده بازارها <span>↘</span>
+            </a>
+            <a className="btn btn-secondary" href="#parsian">
+              قیمت سکه پارسیان
+            </a>
           </div>
+
           <div className="stats">
-            <div className="stat"><div className="stat-label">وضعیت دریافت داده</div><div className="stat-value">{loading ? "در حال اتصال…" : error ? "نیازمند بررسی" : data ? "متصل" : "آماده"}</div></div>
-            <div className="stat"><div className="stat-label">آخرین بررسی در این صفحه</div><div className="stat-value">{lastUpdated ?? "—"}</div></div>
-            <div className="stat"><div className="stat-label">بازهٔ به‌روزرسانی</div><div className="stat-value">۵ دقیقه</div></div>
+            <div className="stat">
+              <div className="stat-label">وضعیت دریافت داده</div>
+              <div className="stat-value">
+                {loading
+                  ? "در حال اتصال…"
+                  : error
+                    ? "نیازمند بررسی"
+                    : data
+                      ? "متصل"
+                      : "آماده"}
+              </div>
+            </div>
+
+            <div className="stat">
+              <div className="stat-label">
+                آخرین بررسی در این صفحه
+              </div>
+              <div className="stat-value">
+                {lastUpdated ?? "—"}
+              </div>
+            </div>
+
+            <div className="stat">
+              <div className="stat-label">
+                بازهٔ به‌روزرسانی
+              </div>
+              <div className="stat-value">۵ دقیقه</div>
+            </div>
           </div>
         </div>
       </section>
 
       <section className="wrap section" id="markets">
         <div className="section-head">
-          <div><p className="eyebrow">01 / CRYPTO MARKET</p><h2>بازار ارزهای دیجیتال</h2><p className="section-sub">قیمت دارایی‌های دیجیتال به دلار و تومان</p></div>
-          <span className="tiny-label">به‌روزرسانی خودکار هر ۵ دقیقه</span>
+          <div>
+            <p className="eyebrow">01 / CRYPTO MARKET</p>
+            <h2>بازار ارزهای دیجیتال</h2>
+            <p className="section-sub">
+              قیمت دارایی‌های دیجیتال به دلار و تومان
+            </p>
+          </div>
+          <span className="tiny-label">
+            به‌روزرسانی خودکار هر ۵ دقیقه
+          </span>
         </div>
-        {loading && <p className="status">در حال دریافت قیمت‌ها از منبع داده…</p>}
-        {error && <p className="status" role="alert">{error}</p>}
-        {data && data.items.length === 0 && <p className="status">در حال حاضر قیمتی برای نمایش موجود نیست.</p>}
-        {data && data.items.length > 0 && <div className="grid">
-          {data.items.map((coin) => <article className="card" key={coin.symbol}>
-            <div className="card-top"><div><div className="name">{coin.name}</div><div className="symbol">{coin.symbol}</div></div><div className="coin-mark">₿</div></div>
-            <div className="price">{coin.usd !== null ? `$${number(coin.usd, 8)}` : "—"}</div>
-            <div className="price-label">قیمت دلاری</div>
-            <div className="toman">{money(coin.toman)}</div>
-            {coin.change24h !== null && <div className={`change ${coin.change24h >= 0 ? "up" : "down"}`}>{coin.change24h > 0 ? "+" : ""}{number(coin.change24h)}٪ در ۲۴ ساعت</div>}
-          </article>)}
-        </div>}
-        {data?.marketTrend && data.marketTrend.length > 0 && <>
-          <div className="section-head" style={{ marginTop: 36, marginBottom: 14 }}><div><p className="eyebrow">MARKET PULSE</p><h2>روند و دامنهٔ روزانه</h2></div></div>
-          <div className="trend-list">{data.marketTrend.map((item) => {
-            const low = item.low ?? item.price;
-            const high = item.high ?? item.price;
-            const range = high - low;
-            const position = range > 0 ? Math.max(0, Math.min(100, ((item.price - low) / range) * 100)) : 50;
-            return <div className="trend-card" key={item.code}>
-              <div className="card-top"><strong>{item.name}</strong><strong className={item.changePct === null ? "muted" : item.changePct >= 0 ? "trend-positive" : "trend-negative"}>{item.changePct === null ? "—" : `${item.changePct > 0 ? "+" : ""}${number(item.changePct)}٪`}</strong></div>
-              <div className="toman">{money(item.price)}</div>
-              <div className="trend-line"><div className="trend-fill" style={{ width: `${position}%` }} /></div>
-              <div className="trend-range"><span>کمینه: {number(low, 0)}</span><span>بیشینه: {number(high, 0)}</span></div>
-            </div>;
-          })}</div>
-        </>}
-        <p className="muted" style={{ marginTop: 20 }}>منبع داده: <a href="https://iran-market.github.io/" target="_blank" rel="noreferrer" style={{ color: "#d9bd77" }}>Iran Market Data</a>. قیمت‌ها ممکن است با تأخیر همراه باشند و تضمین‌شده نیستند.</p>
+
+        {loading && (
+          <p className="status">
+            در حال دریافت قیمت‌ها از منبع داده…
+          </p>
+        )}
+
+        {error && (
+          <p className="status" role="alert">
+            {error}
+          </p>
+        )}
+
+        {data && data.items.length === 0 && (
+          <p className="status">
+            در حال حاضر قیمتی برای نمایش موجود نیست.
+          </p>
+        )}
+
+        {data && data.items.length > 0 && (
+          <div className="grid">
+            {data.items.map((coin) => (
+              <article className="card" key={coin.symbol}>
+                <div className="card-top">
+                  <div>
+                    <div className="name">{coin.name}</div>
+                    <div className="symbol">{coin.symbol}</div>
+                  </div>
+                  <div className="coin-mark">₿</div>
+                </div>
+
+                <div className="price">
+                  {coin.usd !== null
+                    ? `$${number(coin.usd, 8)}`
+                    : "—"}
+                </div>
+
+                <div className="price-label">قیمت دلاری</div>
+                <div className="toman">
+                  {money(coin.toman)}
+                </div>
+
+                {coin.change24h !== null && (
+                  <div
+                    className={`change ${
+                      coin.change24h >= 0 ? "up" : "down"
+                    }`}
+                  >
+                    {coin.change24h > 0 ? "+" : ""}
+                    {number(coin.change24h)}٪ در ۲۴ ساعت
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+
+        {data?.marketTrend &&
+          data.marketTrend.length > 0 && (
+            <>
+              <div
+                className="section-head"
+                style={{
+                  marginTop: 36,
+                  marginBottom: 14,
+                }}
+              >
+                <div>
+                  <p className="eyebrow">MARKET PULSE</p>
+                  <h2>روند و دامنهٔ روزانه</h2>
+                </div>
+              </div>
+
+              <div className="trend-list">
+                {data.marketTrend.map((item) => {
+                  const low = item.low ?? item.price;
+                  const high = item.high ?? item.price;
+                  const range = high - low;
+
+                  const position =
+                    range > 0
+                      ? Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            ((item.price - low) / range) * 100
+                          )
+                        )
+                      : 50;
+
+                  return (
+                    <div
+                      className="trend-card"
+                      key={item.code}
+                    >
+                      <div className="card-top">
+                        <strong>{item.name}</strong>
+                        <strong
+                          className={
+                            item.changePct === null
+                              ? "muted"
+                              : item.changePct >= 0
+                                ? "trend-positive"
+                                : "trend-negative"
+                          }
+                        >
+                          {item.changePct === null
+                            ? "—"
+                            : `${
+                                item.changePct > 0 ? "+" : ""
+                              }${number(item.changePct)}٪`}
+                        </strong>
+                      </div>
+
+                      <div className="toman">
+                        {money(item.price)}
+                      </div>
+
+                      <div className="trend-line">
+                        <div
+                          className="trend-fill"
+                          style={{ width: `${position}%` }}
+                        />
+                      </div>
+
+                      <div className="trend-range">
+                        <span>کمینه: {number(low, 0)}</span>
+                        <span>بیشینه: {number(high, 0)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+        <p className="muted" style={{ marginTop: 20 }}>
+          منبع داده:{" "}
+          <a
+            href="https://iran-market.github.io/"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "#d9bd77" }}
+          >
+            Iran Market Data
+          </a>
+          . قیمت‌ها ممکن است با تأخیر همراه باشند و تضمین‌شده نیستند.
+        </p>
       </section>
 
       <section className="wrap section" id="currencies">
-        <div className="section-head"><div><p className="eyebrow">02 / CURRENCY MARKET</p><h2>ارزهای رایج</h2><p className="section-sub">نرخ‌های دریافت‌شده از منبع داده، به تومان</p></div><span className="tiny-label">CURRENCY WATCH</span></div>
-        {!data?.currencies?.length && !loading && <p className="status">قیمت ارزها در حال حاضر در دسترس نیست.</p>}
-        {data?.currencies && data.currencies.length > 0 && <div className="grid">{data.currencies.map((currency) => <article className="card" key={currency.code}>
-          <div className="card-top"><div><div className="name">{currency.name}</div><div className="symbol">{currency.code}</div></div><div className="coin-mark">¤</div></div>
-          <div className="toman" style={{ fontSize: 20 }}>{money(currency.toman, 2)}</div>
-        </article>)}</div>}
-      </section>
-      {data?.oilPrices && (
-  <>
-    <div className="section-head" style={{ marginTop: 30, marginBottom: 14 }}>
-      <div>
-        <p className="eyebrow">OIL MARKET</p>
-        <h2>قیمت جهانی نفت</h2>
-        <p className="section-sub">قیمت هر بشکه به دلار آمریکا</p>
-      </div>
-    </div>
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">02 / CURRENCY MARKET</p>
+            <h2>ارزهای رایج</h2>
+            <p className="section-sub">
+              نرخ‌های دریافت‌شده از منبع داده، به تومان
+            </p>
+          </div>
+          <span className="tiny-label">CURRENCY WATCH</span>
+        </div>
 
-    <div className="grid">
-      {data.oilPrices.map((oil) => (
-        <article className="card" key={oil.code}>
-          <div className="card-top">
-            <div>
-              <div className="name">{oil.name}</div>
-              <div className="symbol">{oil.code}</div>
+        {!data?.currencies?.length && !loading && (
+          <p className="status">
+            قیمت ارزها در حال حاضر در دسترس نیست.
+          </p>
+        )}
+
+        {data?.currencies &&
+          data.currencies.length > 0 && (
+            <div className="grid">
+              {data.currencies.map((currency) => (
+                <article
+                  className="card"
+                  key={currency.code}
+                >
+                  <div className="card-top">
+                    <div>
+                      <div className="name">
+                        {currency.name}
+                      </div>
+                      <div className="symbol">
+                        {currency.code}
+                      </div>
+                    </div>
+                    <div className="coin-mark">¤</div>
+                  </div>
+
+                  <div
+                    className="toman"
+                    style={{ fontSize: 20 }}
+                  >
+                    {money(currency.toman, 2)}
+                  </div>
+                </article>
+              ))}
             </div>
-            <div className="coin-mark">🛢️</div>
+          )}
+      </section>
+
+      {data?.oilPrices && (
+        <section className="wrap section" id="oil">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">OIL MARKET</p>
+              <h2>قیمت جهانی نفت</h2>
+              <p className="section-sub">
+                قیمت هر بشکه به دلار آمریکا
+              </p>
+            </div>
           </div>
 
-          <div className="price">
-            {oil.usd !== null
-              ? `$${Number(oil.usd).toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`
-              : "قیمت در دسترس نیست"}
+          <div className="grid">
+            {data.oilPrices.map((oil) => (
+              <article className="card" key={oil.code}>
+                <div className="card-top">
+                  <div>
+                    <div className="name">{oil.name}</div>
+                    <div className="symbol">{oil.code}</div>
+                  </div>
+                  <div className="coin-mark">🛢️</div>
+                </div>
+
+                <div className="price">
+                  {oil.usd !== null
+                    ? `$${Number(oil.usd).toLocaleString(
+                        "en-US",
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }
+                      )}`
+                    : "قیمت در دسترس نیست"}
+                </div>
+
+                <div className="price-label">
+                  {oil.unit}
+                </div>
+
+                {oil.changePct !== null && (
+                  <div
+                    className={`change ${
+                      oil.changePct >= 0 ? "up" : "down"
+                    }`}
+                  >
+                    {oil.changePct > 0 ? "+" : ""}
+                    {oil.changePct.toLocaleString("fa-IR")}٪
+                  </div>
+                )}
+
+                <div
+                  className="muted"
+                  style={{ marginTop: 12 }}
+                >
+                  آخرین داده:{" "}
+                  {oil.updatedAt
+                    ? new Date(
+                        oil.updatedAt
+                      ).toLocaleString("fa-IR")
+                    : "نامشخص"}
+                </div>
+              </article>
+            ))}
           </div>
+        </section>
+      )}
 
-          <div className="price-label">{oil.unit}</div>
+      {data?.dollarHistory && (
+        <section
+          className="wrap section"
+          id="dollar-chart"
+        >
+          <DollarHistoryChart
+            points={data.dollarHistory}
+          />
+        </section>
+      )}
 
-          {oil.changePct !== null && (
-            <div className={`change ${oil.changePct >= 0 ? "up" : "down"}`}>
-              {oil.changePct > 0 ? "+" : ""}
-              {oil.changePct.toLocaleString("fa-IR")}٪
+      <section className="wrap section" id="gold">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">
+              03 / GOLD & COIN MARKET
+            </p>
+            <h2>طلا و سکه</h2>
+            <p className="section-sub">
+              قیمت‌های اعلام‌شده توسط API بازار
+            </p>
+          </div>
+          <span className="tiny-label">GOLD WATCH</span>
+        </div>
+
+        {!loading && !data?.goldAndCoins?.length && (
+          <p className="status">
+            قیمت طلا و سکه فعلاً در دسترس نیست.
+          </p>
+        )}
+
+        {data?.goldAndCoins &&
+          data.goldAndCoins.length > 0 && (
+            <div className="grid">
+              {data.goldAndCoins.map((item) => (
+                <article
+                  className="card"
+                  key={item.code}
+                >
+                  <div className="card-top">
+                    <div>
+                      <div className="name">{item.name}</div>
+                      <div className="symbol">{item.code}</div>
+                    </div>
+                    <div className="coin-mark">✦</div>
+                  </div>
+
+                  <div
+                    className="toman"
+                    style={{ fontSize: 19 }}
+                  >
+                    {money(item.toman)}
+                  </div>
+                </article>
+              ))}
             </div>
           )}
 
-          <div className="muted" style={{ marginTop: 12 }}>
-            آخرین داده:{" "}
-            {oil.updatedAt
-              ? new Date(oil.updatedAt).toLocaleString("fa-IR")
-              : "نامشخص"}
+              <p className="eyebrow">
+                04 / PARSIAN GOLD COINS
+              </p>
+              <h2>برآورد سکه‌های پارسیان</h2>
+              <p className="section-sub">
+                وزن‌های ۱۰۰ تا ۷۰۰ سوت، محاسبه‌شده بر پایهٔ نرخ هر گرم طلای ۱۸ عیار
+              </p>
+            </div>
+            <span className="tiny-label">GOLD ESTIMATE</span>
           </div>
-        </article>
-      ))}
-    </div>
-  </>
-)}
-            <section className="wrap section" id="gold">
-        <div className="section-head"><div><p className="eyebrow">03 / GOLD & COIN MARKET</p><h2>طلا و سکه</h2><p className="section-sub">قیمت‌های اعلام‌شده توسط API بازار</p></div><span className="tiny-label">GOLD WATCH</span></div>
-        {!loading && !data?.goldAndCoins?.length && <p className="status">قیمت طلا و سکه فعلاً در دسترس نیست.</p>}
-        {data?.goldAndCoins && data.goldAndCoins.length > 0 && <div className="grid">{data.goldAndCoins.map((item) => <article className="card" key={item.code}>
-          <div className="card-top"><div><div className="name">{item.name}</div><div className="symbol">{item.code}</div></div><div className="coin-mark">✦</div></div>
-          <div className="toman" style={{ fontSize: 19 }}>{money(item.toman)}</div>
-        </article>)}</div>}
-        <p className="muted" style={{ marginTop: 18 }}>منبع داده: Iran Market Data. نرخ‌ها ممکن است با تأخیر باشند.</p>
-      </section>
 
-      <section className="wrap section" id="parsian">
-        <div className="gold-panel">
-          <div className="section-head" style={{ marginBottom: 0 }}><div><p className="eyebrow">04 / PARSIAN GOLD COINS</p><h2>برآورد سکه‌های پارسیان</h2><p className="section-sub">وزن‌های ۱۰۰ تا ۷۰۰ سوت، محاسبه‌شده بر پایهٔ نرخ هر گرم طلای ۱۸ عیار</p></div><span className="tiny-label">GOLD ESTIMATE</span></div>
-          <p className="muted" style={{ marginTop: 15 }}>این ارقام فقط برآورد ارزش طلای محتوی سکه‌اند و قیمت قطعی فروش نیستند؛ اجرت، بسته‌بندی، سود فروشنده و اختلاف قیمت بازار در آن‌ها لحاظ نشده است.</p>
-          {gold18kPrice === null ? <div className="status" style={{ marginTop: 20 }}>برای محاسبهٔ برآورد، نرخ معتبر طلای ۱۸ عیار در پاسخ API پیدا نشد. نام و کد دقیق این نرخ باید در داده‌های /api/crypto بررسی شود.</div> : <div className="grid">
-            {parsianWeights.map((weight) => <article className="card parsian-card" key={weight}>
-              <div className="card-top"><div><div className="name">سکه پارسیان {number(weight, 0)} سوت</div><div className="parsian-weight">وزن اسمی: {(weight / 1000).toFixed(1)} گرم</div></div><div className="coin-mark">✦</div></div>
-              <div className="toman" style={{ fontSize: 20 }}>{money(Math.round((gold18kPrice * weight) / 1000))}</div>
-              <div className="muted" style={{ marginTop: 10 }}>ارزش تقریبی طلا، بدون هزینه‌های فروش</div>
-            </article>)}
-          </div>}
-          <p className="muted" style={{ marginTop: 18 }}>فرمول: قیمت هر گرم طلای ۱۸ عیار × وزن سکه بر حسب گرم. نرخ پایه از API موجود در سایت خوانده می‌شود.</p>
+          <p className="muted" style={{ marginTop: 15 }}>
+            این ارقام فقط برآورد ارزش طلای محتوی سکه‌اند و قیمت قطعی فروش نیستند؛
+            اجرت، بسته‌بندی، سود فروشنده و اختلاف قیمت بازار در آن‌ها لحاظ نشده است.
+          </p>
+
+          {gold18kPrice === null ? (
+            <div
+              className="status"
+              style={{ marginTop: 20 }}
+            >
+              برای محاسبهٔ برآورد، نرخ معتبر طلای ۱۸ عیار در پاسخ API پیدا نشد.
+              نام و کد دقیق این نرخ باید در داده‌های /api/crypto بررسی شود.
+            </div>
+          ) : (
+            <div className="grid">
+              {parsianWeights.map((weight) => (
+                <article
+                  className="card parsian-card"
+                  key={weight}
+                >
+                  <div className="card-top">
+                    <div>
+                      <div className="name">
+                        سکه پارسیان {number(weight, 0)} سوت
+                      </div>
+                      <div className="parsian-weight">
+                        وزن اسمی: {(weight / 1000).toFixed(1)} گرم
+                      </div>
+                    </div>
+                    <div className="coin-mark">✦</div>
+                  </div>
+
+                  <div
+                    className="toman"
+                    style={{ fontSize: 20 }}
+                  >
+                    {money(
+                      Math.round(
+                        (gold18kPrice * weight) / 1000
+                      )
+                    )}
+                  </div>
+
+                  <div
+                    className="muted"
+                    style={{ marginTop: 10 }}
+                  >
+                    ارزش تقریبی طلا، بدون هزینه‌های فروش
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          <p className="muted" style={{ marginTop: 18 }}>
+            فرمول: قیمت هر گرم طلای ۱۸ عیار × وزن سکه بر حسب گرم.
+            نرخ پایه از API موجود در سایت خوانده می‌شود.
+          </p>
         </div>
       </section>
 
       <section className="wrap section" id="billionaires">
         <div className="news-panel">
-          <div style={{ display: "flex", alignItems: "center", gap: 17 }}><div className="news-symbol">♛</div><div><p className="eyebrow">WEALTH & INFLUENCE</p><h2>ثروتمندترین افراد جهان</h2><p className="section-sub">مشاهدهٔ صفحهٔ جداگانهٔ میلیاردرها و رتبه‌بندی ثروت‌ها</p></div></div>
-          <a href="/billionaires" className="btn btn-secondary">ورود به بخش میلیاردرها ↗</a>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 17,
+            }}
+          >
+            <div className="news-symbol">♛</div>
+            <div>
+              <p className="eyebrow">WEALTH & INFLUENCE</p>
+              <h2>ثروتمندترین افراد جهان</h2>
+              <p className="section-sub">
+                مشاهدهٔ صفحهٔ جداگانهٔ میلیاردرها و رتبه‌بندی ثروت‌ها
+              </p>
+            </div>
+          </div>
+
+          <a
+            href="/billionaires"
+            className="btn btn-secondary"
+          >
+            ورود به بخش میلیاردرها ↗
+          </a>
         </div>
       </section>
 
       <section className="wrap section" id="news">
-        <div className="news-panel"><div style={{ display: "flex", alignItems: "center", gap: 17 }}><div className="news-symbol">⌁</div><div><p className="eyebrow">ECONOMIC BRIEFING</p><h2>اخبار و تحلیل اقتصادی</h2><p className="section-sub">بخش اتصال به منبع خبری در مرحلهٔ بعد تکمیل خواهد شد.</p></div></div><span className="tiny-label">COMING SOON</span></div>
+        <div className="news-panel">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 17,
+            }}
+          >
+            <div className="news-symbol">⌁</div>
+            <div>
+              <p className="eyebrow">ECONOMIC BRIEFING</p>
+              <h2>اخبار و تحلیل اقتصادی</h2>
+              <p className="section-sub">
+                بخش اتصال به منبع خبری در مرحلهٔ بعد تکمیل خواهد شد.
+              </p>
+            </div>
+          </div>
+          <span className="tiny-label">COMING SOON</span>
+        </div>
       </section>
 
-      <footer id="about"><div className="wrap footer-inner"><div><div className="footer-brand">ECONOVA</div><div>داشبورد بازارها و اطلاعات اقتصادی</div></div><div>© Econova · داده‌ها ممکن است با تأخیر همراه باشند.</div></div></footer>
+      <footer id="about">
+        <div className="wrap footer-inner">
+          <div>
+            <div className="footer-brand">ECONOVA</div>
+            <div>داشبورد بازارها و اطلاعات اقتصادی</div>
+          </div>
+          <div>
+            © Econova · داده‌ها ممکن است با تأخیر همراه باشند.
+          </div>
+        </div>
+      </footer>
     </main>
   );
-}
+              }
+              
+        
+           
