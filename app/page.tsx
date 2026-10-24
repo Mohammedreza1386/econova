@@ -236,7 +236,9 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-
+const [historyRange, setHistoryRange] =
+  useState<HistoryRange>(30);
+  
   useEffect(() => {
     let active = true;
 
