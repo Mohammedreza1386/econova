@@ -23,6 +23,51 @@ function formatMoney(value: number | null) {
   }).format(value);
 }
 
+function getFlag(code: string) {
+  const flags: Record<string, string> = {
+    USA: "🇺🇸",
+    CHN: "🇨🇳",
+    JPN: "🇯🇵",
+    DEU: "🇩🇪",
+    IND: "🇮🇳",
+    GBR: "🇬🇧",
+    FRA: "🇫🇷",
+    ITA: "🇮🇹",
+    RUS: "🇷🇺",
+    BRA: "🇧🇷",
+    CAN: "🇨🇦",
+    KOR: "🇰🇷",
+    AUS: "🇦🇺",
+    ESP: "🇪🇸",
+    MEX: "🇲🇽",
+    IDN: "🇮🇩",
+    TUR: "🇹🇷",
+    SAU: "🇸🇦",
+    NLD: "🇳🇱",
+    CHE: "🇨🇭",
+    IRN: "🇮🇷",
+    PAK: "🇵🇰",
+    POL: "🇵🇱",
+    SWE: "🇸🇪",
+    BEL: "🇧🇪",
+    ARG: "🇦🇷",
+    NOR: "🇳🇴",
+    AUT: "🇦🇹",
+    THA: "🇹🇭",
+    VNM: "🇻🇳",
+    EGY: "🇪🇬",
+    NGA: "🇳🇬",
+    ZAF: "🇿🇦",
+    ARE: "🇦🇪",
+    ISR: "🇮🇱",
+    IRQ: "🇮🇶",
+    AFG: "🇦🇫",
+  };
+
+  return flags[code] ?? "🌐";
+}
+
+
 export default function EconomiesPage() {
   const [economies, setEconomies] = useState<Economy[]>([]);
   const [loading, setLoading] = useState(true);
