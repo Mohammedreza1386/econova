@@ -800,6 +800,7 @@ const [historyRange, setHistoryRange] =
             <a href="#currencies">ارزها</a>
             <a href="#oil">نفت</a>
             <a href="#gold">طلا و سکه</a>
+            <a href="#history">نمودارها</a>
             <a href="#parsian">پارسیان</a>
             <a href="/billionaires" className="nav-cta">میلیاردرها ↗</a>
             <a href="#news">اخبار</a>
