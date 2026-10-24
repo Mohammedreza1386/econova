@@ -169,12 +169,48 @@ export async function GET() {
       };
     }).filter((item) => item.price !== null);
     
+        // قیمت نفت خام و برنت
+    const energy = groups.energy ?? [];
+
+    const oilWanted = [
+      {
+        code: "WTI",
+        symbol: "ENERGY_CRUDE_OIL",
+        name: "نفت خام آمریکا (WTI)",
+      },
+      {
+        code: "BRENT",
+        symbol: "BRENT_USD",
+        name: "نفت برنت",
+      },
+    ];
+
+    const oilPrices = oilWanted.map((wanted) => {
+      const item = energy.find(
+        (entry: any) =>
+          entry.symbol === wanted.symbol &&
+          !entry.stale &&
+          typeof entry.price === "number" &&
+          entry.price > 0
+      );
+
+      return {
+        code: wanted.code,
+        name: wanted.name,
+        usd: item?.price ?? null,
+        unit: "دلار به‌ازای هر بشکه",
+        changePct: item?.change_pct ?? null,
+        updatedAt: item?.timestamp ?? null,
+      };
+    });
+    
     return Response.json({
       source: "Iran Market Data",
       updatedAt: json?.data?.generated_at ?? null,
       usdToman: usdToman ?? null,
       items,
       currencies: currencyItems,
+      oilPrices,
       goldAndCoins,
       marketTrend,
     });
