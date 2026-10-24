@@ -313,7 +313,7 @@ const visibleEconomies = (
                       </span>
                     </div>
 
-                    <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-3 overflow-hidden rounded-full border border-white/[0.06] bg-[#05080d]">
                       <div
                         className="h-full rounded-full bg-[#b9f27c] transition-all duration-700"
                         style={{ width: `${percentage}%` }}
