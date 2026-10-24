@@ -928,12 +928,15 @@ export default function Home() {
                 04 / PARSIAN GOLD COINS
               </p>
               <h2>برآورد سکه‌های پارسیان</h2>
-              <p className="section-sub">
-                وزن‌های ۱۰۰ تا ۷۰۰ سوت، محاسبه‌شده بر پایهٔ نرخ هر گرم طلای ۱۸ عیار
-              </p>
-            </div>
-            <span className="tiny-label">GOLD ESTIMATE</span>
-          </div>
+              <div>
+  <p className="eyebrow">04 / PARSIAN GOLD COINS</p>
+  <h2>محاسبه قیمت سکه‌های پارسیان</h2>
+  <p className="section-sub">
+    وزن‌های ۱۰۰ تا ۷۰۰ سوت، محاسبه‌شده بر پایهٔ نرخ هر گرم طلای ۱۸ عیار
+  </p>
+</div>
+
+<span className="tiny-label">GOLD ESTIMATE</span>
 
           <p className="muted" style={{ marginTop: 15 }}>
             این ارقام فقط برآورد ارزش طلای محتوی سکه‌اند و قیمت قطعی فروش نیستند؛
