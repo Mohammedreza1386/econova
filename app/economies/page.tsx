@@ -383,4 +383,4 @@ const visibleEconomies = (
       </section>
     </main>
   );
-            }
+}
