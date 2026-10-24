@@ -491,7 +491,16 @@ export default function EconomiesPage() {
                             <span className="eco-flag">
                               {getFlag(economy.code)}
                             </span>
-                            <span>{economy.country}</span>
+                            <a
+  href={`/economies/${economy.code}`}
+  style={{
+    color: "#f4f2ec",
+    textDecoration: "none",
+    cursor: "pointer",
+  }}
+>
+  {economy.country}
+</a>
                           </div>
                           <div className="eco-code">{economy.code}</div>
                         </td>
