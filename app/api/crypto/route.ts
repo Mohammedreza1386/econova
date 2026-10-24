@@ -288,6 +288,45 @@ export async function GET() {
     } catch {
       // اگر تاریخچه در دسترس نباشد، سایر اطلاعات همچنان برمی‌گردند.
     }
+    
+    // تاریخچه روزانه طلای ۱۸ عیار: آخرین ۹۰ رکورد
+    let goldHistory: {
+      date: string;
+      timestamp: string;
+      price: number;
+    }[] = [];
+
+    try {
+      const goldHistoryResponse = await fetch(
+        "https://raw.githubusercontent.com/iran-market/iran-market.github.io/main/data/history/GOLD_18K_IRR.json",
+        { cache: "no-store" }
+      );
+
+      if (goldHistoryResponse.ok) {
+        const goldHistoryJson = await goldHistoryResponse.json();
+
+        const rows = Array.isArray(goldHistoryJson?.data)
+          ? goldHistoryJson.data
+          : [];
+
+        goldHistory = rows
+          .filter(
+            (row: any) =>
+              typeof row.close === "number" &&
+              row.close > 0 &&
+              typeof row.t === "string"
+          )
+          .slice(-90)
+          .map((row: any) => ({
+            date: row.date_jalali ?? row.t.slice(0, 10),
+            timestamp: row.t,
+            price: row.close,
+          }));
+      }
+    } catch {
+      // در صورت قطع تاریخچه طلا، سایر اطلاعات سایت فعال می‌مانند.
+    }
+    
 
     return Response.json({
       source: "Iran Market Data",
@@ -299,6 +338,7 @@ export async function GET() {
       marketTrend,
       oilPrices,
       dollarHistory,
+      goldHistory,
     });
   } catch {
     return Response.json(
