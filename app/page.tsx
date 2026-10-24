@@ -1103,6 +1103,46 @@ const [historyRange, setHistoryRange] =
           منبع داده: Iran Market Data. نرخ‌ها ممکن است با تأخیر باشند.
         </p>
       </section>
+      <section className="wrap section" id="history">
+  <div className="section-head">
+    <div>
+      <p className="eyebrow">04 / MARKET HISTORY</p>
+      <h2>نمودار تغییرات بازار</h2>
+      <p className="section-sub">
+        روند تغییر قیمت دلار و طلای ۱۸ عیار
+      </p>
+    </div>
+    <span className="tiny-label">PRICE HISTORY</span>
+  </div>
+
+  <div className="history-controls">
+    {[7, 30, 90].map((days) => (
+      <button
+        key={days}
+        className={`history-button ${historyRange === days ? "active" : ""}`}
+        onClick={() => setHistoryRange(days as HistoryRange)}
+      >
+        {days} روز
+      </button>
+    ))}
+  </div>
+
+  <div className="history-grid">
+    <HistoryChart
+      title="قیمت دلار"
+      points={data?.dollarHistory ?? []}
+      days={historyRange}
+      color="#b9f27c"
+    />
+
+    <HistoryChart
+      title="طلای ۱۸ عیار"
+      points={data?.goldHistory ?? []}
+      days={historyRange}
+      color="#d9bd77"
+    />
+  </div>
+</section>
             <section className="wrap section" id="parsian">
         <div className="gold-panel">
           <div className="section-head" style={{ marginBottom: 0 }}>
