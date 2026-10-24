@@ -803,6 +803,7 @@ const [historyRange, setHistoryRange] =
             <a href="#history">نمودارها</a>
             <a href="#parsian">پارسیان</a>
             <a href="/billionaires" className="nav-cta">میلیاردرها ↗</a>
+            <a href="/economies">اقتصادهای جهان</a>
             <a href="#news">اخبار</a>
           </nav>
         </div>
