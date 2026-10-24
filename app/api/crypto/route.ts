@@ -21,7 +21,10 @@ export async function GET() {
     const currencies = groups.currency ?? [];
 
     const usdToman = currencies.find(
-      (item: any) => item.symbol === "USD_IRR_FREE" && !item.stale
+      (item: any) =>
+        item.symbol === "USD_IRR_FREE" &&
+        !item.stale &&
+        item.price > 0
     )?.price;
 
     const wanted = [
@@ -37,32 +40,36 @@ export async function GET() {
       ["BCH", "بیت‌کوین کش"],
     ];
 
-    const items = wanted.map(([symbol, name]) => {
-      const usd = crypto.find(
-        (item: any) =>
-          item.symbol === `${symbol}_USD` &&
-          !item.stale &&
-          item.price > 0
-      );
+    const items = wanted
+      .map(([symbol, name]) => {
+        const usd = crypto.find(
+          (item: any) =>
+            item.symbol === `${symbol}_USD` &&
+            !item.stale &&
+            item.price > 0
+        );
 
-      const toman = crypto.find(
-        (item: any) =>
-          item.symbol === `${symbol}_IRR` &&
-          !item.stale &&
-          item.price > 0
-      );
+        const toman = crypto.find(
+          (item: any) =>
+            item.symbol === `${symbol}_IRR` &&
+            !item.stale &&
+            item.price > 0
+        );
 
-      return {
-        symbol,
-        name,
-        usd: usd?.price ?? null,
-        toman:
-          toman?.price ??
-          (usd?.price && usdToman ? usd.price * usdToman : null),
-        change24h: usd?.change_pct ?? toman?.change_pct ?? null,
-        updatedAt: usd?.timestamp ?? toman?.timestamp ?? null,
-      };
-    }).filter((item) => item.usd !== null || item.toman !== null);
+        return {
+          symbol,
+          name,
+          usd: usd?.price ?? null,
+          toman:
+            toman?.price ??
+            (usd?.price && usdToman
+              ? usd.price * usdToman
+              : null),
+          change24h: usd?.change_pct ?? toman?.change_pct ?? null,
+          updatedAt: usd?.timestamp ?? toman?.timestamp ?? null,
+        };
+      })
+      .filter((item) => item.usd !== null || item.toman !== null);
 
     const currencyWanted = [
       ["USD_IRR_FREE", "USD", "دلار آمریکا"],
@@ -79,8 +86,8 @@ export async function GET() {
       ["CNY_IRR_FREE", "CNY", "یوان چین"],
     ];
 
-    const currencyItems = currencyWanted.map(
-      ([symbol, code, name]) => {
+    const currencyItems = currencyWanted
+      .map(([symbol, code, name]) => {
         const item = currencies.find(
           (entry: any) =>
             entry.symbol === symbol &&
@@ -94,8 +101,8 @@ export async function GET() {
           toman: item?.price ?? null,
           updatedAt: item?.timestamp ?? null,
         };
-      }
-    ).filter((item) => item.toman !== null);
+      })
+      .filter((item) => item.toman !== null);
 
     const tether = crypto.find(
       (item: any) =>
@@ -124,23 +131,25 @@ export async function GET() {
       { category: "coin", symbol: "COIN_GRAMI_IRR", code: "GRAMI", name: "سکه گرمی" },
     ];
 
-    const goldAndCoins = goldAndCoinWanted.map((wanted) => {
-      const sourceItems = groups[wanted.category] ?? [];
-      const item = sourceItems.find(
-        (entry: any) =>
-          entry.symbol === wanted.symbol &&
-          !entry.stale &&
-          entry.price > 0
-      );
+    const goldAndCoins = goldAndCoinWanted
+      .map((wanted) => {
+        const sourceItems = groups[wanted.category] ?? [];
+        const item = sourceItems.find(
+          (entry: any) =>
+            entry.symbol === wanted.symbol &&
+            !entry.stale &&
+            entry.price > 0
+        );
 
-      return {
-        code: wanted.code,
-        name: wanted.name,
-        toman: item?.price ?? null,
-        updatedAt: item?.timestamp ?? null,
-      };
-    }).filter((item) => item.toman !== null);
-    
+        return {
+          code: wanted.code,
+          name: wanted.name,
+          toman: item?.price ?? null,
+          updatedAt: item?.timestamp ?? null,
+        };
+      })
+      .filter((item) => item.toman !== null);
+
     const trendWanted = [
       { category: "crypto", symbol: "BTC_IRR", code: "BTC", name: "بیت‌کوین" },
       { category: "currency", symbol: "USD_IRR_FREE", code: "USD", name: "دلار آمریکا" },
@@ -148,71 +157,148 @@ export async function GET() {
       { category: "coin", symbol: "COIN_EMAMI_IRR", code: "EMAMI", name: "سکه امامی" },
     ];
 
-    const marketTrend = trendWanted.map((wanted) => {
-      const sourceItems = groups[wanted.category] ?? [];
-      const item = sourceItems.find(
-        (entry: any) =>
-          entry.symbol === wanted.symbol &&
-          !entry.stale &&
-          entry.price > 0
-      );
+    const marketTrend = trendWanted
+      .map((wanted) => {
+        const sourceItems = groups[wanted.category] ?? [];
+        const item = sourceItems.find(
+          (entry: any) =>
+            entry.symbol === wanted.symbol &&
+            !entry.stale &&
+            entry.price > 0
+        );
 
-      return {
-        code: wanted.code,
-        name: wanted.name,
-        price: item?.price ?? null,
-        high: item?.high ?? null,
-        low: item?.low ?? null,
-        previousClose: item?.prev_close ?? null,
-        changePct: item?.change_pct ?? null,
-        updatedAt: item?.timestamp ?? null,
-      };
-    }).filter((item) => item.price !== null);
-    
-        // قیمت نفت خام و برنت
+        return {
+          code: wanted.code,
+          name: wanted.name,
+          price: item?.price ?? null,
+          high: item?.high ?? null,
+          low: item?.low ?? null,
+          previousClose: item?.prev_close ?? null,
+          changePct: item?.change_pct ?? null,
+          updatedAt: item?.timestamp ?? null,
+        };
+      })
+      .filter((item) => item.price !== null);
+
+    // قیمت برنت از منبع اصلی
     const energy = groups.energy ?? [];
 
-    const oilWanted = [
+    const oilPrices = [
       {
         code: "WTI",
-        symbol: "ENERGY_CRUDE_OIL",
         name: "نفت خام آمریکا (WTI)",
+        usd: null as number | null,
+        unit: "دلار به‌ازای هر بشکه",
+        changePct: null as number | null,
+        updatedAt: null as string | null,
       },
       {
         code: "BRENT",
-        symbol: "BRENT_USD",
         name: "نفت برنت",
+        usd: null as number | null,
+        unit: "دلار به‌ازای هر بشکه",
+        changePct: null as number | null,
+        updatedAt: null as string | null,
       },
     ];
 
-    const oilPrices = oilWanted.map((wanted) => {
-      const item = energy.find(
-        (entry: any) =>
-          entry.symbol === wanted.symbol &&
-          !entry.stale &&
-          typeof entry.price === "number" &&
-          entry.price > 0
+    const brent = energy.find(
+      (item: any) =>
+        item.symbol === "BRENT_USD" &&
+        !item.stale &&
+        typeof item.price === "number" &&
+        item.price > 0
+    );
+
+    if (brent) {
+      oilPrices[1] = {
+        ...oilPrices[1],
+        usd: brent.price,
+        changePct: brent.change_pct ?? null,
+        updatedAt: brent.timestamp ?? null,
+      };
+    }
+
+    // منبع جایگزین WTI
+    try {
+      const wtiResponse = await fetch(
+        "https://americasoilwatch.com/api/v1/wti",
+        { cache: "no-store" }
       );
 
-      return {
-        code: wanted.code,
-        name: wanted.name,
-        usd: item?.price ?? null,
-        unit: "دلار به‌ازای هر بشکه",
-        changePct: item?.change_pct ?? null,
-        updatedAt: item?.timestamp ?? null,
-      };
-    });
-    
+      if (wtiResponse.ok) {
+        const wtiData = await wtiResponse.json();
+
+        if (
+          wtiData.quoteStatus === "current" &&
+          typeof wtiData.priceUsd === "number" &&
+          wtiData.priceUsd > 0
+        ) {
+          oilPrices[0] = {
+            ...oilPrices[0],
+            usd: wtiData.priceUsd,
+            changePct:
+              typeof wtiData.changePct === "number"
+                ? wtiData.changePct
+                : null,
+            updatedAt:
+              wtiData.observedAt ??
+              wtiData.lastUpdated ??
+              null,
+          };
+        }
+      }
+    } catch {
+      // قطع منبع WTI نباید بقیه قیمت‌ها را متوقف کند.
+    }
+
+    // تاریخچه روزانه دلار آزاد: آخرین ۹۰ رکورد
+    let dollarHistory: {
+      date: string;
+      timestamp: string;
+      price: number;
+    }[] = [];
+
+    try {
+      const historyResponse = await fetch(
+        "https://raw.githubusercontent.com/iran-market/iran-market.github.io/main/data/history/USD_IRR_FREE.json",
+        { cache: "no-store" }
+      );
+
+      if (historyResponse.ok) {
+        const historyJson = await historyResponse.json();
+        const rows = Array.isArray(historyJson?.data)
+          ? historyJson.data
+          : [];
+
+        dollarHistory = rows
+          .filter(
+            (row: any) =>
+              typeof row.close === "number" &&
+              row.close > 0 &&
+              typeof row.t === "string"
+          )
+          .slice(-90)
+          .map((row: any) => ({
+            date: row.date_jalali ?? row.t.slice(0, 10),
+            timestamp: row.t,
+            price: row.close,
+          }));
+      }
+    } catch {
+      // اگر تاریخچه در دسترس نباشد، سایر اطلاعات همچنان برمی‌گردند.
+    }
+
     return Response.json({
       source: "Iran Market Data",
       updatedAt: json?.data?.generated_at ?? null,
       usdToman: usdToman ?? null,
       items,
       currencies: currencyItems,
-      oilPrices,
       goldAndCoins,
       marketTrend,
+      oilPrices,
+      dollarHistory,
     });
   } catch {
     return Response.json(
@@ -220,4 +306,4 @@ export async function GET() {
       { status: 502 }
     );
   }
-        }
+          }
