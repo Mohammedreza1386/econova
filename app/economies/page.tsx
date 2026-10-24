@@ -239,7 +239,7 @@ const visibleEconomies = (
                     className="border-t border-white/[0.07] hover:bg-white/[0.03]"
                   >
                     <td className="p-4 font-bold text-[#b9f27c]">
-                      {index + 1}
+                      {economies.findIndex((item) => item.code === economy.code) + 1}
                     </td>
                     <td className="p-4">
                       <div className="font-bold">{economy.country}</div>
