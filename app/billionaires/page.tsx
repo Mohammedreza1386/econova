@@ -5010,10 +5010,3 @@ const previousRows = previousResponse as {
     </main>
   );
 }
-
-
-      
-
-/* Forbes-style: wealth history sits beneath the complete top-five section */
-.eco-legacy-top-five > .eco-history-panel { width:100%; margin-top:22px; }
-.eco-legacy-top-five .eco-top-five-layout + .eco-history-panel { display:block; width:100%; grid-column:1 / -1; }
