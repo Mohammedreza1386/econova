@@ -231,6 +231,93 @@ function HistoryChart({
 }
 
 
+function CryptoMiniChart({ symbol }: { symbol: string }) {
+  const [prices, setPrices] = useState<number[]>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadChart() {
+      try {
+        const response = await fetch(
+          `/api/crypto/chart?symbol=${encodeURIComponent(symbol)}&days=7`,
+          { cache: "no-store" }
+        );
+
+        if (!response.ok) throw new Error("Chart unavailable");
+
+        const result = await response.json();
+        const points = Array.isArray(result.points)
+          ? result.points
+          : [];
+
+        const values = points
+          .map((point: { price?: number | string }) =>
+            Number(point.price)
+          )
+          .filter((price: number) =>
+            Number.isFinite(price) && price > 0
+          );
+
+        if (active) setPrices(values);
+      } catch {
+        if (active) setPrices([]);
+      } finally {
+        if (active) setReady(true);
+      }
+    }
+
+    loadChart();
+
+    return () => {
+      active = false;
+    };
+  }, [symbol]);
+
+  if (prices.length < 2) {
+    return (
+      <div className="mini-chart-empty">
+        {ready ? "نمودار فعلاً در دسترس نیست" : "دریافت نمودار…"}
+      </div>
+    );
+  }
+
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max - min || 1;
+
+  const coordinates = prices
+    .map((price, index) => {
+      const x = (index / (prices.length - 1)) * 300;
+      const y = 42 - ((price - min) / range) * 34;
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  const rising = prices[prices.length - 1] >= prices[0];
+
+  return (
+    <div className="mini-chart">
+      <svg
+        viewBox="0 0 300 48"
+        role="img"
+        aria-label={`نمودار هفت روزه ${symbol}`}
+      >
+        <polyline
+          points={coordinates}
+          fill="none"
+          stroke={rising ? "#7dd8b1" : "#f3a3a3"}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <div className="mini-chart-caption">روند ۷ روز گذشته ↗</div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [data, setData] = useState<ApiData | null>(null);
   const [error, setError] = useState("");
