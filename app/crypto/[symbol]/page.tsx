@@ -130,7 +130,7 @@ export default function CryptoDetailPage({
 
   if (symbol && !coin) {
     return (
-      <main className="min-h-screen bg-[#080b0a] p-6 text-white" dir="rtl">
+      <main className="crypto-detail-page" dir="rtl">
         <h1 className="text-2xl font-bold">رمزارز پیدا نشد</h1>
         <Link href="/" className="mt-5 inline-block text-lime-300">
           بازگشت به اکونوا
