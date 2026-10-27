@@ -144,7 +144,7 @@ export default function CryptoDetailPage({
       dir="rtl"
       className="crypto-detail-page"
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="crypto-detail-container">
         <Link href="/" className="text-sm text-lime-300 hover:text-lime-200">
           ← بازگشت به اکونوا
         </Link>
