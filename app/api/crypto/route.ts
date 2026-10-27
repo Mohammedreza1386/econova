@@ -40,36 +40,124 @@ export async function GET() {
       ["BCH", "بیت‌کوین کش"],
     ];
 
-    const items = wanted
-      .map(([symbol, name]) => {
-        const usd = crypto.find(
-          (item: any) =>
-            item.symbol === `${symbol}_USD` &&
-            !item.stale &&
-            item.price > 0
-        );
+    const wanted: [string, string][] = [
+      ["BTC", "بیت‌کوین"],
+      ["ETH", "اتریوم"],
+      ["BNB", "بایننس کوین"],
+      ["SOL", "سولانا"],
+      ["XRP", "ریپل"],
+      ["DOGE", "دوج‌کوین"],
+      ["ADA", "کاردانو"],
+      ["TRX", "ترون"],
+      ["TON", "تون‌کوین"],
+      ["BCH", "بیت‌کوین کش"],
+    ];
 
-        const toman = crypto.find(
-          (item: any) =>
-            item.symbol === `${symbol}_IRR` &&
-            !item.stale &&
-            item.price > 0
-        );
+    type CryptoItem = {
+      symbol: string;
+      name: string;
+      usd: number | null;
+      toman: number | null;
+      change24h: number | null;
+      updatedAt: string | number | null;
+    };
 
-        return {
-          symbol,
-          name,
-          usd: usd?.price ?? null,
-          toman:
-            toman?.price ??
-            (usd?.price && usdToman
-              ? usd.price * usdToman
-              : null),
-          change24h: usd?.change_pct ?? toman?.change_pct ?? null,
-          updatedAt: usd?.timestamp ?? toman?.timestamp ?? null,
-        };
-      })
-      .filter((item) => item.usd !== null || item.toman !== null);
+    const items: CryptoItem[] = wanted.map(([symbol, name]) => {
+      const usd = crypto.find(
+        (item: any) =>
+          item.symbol === `${symbol}_USD` &&
+          !item.stale &&
+          typeof item.price === "number" &&
+          item.price > 0
+      );
+
+      const toman = crypto.find(
+        (item: any) =>
+          item.symbol === `${symbol}_IRR` &&
+          !item.stale &&
+          typeof item.price === "number" &&
+          item.price > 0
+      );
+
+      return {
+        symbol,
+        name,
+        usd: usd?.price ?? null,
+        toman:
+          toman?.price ??
+          (usd?.price && usdToman ? usd.price * usdToman : null),
+        change24h: usd?.change_pct ?? toman?.change_pct ?? null,
+        updatedAt: usd?.timestamp ?? toman?.timestamp ?? null,
+      };
+    });
+
+    // منبع جایگزین قیمت رمزارزها
+    const coinIds: Record<string, string> = {
+      BTC: "bitcoin",
+      ETH: "ethereum",
+      BNB: "binancecoin",
+      SOL: "solana",
+      XRP: "ripple",
+      DOGE: "dogecoin",
+      ADA: "cardano",
+      TRX: "tron",
+      TON: "the-open-network",
+      BCH: "bitcoin-cash",
+    };
+
+    try {
+      const missing = items.filter(
+        (item) => item.usd === null || item.toman === null
+      );
+
+      if (missing.length > 0) {
+        const ids = missing
+          .map((item) => coinIds[item.symbol])
+          .filter(Boolean)
+          .join(",");
+
+        if (ids) {
+          const fallbackResponse = await fetch(
+            `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true`,
+            { cache: "no-store" }
+          );
+
+          if (fallbackResponse.ok) {
+            const fallbackData = await fallbackResponse.json();
+
+            for (const item of missing) {
+              const data = fallbackData[coinIds[item.symbol]];
+
+              if (!data || typeof data.usd !== "number" || data.usd <= 0) {
+                continue;
+              }
+
+              item.usd ??= data.usd;
+
+              if (usdToman && usdToman > 0) {
+                item.toman ??= data.usd * usdToman;
+              }
+
+              item.change24h ??=
+                typeof data.usd_24h_change === "number"
+                  ? data.usd_24h_change
+                  : null;
+
+              item.updatedAt ??=
+                typeof data.last_updated_at === "number"
+                  ? new Date(data.last_updated_at * 1000).toISOString()
+                  : null;
+            }
+          }
+        }
+      }
+    } catch {
+      // اگر منبع جایگزین در دسترس نباشد، سایر بخش‌های سایت کار می‌کنند.
+    }
+
+    const availableItems = items.filter(
+      (item) => item.usd !== null || item.toman !== null
+    );
 
     const currencyWanted = [
       ["USD_IRR_FREE", "USD", "دلار آمریکا"],
