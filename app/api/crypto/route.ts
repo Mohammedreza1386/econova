@@ -40,19 +40,6 @@ export async function GET() {
       ["BCH", "بیت‌کوین کش"],
     ];
 
-    const wanted: [string, string][] = [
-      ["BTC", "بیت‌کوین"],
-      ["ETH", "اتریوم"],
-      ["BNB", "بایننس کوین"],
-      ["SOL", "سولانا"],
-      ["XRP", "ریپل"],
-      ["DOGE", "دوج‌کوین"],
-      ["ADA", "کاردانو"],
-      ["TRX", "ترون"],
-      ["TON", "تون‌کوین"],
-      ["BCH", "بیت‌کوین کش"],
-    ];
-
     type CryptoItem = {
       symbol: string;
       name: string;
