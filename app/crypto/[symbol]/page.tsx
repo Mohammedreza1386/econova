@@ -149,7 +149,7 @@ export default function CryptoDetailPage({
           ← بازگشت به اکونوا
         </Link>
 
-        <section className="mt-8 rounded-3xl border border-white/10 bg-[#101512] p-5 md:p-8">
+       <section className="crypto-detail-panel">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm text-gray-400">بازار رمزارزها · ECONOVA</p>
