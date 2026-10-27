@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import "./crypto-detail.css";
 
 type Point = {
   timestamp: number;
