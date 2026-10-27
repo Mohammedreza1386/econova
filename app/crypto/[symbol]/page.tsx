@@ -197,7 +197,7 @@ export default function CryptoDetailPage({
             ))}
           </div>
 
-          <div className="mt-6 overflow-hidden rounded-2xl border border-white/5 bg-[#090d0b] p-3 md:p-5">
+         <div className="crypto-detail-chart">
             {loading ? (
               <div className="flex h-64 items-center justify-center text-gray-400">
                 در حال دریافت داده‌های واقعی بازار...
