@@ -142,7 +142,7 @@ export default function CryptoDetailPage({
   return (
     <main
       dir="rtl"
-      className="min-h-screen bg-[#080b0a] px-4 py-8 text-white md:px-8"
+      className="crypto-detail-page"
     >
       <div className="mx-auto max-w-6xl">
         <Link href="/" className="text-sm text-lime-300 hover:text-lime-200">
