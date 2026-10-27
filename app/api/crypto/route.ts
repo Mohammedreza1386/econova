@@ -420,7 +420,7 @@ export async function GET() {
       source: "Iran Market Data",
       updatedAt: json?.data?.generated_at ?? null,
       usdToman: usdToman ?? null,
-      items,
+      items: availableItems,
       currencies: currencyItems,
       goldAndCoins,
       marketTrend,
