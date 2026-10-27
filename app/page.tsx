@@ -992,35 +992,57 @@ const [historyRange, setHistoryRange] =
         {data && data.items.length === 0 && (
           <p className="status">در حال حاضر قیمتی برای نمایش موجود نیست.</p>
         )}
-
-        {data && data.items.length > 0 && (
-          <div className="grid">
-            {data.items.map((coin) => (
-              <article className="card" key={coin.symbol}>
-                <div className="card-top">
-                  <div>
-                    <div className="name">{coin.name}</div>
-                    <div className="symbol">{coin.symbol}</div>
-                  </div>
-                  <div className="coin-mark">₿</div>
-                </div>
-
-                <div className="price">
-                  {coin.usd !== null ? `$${number(coin.usd, 8)}` : "—"}
-                </div>
-                <div className="price-label">قیمت دلاری</div>
-                <div className="toman">{money(coin.toman)}</div>
-
-                {coin.change24h !== null && (
-                  <div className={`change ${coin.change24h >= 0 ? "up" : "down"}`}>
-                    {coin.change24h > 0 ? "+" : ""}
-                    {number(coin.change24h)}٪ در ۲۴ ساعت
-                  </div>
-                )}
-              </article>
-            ))}
+     
+{data && data.items.length > 0 && (
+  <div className="grid">
+    {data.items.map((coin) => (
+      <a
+        className="crypto-card-link"
+        href={`/crypto/${encodeURIComponent(
+          coin.symbol.toUpperCase()
+        )}`}
+        key={coin.symbol}
+        aria-label={`مشاهده جزئیات ${coin.name}`}
+      >
+        <article className="card">
+          <div className="card-top">
+            <div>
+              <div className="name">{coin.name}</div>
+              <div className="symbol">{coin.symbol}</div>
+            </div>
+            <div className="coin-mark">₿</div>
           </div>
-        )}
+
+          <div className="price">
+            {coin.usd !== null
+              ? `$${number(coin.usd, 8)}`
+              : "—"}
+          </div>
+
+          <div className="price-label">قیمت دلاری</div>
+          <div className="toman">{money(coin.toman)}</div>
+
+          {coin.change24h !== null && (
+            <div
+              className={`change ${
+                coin.change24h >= 0 ? "up" : "down"
+              }`}
+            >
+              {coin.change24h > 0 ? "+" : ""}
+              {number(coin.change24h)}٪ در ۲۴ ساعت
+            </div>
+          )}
+
+          <CryptoMiniChart symbol={coin.symbol} />
+
+          <div className="muted" style={{ marginTop: 10 }}>
+            برای مشاهدهٔ نمودار کامل، انتخاب کن ↗
+          </div>
+        </article>
+      </a>
+    ))}
+  </div>
+)}
 
         {data?.marketTrend && data.marketTrend.length > 0 && (
           <>
