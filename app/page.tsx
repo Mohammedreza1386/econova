@@ -609,6 +609,42 @@ const [historyRange, setHistoryRange] =
       transform: translateY(-3px);
       border-color: rgba(217,189,119,.38);
     }
+    
+.crypto-card-link {
+  display: block;
+  min-width: 0;
+  border-radius: 14px;
+  outline-offset: 4px;
+}
+
+.crypto-card-link:focus-visible {
+  outline: 2px solid #d9bd77;
+}
+
+.mini-chart {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(180, 190, 199, .12);
+}
+
+.mini-chart svg {
+  display: block;
+  width: 100%;
+  height: 48px;
+  overflow: visible;
+}
+
+.mini-chart-caption,
+.mini-chart-empty {
+  margin-top: 5px;
+  color: #8290a0;
+  font-size: 10px;
+}
+
+.mini-chart-empty {
+  padding: 15px 0;
+}
+
     .card-top {
       display: flex;
       align-items: flex-start;
