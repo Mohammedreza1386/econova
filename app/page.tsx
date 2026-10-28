@@ -936,10 +936,12 @@ const [historyRange, setHistoryRange] =
         <div className="hero-content">
           <p className="eyebrow">ECONOMIC INTELLIGENCE · EST. ECONOVA</p>
           <h1>
-            نبض بازارها،
-            <br />
-            <span className="gold-text">با نگاهی دقیق‌تر.</span>
-          </h1>
+  اکونوا؛ رصد بازارهای مالی
+  <br />
+  <span className="gold-text">
+    ارز دیجیتال، ارز و طلا
+  </span>
+</h1>
           <p className="hero-desc">
             داشبورد اقتصادی Econova برای دنبال‌کردن قیمت ارزهای دیجیتال،
             ارزهای رایج، طلا و سکه؛ اطلاعات بازار را یک‌جا ببین و
