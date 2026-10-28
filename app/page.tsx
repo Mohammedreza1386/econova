@@ -941,12 +941,13 @@ const [historyRange, setHistoryRange] =
   <span className="gold-text">
     ارز دیجیتال، ارز و طلا
   </span>
-</h1>
-          <p className="hero-desc">
-            داشبورد اقتصادی Econova برای دنبال‌کردن قیمت ارزهای دیجیتال،
-            ارزهای رایج، طلا و سکه؛ اطلاعات بازار را یک‌جا ببین و
-            تغییرات را ساده‌تر دنبال کن.
-          </p>
+</h1>       
+<p className="hero-desc">
+  Econova یک داشبورد اقتصادی برای بررسی بازارهای مالی،
+  قیمت ارزهای دیجیتال، نرخ ارزهای رایج، طلا و سکه است.
+  همچنین می‌توانی رتبه‌بندی ثروتمندان جهان و اطلاعات
+  اقتصادهای مختلف را در اکونوا دنبال کنی.
+</p>
           <div className="hero-actions">
             <a className="btn btn-primary" href="#markets">
               مشاهده بازارها <span>↘</span>
