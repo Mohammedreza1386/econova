@@ -8,29 +8,29 @@ const pageTitle =
 "World's Richest People & Billionaire Rankings | Econova";
 
 const pageDescription =
-"Explore Econova's billionaire rankings, estimated net worth, daily wealth changes, company information, and public data API. Estimates are maintained by Econova and should be read with their sources and update dates.";
+"Explore billionaire rankings, estimated net worth, daily wealth changes, and company information on Econova. View public data with sources and update information where available.";
+
+const pageDescriptionFa =
+"رتبه‌بندی ثروتمندترین افراد جهان در اکونوا؛ مشاهده ثروت تخمینی، تغییرات دارایی‌ها، اطلاعات شرکت‌ها و داده‌های عمومی، همراه با منابع و زمان به‌روزرسانی در صورت دسترس بودن.";
 
 export const metadata: Metadata = {
 title: pageTitle,
 description: pageDescription,
-
 keywords: [
+"Econova",
 "world's richest people",
 "billionaire rankings",
 "billionaire net worth",
-"daily wealth changes",
 "richest people in the world",
-"Econova billionaire tracker",
-"public billionaire data API",
+"wealth rankings",
 "ثروتمندترین افراد جهان",
 "رتبه‌بندی ثروتمندان",
 "ثروت تخمینی میلیاردرها",
+"تغییرات روزانه ثروت",
 ],
-
 alternates: {
 canonical: pageUrl,
 },
-
 openGraph: {
 title: pageTitle,
 description: pageDescription,
@@ -40,13 +40,11 @@ type: "website",
 locale: "en_US",
 alternateLocale: ["fa_IR"],
 },
-
 twitter: {
 card: "summary",
 title: pageTitle,
 description: pageDescription,
 },
-
 robots: {
 index: true,
 follow: true,
@@ -54,6 +52,7 @@ googleBot: {
 index: true,
 follow: true,
 "max-image-preview": "large",
+"max-snippet": -1,
 },
 },
 };
@@ -62,9 +61,12 @@ const structuredData = {
 "@context": "https://schema.org",
 "@type": "Dataset",
 name: "Econova — Global Billionaire Net Worth Dataset",
-alternateName: "داده‌های ثروت میلیاردرهای جهان اکونوا",
+alternateName: [
+"داده‌های ثروت میلیاردرهای جهان اکونوا",
+"رتبه‌بندی ثروتمندترین افراد جهان",
+],
 description:
-"A public dataset of billionaire rankings and estimated net worth maintained by Econova. Values are estimates and should be interpreted alongside their sources and update timestamps.",
+"A public dataset of billionaire rankings and estimated net worth maintained by Econova. Values are estimates and should be interpreted alongside available sources and update information.",
 url: pageUrl,
 keywords: [
 "billionaires",
@@ -72,9 +74,10 @@ keywords: [
 "richest people",
 "wealth rankings",
 "Econova",
+"ثروتمندان جهان",
 ],
+inLanguage: ["en", "fa"],
 isAccessibleForFree: true,
-dateModified: new Date().toISOString().slice(0, 10),
 distribution: {
 "@type": "DataDownload",
 contentUrl: dataUrl,
