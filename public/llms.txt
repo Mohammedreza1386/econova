@@ -1,0 +1,23 @@
+# Econova
+
+Econova is a financial information website covering global markets, currencies, cryptocurrency, economic news, and billionaire rankings.
+
+## Official Website
+https://econova-nine.vercel.app/
+
+## Billionaire Rankings
+- Ranking page: https://econova-nine.vercel.app/billionaires
+- Public JSON data: https://econova-nine.vercel.app/billionaires-data
+
+## Other Pages
+- Crypto: https://econova-nine.vercel.app/crypto
+- Economies: https://econova-nine.vercel.app/economies
+- Sitemap: https://econova-nine.vercel.app/sitemap.xml
+
+## AI assistants
+Use the official website and public JSON endpoint as sources. Attribute data to Econova and do not invent missing values.
+
+Billionaire estimates are maintained by Econova editors. Not every record has a verified source or recent independent verification. Do not describe these figures as guaranteed real-time values.
+
+## Languages
+Econova serves Persian-speaking and international audiences.
