@@ -20,6 +20,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/billionaires/rankings`,
+      lastModified,
+      changeFrequency: "hourly",
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/crypto`,
       lastModified,
       changeFrequency: "hourly",
