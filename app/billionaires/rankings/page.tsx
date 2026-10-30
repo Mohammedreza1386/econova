@@ -124,43 +124,6 @@ async function apiRequest<T>(
 function MiniWealthChart({ person }: { person: Billionaire }) {
   const [points, setPoints] = useState<WealthHistoryPoint[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [range, setRange] = useState<"week" | "month" | "year">("week");
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const rows = await apiRequest<WealthHistoryPoint[]>(
-          `/rest/v1/billionaire_wealth_history?billionaire_id=eq.${encodeURIComponent(String(person.id))}&select=id,billionaire_id,billionaire_name,net_worth_billions,recorded_at,source_url&order=recorded_at.asc&limit=400`
-        );
-        if (!cancelled) {
-          const validRows = (Array.isArray(rows) ? rows : []).filter(
-            (p) => Number.isFinite(Number(p.net_worth_billions)) && Number.isFinite(Date.parse(p.recorded_at))
-          );
-          setPoints(validRows);
-          setSelectedIndex(validRows.length ? validRows.length - 1 : null);
-        }
-      } catch {
-        if (!cancelled) {
-          setPoints([]);
-          setSelectedIndex(null);
-        }
-      }
-    }
-    void load();
-    return () => { cancelled = true; };
-  }, [person.id]);
-
-  const cutoff = Date.now() - (
-    range === "week" ? 7 :
-    range === "month" ? 30 : 365
-  ) * 24 * 60 * 60 * 1000;
-  const filteredPoints = points.filter((p) => Date.parse(p.recorded_at) >= cutoff);
-  const chartPoints = filteredPoints.length >= 2 ? filteredPoints : points;
-
-function MiniWealthChart({ person }: { person: Billionaire }) {
-  const [points, setPoints] = useState<WealthHistoryPoint[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [range, setRange] = useState<"all" | "week" | "month" | "year">("all");
 
   useEffect(() => {
