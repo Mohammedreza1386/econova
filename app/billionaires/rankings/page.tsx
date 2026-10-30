@@ -575,21 +575,31 @@ const [dailyTotalStatus, setDailyTotalStatus] = useState("در انتظار ثب
     setErrorMessage("");
 
     try {
-      const [peopleData, newsData] = await Promise.all([
-        apiRequest<Billionaire[]>(
-          "/rest/v1/billionaires?select=*&order=rank.asc&limit=100"
-        ),
-        apiRequest<BillionaireNews[]>(
-          "/rest/v1/billionaire_news?select=*&order=billionaire_rank.asc"
-        ).catch(() => [] as BillionaireNews[]),
-      ]);
+      const response = await fetch(
+        "https://zusbebjskchgehdjvpsm.supabase.co/functions/v1/econova-public-billionaires",
+        { cache: "no-store" }
+      );
+
+      if (!response.ok) {
+        throw new Error("دریافت اطلاعات اکونوا ناموفق بود.");
+      }
+
+      const payload = await response.json();
+
+      const peopleData: Billionaire[] = Array.isArray(payload.billionaires)
+        ? payload.billionaires
+        : [];
+
+      const newsData: BillionaireNews[] = Array.isArray(payload.news)
+        ? payload.news
+        : [];
 
       const sorted = [...peopleData].sort(
         (a, b) => Number(a.rank) - Number(b.rank)
       );
 
       setPeople(sorted);
-      setNews(newsData || []);
+      setNews(newsData);
 
       if (sorted.length > 0) {
         setLastUpdated(
