@@ -5232,7 +5232,7 @@ const previousRows = previousResponse as {
   }
 }
               
-</style>
-    </main>
-  );
+`}</style>
+</main>
+);
 }
