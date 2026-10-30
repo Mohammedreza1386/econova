@@ -121,7 +121,6 @@ async function apiRequest<T>(
   return data as T;
 }
 
-
 function MiniWealthChart({ person }: { person: Billionaire }) {
   const [points, setPoints] = useState<WealthHistoryPoint[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -191,59 +190,404 @@ function MiniWealthChart({ person }: { person: Billionaire }) {
   const gradientId = `wealthGradient-${String(person.id).replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const activeIndex = selectedIndex !== null && selectedIndex < chartPoints.length ? selectedIndex : chartPoints.length - 1;
   const activePoint = chartPoints[activeIndex];
-  const activePlot = plotted[activeIndex];
-  const activeDate = activePoint?.recorded_at
-    ? new Date(activePoint.recorded_at).toLocaleDateString("fa-IR", { year: "numeric", month: "short", day: "numeric" })
-    : "تاریخ نامشخص";
-  const choosePoint = (clientX: number, currentTarget: SVGSVGElement) => {
-    const rect = currentTarget.getBoundingClientRect();
-    if (!rect.width) return;
-    const chartX = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-    let nearest = 0;
-    for (let i = 1; i < plotted.length; i++) {
-      if (Math.abs(plotted[i].x - chartX) < Math.abs(plotted[nearest].x - chartX)) nearest = i;
+
+function MiniWealthChart({ person }: { person: Billionaire }) {
+  const [points, setPoints] = useState<WealthHistoryPoint[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [range, setRange] = useState<"all" | "week" | "month" | "year">("all");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const rows = await apiRequest<WealthHistoryPoint[]>(
+          `/rest/v1/billionaire_wealth_history?billionaire_id=eq.${encodeURIComponent(
+            String(person.id)
+          )}&select=id,billionaire_id,billionaire_name,net_worth_billions,recorded_at,source_url&order=recorded_at.asc&limit=400`
+        );
+
+        if (!cancelled) {
+          const validRows = (Array.isArray(rows) ? rows : [])
+            .filter(
+              (p) =>
+                Number.isFinite(Number(p.net_worth_billions)) &&
+                Number.isFinite(Date.parse(p.recorded_at))
+            )
+            .sort(
+              (a, b) =>
+                Date.parse(a.recorded_at) - Date.parse(b.recorded_at)
+            );
+
+          setPoints(validRows);
+          setSelectedIndex(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setPoints([]);
+          setSelectedIndex(null);
+        }
+      }
     }
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [person.id]);
+
+  // شروع بازه‌ها بر اساس تقویم ایران (هفته از شنبه)
+  const getPeriodStart = (selectedRange: typeof range): number => {
+    if (selectedRange === "all") return 0;
+
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Tehran",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    }).formatToParts(new Date());
+
+    const year = Number(parts.find((p) => p.type === "year")?.value);
+    const month = Number(parts.find((p) => p.type === "month")?.value);
+    const day = Number(parts.find((p) => p.type === "day")?.value);
+
+    let start: number;
+
+    if (selectedRange === "week") {
+      const weekday = new Date(
+        Date.UTC(year, month - 1, day)
+      ).getUTCDay();
+
+      const daysSinceSaturday = (weekday + 1) % 7;
+
+      start = Date.UTC(
+        year,
+        month - 1,
+        day - daysSinceSaturday
+      );
+    } else if (selectedRange === "month") {
+      start = Date.UTC(year, month - 1, 1);
+    } else {
+      start = Date.UTC(year, 0, 1);
+    }
+
+    // نیمه‌شب تهران = ساعت ۲۰:۳۰ روز قبل UTC
+    return start - (3.5 * 60 * 60 * 1000);
+  };
+
+  const periodStart = getPeriodStart(range);
+
+  const periodPoints =
+    range === "all"
+      ? points
+      : points.filter(
+          (p) => Date.parse(p.recorded_at) >= periodStart
+        );
+
+  // آخرین رکورد قبل از شروع بازه، مبنای مقایسه است.
+  const previousPoints =
+    range === "all"
+      ? []
+      : points.filter(
+          (p) => Date.parse(p.recorded_at) < periodStart
+        );
+
+  const baseline =
+    range === "all"
+      ? null
+      : previousPoints.length
+        ? previousPoints[previousPoints.length - 1]
+        : null;
+
+  const chartPoints =
+    baseline && periodPoints.length
+      ? [baseline, ...periodPoints]
+      : periodPoints;
+
+  const values = chartPoints.map((p) =>
+    Number(p.net_worth_billions)
+  );
+
+  const hasChart = chartPoints.length >= 2;
+
+  const firstValue = values[0] ?? 0;
+  const lastValue = values[values.length - 1] ?? 0;
+
+  const delta = hasChart ? lastValue - firstValue : null;
+
+  const changePercent =
+    delta !== null && firstValue > 0
+      ? (delta / firstValue) * 100
+      : null;
+
+  const isUp = delta === null || delta >= 0;
+
+  const rangeLabels = {
+    all: "کل تاریخچه",
+    week: "از ابتدای هفته",
+    month: "از ابتدای ماه",
+    year: "از ابتدای سال",
+  };
+
+  const rangeControls = (
+    <div
+      className="eco-mini-chart-ranges"
+      role="group"
+      aria-label="بازه زمانی نمودار ثروت"
+    >
+      {(
+        [
+          ["all", "همه"],
+          ["week", "هفته"],
+          ["month", "ماه"],
+          ["year", "سال"],
+        ] as const
+      ).map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          className={range === value ? "active" : ""}
+          aria-pressed={range === value}
+          onClick={() => {
+            setRange(value);
+            setSelectedIndex(null);
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (!hasChart) {
+    return (
+      <div className="eco-mini-chart-wrap">
+        <span className="eco-mini-chart-empty">
+          {points.length === 0
+            ? "هنوز تاریخچه ثروت ثبت نشده است."
+            : periodPoints.length === 0
+              ? "در این بازه هنوز رکورد جدیدی ثبت نشده است."
+              : "برای رسم نمودار حداقل دو رکورد تاریخی لازم است."}
+        </span>
+        {rangeControls}
+      </div>
+    );
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+
+  const valueRange =
+    max - min || Math.max(Math.abs(max) * 0.01, 1);
+
+  const plotted = values.map((v, i) => ({
+    x: 3 + i * (94 / (values.length - 1)),
+    y: 25 - ((v - min) / valueRange) * 18,
+  }));
+
+  const linePath = plotted
+    .map(
+      (p, i) =>
+        `${i === 0 ? "M" : "L"}${p.x.toFixed(2)},${p.y.toFixed(2)}`
+    )
+    .join(" ");
+
+  const areaPath = `${linePath} L${plotted[plotted.length - 1].x.toFixed(
+    2
+  )},29 L${plotted[0].x.toFixed(2)},29 Z`;
+
+  const gradientId = `wealthGradient-${String(person.id).replace(
+    /[^a-zA-Z0-9_-]/g,
+    ""
+  )}`;
+
+  const activeIndex =
+    selectedIndex !== null && selectedIndex < chartPoints.length
+      ? selectedIndex
+      : chartPoints.length - 1;
+
+  const activePoint = chartPoints[activeIndex];
+  const activePlot = plotted[activeIndex];
+
+  const activeDate = new Date(
+    activePoint.recorded_at
+  ).toLocaleDateString("fa-IR", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+
+  const choosePoint = (
+    clientX: number,
+    currentTarget: SVGSVGElement
+  ) => {
+    const rect = currentTarget.getBoundingClientRect();
+
+    if (!rect.width) return;
+
+    const chartX = Math.max(
+      0,
+      Math.min(100, ((clientX - rect.left) / rect.width) * 100)
+    );
+
+    let nearest = 0;
+
+    for (let i = 1; i < plotted.length; i++) {
+      if (
+        Math.abs(plotted[i].x - chartX) <
+        Math.abs(plotted[nearest].x - chartX)
+      ) {
+        nearest = i;
+      }
+    }
+
     setSelectedIndex(nearest);
   };
 
   return (
     <div className="eco-mini-chart-wrap">
+
       <div className="eco-mini-chart-tooltip" aria-live="polite">
         <span>{activeDate}</span>
-        <strong>${values[activeIndex].toLocaleString("en-US", { maximumFractionDigits: 1 })}B</strong>
+        <strong>
+          ${values[activeIndex].toLocaleString("en-US", {
+            maximumFractionDigits: 1,
+          })}B
+        </strong>
       </div>
+
+      <div className="eco-mini-chart-summary">
+        <span>{rangeLabels[range]}</span>
+
+        <strong className={isUp ? "eco-positive" : "eco-negative"}>
+          {delta !== null
+            ? `${delta >= 0 ? "+" : "−"}$${Math.abs(delta).toFixed(2)}B`
+            : "—"}
+        </strong>
+
+        <small className={isUp ? "eco-positive" : "eco-negative"}>
+          {changePercent !== null
+            ? `${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(2)}%`
+            : "درصد نامشخص"}
+        </small>
+      </div>
+
       <svg
-        className={`eco-mini-chart ${up ? "is-up" : "is-down"}`}
+        className={`eco-mini-chart ${isUp ? "is-up" : "is-down"}`}
         viewBox="0 0 100 32"
         role="img"
-        aria-label={`نمودار تاریخچه ثروت ${person.name}`}
+        aria-label={`نمودار تغییر ثروت ${person.name}`}
         preserveAspectRatio="none"
-        onPointerDown={(event) => choosePoint(event.clientX, event.currentTarget)}
-        onPointerMove={(event) => { if (event.buttons === 1 || event.pointerType === "touch") choosePoint(event.clientX, event.currentTarget); }}
+        onPointerDown={(event) =>
+          choosePoint(event.clientX, event.currentTarget)
+        }
+        onPointerMove={(event) => {
+          if (
+            event.buttons === 1 ||
+            event.pointerType === "touch"
+          ) {
+            choosePoint(event.clientX, event.currentTarget);
+          }
+        }}
         onPointerLeave={() => setSelectedIndex(null)}
       >
         <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="currentColor" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="currentColor" stopOpacity="0.015" />
+          <linearGradient
+            id={gradientId}
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+          >
+            <stop
+              offset="0%"
+              stopColor="currentColor"
+              stopOpacity="0.28"
+            />
+            <stop
+              offset="100%"
+              stopColor="currentColor"
+              stopOpacity="0.015"
+            />
           </linearGradient>
         </defs>
-        <path className="eco-mini-chart-grid" d="M1 8 H99 M1 18 H99 M1 28 H99" fill="none" stroke="currentColor" strokeOpacity="0.13" strokeDasharray="1.5 3" />
-        <path d={areaPath} fill={`url(#${gradientId})`} stroke="none" />
-        <path d={linePath} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+
+        <path
+          className="eco-mini-chart-grid"
+          d="M1 8 H99 M1 18 H99 M1 28 H99"
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity="0.13"
+          strokeDasharray="1.5 3"
+        />
+
+        <path
+          d={areaPath}
+          fill={`url(#${gradientId})`}
+          stroke="none"
+        />
+
+        <path
+          d={linePath}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+
         {plotted.map((point, index) => (
-          <circle key={`${chartPoints[index]?.id ?? index}`} cx={point.x} cy={point.y} r={index === activeIndex ? 3.2 : 1.5} fill="currentColor" fillOpacity={index === activeIndex ? 1 : 0.42} />
+          <circle
+            key={chartPoints[index]?.id ?? index}
+            cx={point.x}
+            cy={point.y}
+            r={index === activeIndex ? 3.2 : 1.5}
+            fill="currentColor"
+            fillOpacity={index === activeIndex ? 1 : 0.42}
+          />
         ))}
-        <line x1={activePlot.x} y1="2" x2={activePlot.x} y2="30" stroke="currentColor" strokeOpacity="0.55" strokeDasharray="1.5 2" strokeWidth="0.8" />
-        <circle cx={activePlot.x} cy={activePlot.y} r="5" fill="currentColor" fillOpacity="0.14" />
-        <circle cx={activePlot.x} cy={activePlot.y} r="2.4" fill="currentColor" />
-        <rect x="0" y="0" width="100" height="32" fill="transparent" />
+
+        <line
+          x1={activePlot.x}
+          y1="2"
+          x2={activePlot.x}
+          y2="30"
+          stroke="currentColor"
+          strokeOpacity="0.55"
+          strokeDasharray="1.5 2"
+          strokeWidth="0.8"
+        />
+
+        <circle
+          cx={activePlot.x}
+          cy={activePlot.y}
+          r="5"
+          fill="currentColor"
+          fillOpacity="0.14"
+        />
+
+        <circle
+          cx={activePlot.x}
+          cy={activePlot.y}
+          r="2.4"
+          fill="currentColor"
+        />
+
+        <rect
+          x="0"
+          y="0"
+          width="100"
+          height="32"
+          fill="transparent"
+        />
       </svg>
-      {!hasRangeData && <small className="eco-mini-chart-range-note">برای این بازه داده کافی نیست؛ تاریخچه موجود نمایش داده می‌شود.</small>}
+
       {rangeControls}
     </div>
   );
-}
+      }
 
 function changeAmount(person: Billionaire): number | null {
   const current = Number(person.net_worth_billions);
