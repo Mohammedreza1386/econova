@@ -157,39 +157,6 @@ function MiniWealthChart({ person }: { person: Billionaire }) {
   ) * 24 * 60 * 60 * 1000;
   const filteredPoints = points.filter((p) => Date.parse(p.recorded_at) >= cutoff);
   const chartPoints = filteredPoints.length >= 2 ? filteredPoints : points;
-  const hasRangeData = filteredPoints.length >= 2;
-  const values = chartPoints.map((p) => Number(p.net_worth_billions));
-
-  const rangeControls = (
-    <div className="eco-mini-chart-ranges" role="group" aria-label="بازه زمانی نمودار ثروت">
-      <button type="button" className={range === "week" ? "active" : ""} aria-pressed={range === "week"} onClick={() => { setRange("week"); setSelectedIndex(null); }}>هفته</button>
-      <button type="button" className={range === "month" ? "active" : ""} aria-pressed={range === "month"} onClick={() => { setRange("month"); setSelectedIndex(null); }}>ماه</button>
-      <button type="button" className={range === "year" ? "active" : ""} aria-pressed={range === "year"} onClick={() => { setRange("year"); setSelectedIndex(null); }}>سال</button>
-    </div>
-  );
-
-  if (chartPoints.length < 2) {
-    return (
-      <div className="eco-mini-chart-wrap">
-        <span className="eco-mini-chart-empty">برای رسم نمودار، حداقل ۲ رکورد تاریخی لازم است.</span>
-        {rangeControls}
-      </div>
-    );
-  }
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const valueRange = max - min || Math.max(Math.abs(max) * 0.01, 1);
-  const plotted = values.map((v, i) => ({
-    x: 3 + i * (94 / (values.length - 1)),
-    y: 25 - ((v - min) / valueRange) * 18,
-  }));
-  const linePath = plotted.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(" ");
-  const areaPath = `${linePath} L${plotted[plotted.length - 1].x.toFixed(2)},29 L${plotted[0].x.toFixed(2)},29 Z`;
-  const up = values[values.length - 1] >= values[0];
-  const gradientId = `wealthGradient-${String(person.id).replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const activeIndex = selectedIndex !== null && selectedIndex < chartPoints.length ? selectedIndex : chartPoints.length - 1;
-  const activePoint = chartPoints[activeIndex];
 
 function MiniWealthChart({ person }: { person: Billionaire }) {
   const [points, setPoints] = useState<WealthHistoryPoint[]>([]);
