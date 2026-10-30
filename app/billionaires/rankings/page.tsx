@@ -5347,6 +5347,279 @@ const previousRows = previousResponse as {
     margin-top: 2px;
   }
 }
+
+/* ==========================================
+   ECONOVA — PREMIUM FORBES TOP FIVE
+   Horizontal luxury cards
+   ========================================== */
+
+/* Main section */
+.eco-legacy-top-five {
+  margin-top: 0 !important;
+  overflow: hidden;
+}
+
+.eco-legacy-top-five > .eco-section-heading {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px !important;
+}
+
+/* Horizontal carousel */
+.eco-legacy-top-five .eco-top-five-layout {
+  display: block !important;
+  width: 100%;
+}
+
+.eco-legacy-top-five .eco-top-five-list {
+  display: grid !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: calc((100% - 56px) / 5) !important;
+  grid-template-columns: none !important;
+  gap: 14px !important;
+  width: 100%;
+  margin: 0 0 22px !important;
+  padding: 5px 3px 16px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  direction: ltr;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: #526b43 #111712;
+}
+
+/* Individual card */
+.eco-legacy-top-five .eco-person-row {
+  position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  min-height: 340px !important;
+  padding: 19px 16px !important;
+  direction: rtl;
+  text-align: right !important;
+  overflow: hidden;
+  scroll-snap-align: start;
+  border: 1px solid rgba(255,255,255,.09) !important;
+  border-radius: 17px !important;
+  background:
+    radial-gradient(ellipse at 85% 0%, rgba(185,242,124,.10), transparent 55%),
+    linear-gradient(155deg,#171d18 0%,#101511 55%,#0b100c 100%) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.22) !important;
+  transition:
+    transform .22s ease,
+    border-color .22s ease,
+    box-shadow .22s ease,
+    background .22s ease;
+}
+
+.eco-legacy-top-five .eco-person-row::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg,transparent,#b9f27c,transparent);
+  opacity: .45;
+  pointer-events: none;
+}
+
+.eco-legacy-top-five .eco-person-row:hover {
+  transform: translateY(-5px);
+  border-color: rgba(185,242,124,.48) !important;
+  box-shadow: 0 18px 38px rgba(0,0,0,.34),
+              0 0 24px rgba(185,242,124,.07) !important;
+}
+
+.eco-legacy-top-five .eco-person-row.is-active {
+  border-color: #b9f27c !important;
+  background:
+    radial-gradient(ellipse at 85% 0%, rgba(185,242,124,.16), transparent 60%),
+    linear-gradient(155deg,#1a251c,#101811 60%,#0b100c) !important;
+  box-shadow: 0 0 0 1px #b9f27c22,
+              0 16px 40px #0007,
+              0 0 25px #b9f27c12 !important;
+}
+
+/* Rank */
+.eco-legacy-top-five .eco-person-rank {
+  align-self: flex-start;
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 9px;
+  color: #b9f27c !important;
+  background: rgba(185,242,124,.09);
+  border: 1px solid rgba(185,242,124,.27);
+  border-radius: 10px;
+  font-size: 14px !important;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Portrait */
+.eco-legacy-top-five .eco-person-avatar {
+  align-self: center;
+  width: 94px !important;
+  height: 94px !important;
+  margin: 2px auto 0 !important;
+  border-radius: 18px !important;
+  border: 2px solid rgba(185,242,124,.52) !important;
+  object-fit: cover;
+  box-shadow: 0 0 0 6px rgba(185,242,124,.055),
+              0 12px 28px rgba(0,0,0,.45) !important;
+}
+
+/* Name and company */
+.eco-legacy-top-five .eco-person-info {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px !important;
+  width: 100%;
+  min-width: 0;
+  text-align: center !important;
+}
+
+.eco-legacy-top-five .eco-person-info strong {
+  color: #f3f7f2 !important;
+  font-size: 16px !important;
+  font-weight: 850 !important;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.eco-legacy-top-five .eco-person-info small {
+  color: #9ba99e !important;
+  font-size: 11px !important;
+  line-height: 1.6;
+}
+
+/* Net worth */
+.eco-legacy-top-five .eco-person-worth {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center;
+  gap: 5px !important;
+  width: 100%;
+  min-width: 0 !important;
+  margin-top: auto !important;
+  padding: 12px 8px;
+  background: rgba(185,242,124,.045);
+  border: 1px solid rgba(185,242,124,.12);
+  border-radius: 12px;
+}
+
+.eco-legacy-top-five .eco-person-worth strong {
+  color: #b9f27c !important;
+  font-size: clamp(14px,1.2vw,19px) !important;
+  font-weight: 900 !important;
+  direction: ltr;
+  text-align: center;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.eco-legacy-top-five .eco-person-worth small {
+  color: #a0afa3 !important;
+  font-size: 10px !important;
+  white-space: normal !important;
+}
+
+/* Mini chart */
+.eco-legacy-top-five .eco-mini-chart-wrap {
+  width: 100%;
+  margin-top: 2px;
+}
+
+.eco-legacy-top-five .eco-mini-chart {
+  display: block;
+  width: 100% !important;
+  max-width: none !important;
+  height: 52px !important;
+  margin: 3px 0 !important;
+}
+
+.eco-legacy-top-five .eco-mini-chart-tooltip {
+  max-width: none !important;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+.eco-legacy-top-five .eco-mini-chart-tooltip strong {
+  color: #eaf2eb;
+}
+
+/* Hide only the old large featured profile */
+.eco-legacy-top-five .eco-featured-person {
+  display: none !important;
+}
+
+/* Keep the main wealth history chart visible */
+.eco-legacy-top-five > .eco-history-panel {
+  display: block !important;
+}
+
+/* Remove decorative arrow from horizontal cards */
+.eco-legacy-top-five .eco-person-arrow {
+  display: none !important;
+}
+
+/* Tablet */
+@media (max-width: 1100px) {
+  .eco-legacy-top-five .eco-top-five-list {
+    grid-auto-columns: calc((100% - 28px) / 3) !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 680px) {
+  .eco-legacy-top-five .eco-top-five-list {
+    grid-auto-columns: 78% !important;
+    gap: 12px !important;
+    padding-bottom: 14px !important;
+  }
+
+  .eco-legacy-top-five .eco-person-row {
+    min-height: 320px !important;
+    padding: 17px !important;
+  }
+
+  .eco-legacy-top-five .eco-person-avatar {
+    width: 86px !important;
+    height: 86px !important;
+  }
+
+  .eco-legacy-top-five .eco-person-info strong {
+    font-size: 15px !important;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 420px) {
+  .eco-legacy-top-five .eco-top-five-list {
+    grid-auto-columns: 88% !important;
+  }
+
+  .eco-legacy-top-five .eco-person-row {
+    min-height: 305px !important;
+    padding: 15px !important;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .eco-legacy-top-five .eco-person-row {
+    transition: none !important;
+  }
+}
               
 `}</style>
 </main>
