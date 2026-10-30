@@ -5261,17 +5261,6 @@ const previousRows = previousResponse as {
   outline: 2px solid #b9f27c;
   outline-offset: 2px;
 }
-.eco-mini-chart-range-note {
-  display: block;
-  color: #9ba99b;
-  font-size: 10px;
-  line-height: 1.6;
-  margin-top: 6px;
-}
-
-
-`}
-
 
 .eco-mini-chart-summary {
   display: flex;
