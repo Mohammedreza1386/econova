@@ -587,7 +587,7 @@ function MiniWealthChart({ person }: { person: Billionaire }) {
       {rangeControls}
     </div>
   );
-      }
+}
 
 function changeAmount(person: Billionaire): number | null {
   const current = Number(person.net_worth_billions);
