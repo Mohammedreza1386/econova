@@ -5343,6 +5343,41 @@ const previousRows = previousResponse as {
 `}
 
 
+.eco-mini-chart-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.eco-mini-chart-summary > span {
+  color: #9ba99b;
+}
+
+.eco-mini-chart-summary strong {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.eco-mini-chart-summary small {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.eco-mini-chart-ranges {
+  flex-wrap: wrap;
+}
+
+.eco-mini-chart-ranges button {
+  flex: 1;
+  min-width: 42px;
+  padding: 7px 8px;
+              }
+              
 </style>
     </main>
   );
