@@ -1,5 +1,6 @@
 
 import type { Metadata } from "next";
+import "./globals.css";
 
 const siteUrl = "https://econova-nine.vercel.app";
 
@@ -15,17 +16,13 @@ const websiteJsonLd = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-
   title: {
     default: "Econova | Global Markets, Currencies & Billionaire Rankings",
     template: "%s | Econova",
   },
-
   description:
     "Explore global financial markets, cryptocurrency, currency exchange rates, economic news, and billionaire net worth rankings with Econova.",
-
   applicationName: "Econova",
-
   keywords: [
     "Econova",
     "global financial markets",
@@ -40,11 +37,9 @@ export const metadata: Metadata = {
     "اخبار اقتصادی",
     "ثروتمندان جهان",
   ],
-
   alternates: {
     canonical: "/",
   },
-
   openGraph: {
     type: "website",
     url: siteUrl,
@@ -55,14 +50,12 @@ export const metadata: Metadata = {
     locale: "fa_IR",
     alternateLocale: ["en_US"],
   },
-
   twitter: {
     card: "summary_large_image",
     title: "Econova | Global Markets & Billionaire Rankings",
     description:
       "Explore financial markets, currency rates, economic news, and billionaire rankings.",
   },
-
   robots: {
     index: true,
     follow: true,
@@ -74,7 +67,6 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-
   verification: {
     google: "0IhLwZnj_JSHAP01HsRjO9BX8IrpylhsEeSUTU40GpU",
   },
