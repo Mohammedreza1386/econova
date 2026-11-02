@@ -31,6 +31,8 @@ type Billionaire = {
   forbes_change_pct?: number | string | null;
   forbes_change_period?: "day" | "week";
   daily_change_source?: "manual" | "forbes" | "superrich";
+  yesterday_net_worth_billions?: number | string | null;
+  daily_change_date?: string | null;
 };
 
 function normalizeName(value: string) {
@@ -83,7 +85,7 @@ export default function AdminPage() {
 
   async function loadPeople(accessToken: string) {
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/billionaires?select=id,rank,name,company,country,image_url,bio,net_worth_billions,daily_change_pct,forbes_change_pct,forbes_change_period,daily_change_source&order=rank.asc&limit=500`,
+      `${SUPABASE_URL}/rest/v1/billionaires?select=id,rank,name,company,country,image_url,bio,net_worth_billions,daily_change_pct,forbes_change_pct,forbes_change_period,daily_change_source,yesterday_net_worth_billions,daily_change_date&order=rank.asc&limit=500`,
       {
         headers: {
           apikey: SUPABASE_KEY,
@@ -332,6 +334,45 @@ export default function AdminPage() {
     }
   }
 
+  function getLocalDateKey() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function getManualChangePreview(person: Billionaire) {
+    const pct = Number(
+      String(person.daily_change_pct ?? "").replace(/^\+/, "")
+    );
+    const current = Number(person.net_worth_billions);
+    const savedBase = Number(person.yesterday_net_worth_billions);
+
+    const base =
+      person.daily_change_date === getLocalDateKey() &&
+      person.yesterday_net_worth_billions !== null &&
+      person.yesterday_net_worth_billions !== undefined &&
+      Number.isFinite(savedBase)
+        ? savedBase
+        : current;
+
+    if (
+      !Number.isFinite(pct) ||
+      !Number.isFinite(base) ||
+      base < 0 ||
+      pct < -100
+    ) {
+      return null;
+    }
+
+    return {
+      base,
+      result: Number((base * (1 + pct / 100)).toFixed(3)),
+      difference: Number((base * pct / 100).toFixed(3)),
+    };
+  }
+
   function changeField(
     id: string,
     field: keyof Billionaire,
@@ -403,6 +444,29 @@ export default function AdminPage() {
       if (!Number.isFinite(selectedChange)) {
         throw new Error("درصد تغییر واردشده معتبر نیست.");
       }
+      if (selectedChange < -100) {
+        throw new Error("درصد کاهش نمی‌تواند کمتر از ۱۰۰- درصد باشد.");
+      }
+
+      const currentNetWorth = Number(person.net_worth_billions);
+      if (!Number.isFinite(currentNetWorth) || currentNetWorth < 0) {
+        throw new Error("مقدار ثروت فعلی معتبر نیست.");
+      }
+
+      const todayKey = getLocalDateKey();
+
+      const previousBase =
+        person.daily_change_date === todayKey &&
+        person.yesterday_net_worth_billions !== null &&
+        person.yesterday_net_worth_billions !== undefined &&
+        Number.isFinite(Number(person.yesterday_net_worth_billions))
+          ? Number(person.yesterday_net_worth_billions)
+          : currentNetWorth;
+
+      const autoCalculatedNetWorth =
+        person.daily_change_source === "manual"
+          ? Number((previousBase * (1 + selectedChange / 100)).toFixed(3))
+          : currentNetWorth;
 
       const forbesNumber =
         forbesValue === ""
@@ -433,9 +497,74 @@ export default function AdminPage() {
             country: person.country,
             image_url: person.image_url,
             bio: person.bio,
-            net_worth_billions: Number(
-              person.net_worth_billions
-            ),
+            net_worth_billions: autoCalculatedNetWorth,
+            yesterday_net_worth_billions:
+              person.daily_change_source === "manual"
+                ? previousBase
+                : person.yesterday_net_worth_billions ?? null,
+            daily_change_date:
+              person.daily_change_source === "manual"
+                ? todayKey
+                : person.daily_change_date ?? null,
+            daily_change_pct: selectedChange,
+            forbes_change_pct: forbesNumber,
+            forbes_change_period:
+              person.forbes_change_period ?? "day",
+            daily_change_source:
+              person.daily_change_source ?? "manual",
+            updated_at: new Date().toISOString(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "ذخیره ناموفق بود؛ دسترسی مدیر و مقادیر را بررسی کن."
+        );
+      }
+
+      setMessage(`اطلاعات ${person.name} ذخیره شد.`);
+      await loadPeople(token);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "خطا در ذخیره اطلاعات."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function logout() {
+    setToken("");
+    setPeople([]);
+    setReports([]);
+    setEmail("");
+    setPassword("");
+    setMessage("از پنل خارج شدی.");
+  }
+
+  const visiblePeople = people.filter((person) =>
+    `${person.name} ${person.company ?? ""} ${person.country ?? ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+              apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            rank: Number(person.rank),
+            name: person.name,
+            company: person.company,
+            country: person.country,
+            image_url: person.image_url,
+            bio: person.bio,
+            net_worth_billions: autoCalculatedNetWorth,
+            yesterday_net_worth_billions: person.daily_change_source === "manual" ? previousBase : person.yesterday_net_worth_billions ?? null,
+            daily_change_date: person.daily_change_source === "manual" ? todayKey : person.daily_change_date ?? null,
             daily_change_pct: selectedChange,
             forbes_change_pct: forbesNumber,
             forbes_change_period:
@@ -869,7 +998,7 @@ export default function AdminPage() {
                     onChange={(value) =>
                       changeField(person.id, "company", value)
                     }
-                  />
+                                      />
 
                   <Field
                     label="کشور"
@@ -1237,6 +1366,22 @@ export default function AdminPage() {
                       تغییر اصلی از منبع انتخاب‌شده گرفته می‌شود.
                     </p>
                   </div>
+
+                  {person.daily_change_source === "manual" && (
+                    <div style={{ marginTop: "12px", padding: "12px", border: "1px solid #36533b", borderRadius: "10px", background: "#0b1c1b", color: "#cbd5e1", lineHeight: 1.9, fontSize: "13px" }}>
+                      {(() => {
+                        const preview = getManualChangePreview(person);
+                        if (!preview) return "برای محاسبه خودکار، درصد معتبر (بزرگ‌تر یا مساوی ۱۰۰-٪) وارد کن.";
+                        return <>
+                          <strong style={{ color: "#b9f27c" }}>پیش‌نمایش محاسبه خودکار</strong>
+                          <div>ثروت پایه: {preview.base.toFixed(3)} میلیارد دلار</div>
+                          <div>مقدار تغییر: {preview.difference > 0 ? "+" : ""}{preview.difference.toFixed(3)} میلیارد دلار</div>
+                          <div style={{ color: "#b9f27c", fontWeight: "bold" }}>ثروت پس از ثبت: {preview.result.toFixed(3)} میلیارد دلار</div>
+                          <div style={{ color: "#94a3b8", fontSize: "12px" }}>ذخیره دوباره در همان روز درصد را دوباره روی ثروت جدید اعمال نمی‌کند.</div>
+                        </>;
+                      })()}
+                    </div>
+                  )}
 
                   <button
                     onClick={() => savePerson(person)}
