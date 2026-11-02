@@ -1,13 +1,12 @@
-
 import type { Metadata } from "next";
 import Link from "next/link";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Top 10 Billionaires in the World | Econova",
+  title: "Top 25 Billionaires in the World | Econova",
   description:
-    "Explore the world's top 10 billionaires, their net worth and daily wealth changes on Econova.",
+    "Explore the world's top 25 billionaires, their net worth and daily wealth changes on Econova.",
   alternates: {
     canonical: "https://econova-nine.vercel.app/billionaires",
   },
@@ -46,7 +45,7 @@ async function getTopBillionaires(): Promise<Billionaire[]> {
     );
 
     url.searchParams.set("order", "rank.asc");
-    url.searchParams.set("limit", "10");
+    url.searchParams.set("limit", "25");
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -181,7 +180,7 @@ export default async function BillionairesPage() {
             className="text-2xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl"
           >
             World&apos;s Top{" "}
-            <span className="text-[#b9f27c]">10</span>{" "}
+            <span className="text-[#b9f27c]">25</span>{" "}
             Billionaires
           </h1>
 
@@ -216,7 +215,7 @@ export default async function BillionairesPage() {
               dir="ltr"
               className="mt-1 text-[9px] leading-4 text-gray-500 sm:mt-2 sm:text-xs"
             >
-              Total wealth of the top 10
+              Total wealth of the top 25
             </p>
           </div>
 
@@ -234,7 +233,7 @@ export default async function BillionairesPage() {
             >
               {billionaires.length}
               <span className="ml-1 text-sm font-medium text-gray-500 sm:ml-2 sm:text-base">
-                / 10
+                / 25
               </span>
             </p>
 
@@ -263,7 +262,7 @@ export default async function BillionairesPage() {
                 dir="ltr"
                 className="mt-1 text-xl font-black sm:mt-2 sm:text-3xl"
               >
-                Billionaire Rankings
+                Top 25 Billionaire Rankings
               </h2>
             </div>
 
@@ -371,7 +370,7 @@ export default async function BillionairesPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     {/* DAILY CHANGE */}
 
                     <div className="col-start-3 row-start-1 min-w-[76px] text-right sm:col-start-4 sm:row-start-1">
@@ -512,5 +511,5 @@ export default async function BillionairesPage() {
         </footer>
       </div>
     </main>
-  );
-      }
+  )
+ }
