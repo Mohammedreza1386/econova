@@ -1311,7 +1311,6 @@ const previousRows = previousResponse as {
           <a href="#news">اخبار</a>
         </nav>
 
-        <button
         <a
   href="/account"
   className="eco-account-button"
