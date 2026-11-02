@@ -346,16 +346,8 @@ export default function AdminPage() {
     const pct = Number(
       String(person.daily_change_pct ?? "").replace(/^\+/, "")
     );
-    const current = Number(person.net_worth_billions);
-    const savedBase = Number(person.yesterday_net_worth_billions);
-
-    const base =
-      person.daily_change_date === getLocalDateKey() &&
-      person.yesterday_net_worth_billions !== null &&
-      person.yesterday_net_worth_billions !== undefined &&
-      Number.isFinite(savedBase)
-        ? savedBase
-        : current;
+    // درصد همیشه بر اساس ثروت فعلی نمایش‌داده‌شده در Econova محاسبه می‌شود.
+    const base = Number(person.net_worth_billions);
 
     if (
       !Number.isFinite(pct) ||
@@ -455,17 +447,12 @@ export default function AdminPage() {
 
       const todayKey = getLocalDateKey();
 
-      const previousBase =
-        person.daily_change_date === todayKey &&
-        person.yesterday_net_worth_billions !== null &&
-        person.yesterday_net_worth_billions !== undefined &&
-        Number.isFinite(Number(person.yesterday_net_worth_billions))
-          ? Number(person.yesterday_net_worth_billions)
-          : currentNetWorth;
+      // درصد دستی روی ثروت فعلی ثبت‌شده در Econova اعمال می‌شود.
+      const previousBase = currentNetWorth;
 
       const autoCalculatedNetWorth =
         person.daily_change_source === "manual"
-          ? Number((previousBase * (1 + selectedChange / 100)).toFixed(3))
+          ? Number((currentNetWorth * (1 + selectedChange / 100)).toFixed(3))
           : currentNetWorth;
 
       const forbesNumber =
@@ -484,7 +471,7 @@ export default function AdminPage() {
         `${SUPABASE_URL}/rest/v1/billionaires?id=eq.${person.id}`,
         {
           method: "PATCH",
-          headers: {
+                    headers: {
             apikey: SUPABASE_KEY,
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -957,7 +944,7 @@ export default function AdminPage() {
                         person.id,
                         "image_url",
                         value
-                      )
+                                              )
                     }
                   />
 
@@ -1359,7 +1346,7 @@ export default function AdminPage() {
                                 fontSize: "12px",
                               }}
                             >
-                              ذخیره دوباره در همان روز درصد را دوباره روی ثروت جدید اعمال نمی‌کند.
+                              ذخیره دوباره، درصد را مجدداً روی ثروت فعلی اعمال می‌کند.
                             </div>
                           </>
                         );
@@ -1430,3 +1417,4 @@ function Field({
     </label>
   );
 }
+          
