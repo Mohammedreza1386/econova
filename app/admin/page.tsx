@@ -44,12 +44,41 @@ export default function AdminPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
+
   const [people, setPeople] = useState<Billionaire[]>([]);
   const [reports, setReports] = useState<WealthReport[]>([]);
+
   const [reportsLoading, setReportsLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const inputStyle = {
+    width: "100%",
+    boxSizing: "border-box" as const,
+    padding: "11px",
+    borderRadius: "9px",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#f8fafc",
+    marginTop: "5px",
+  };
+
+  const selectStyle = {
+    ...inputStyle,
+    cursor: "pointer",
+  };
+
+  const buttonStyle = {
+    marginTop: "12px",
+    padding: "12px 18px",
+    border: 0,
+    borderRadius: "9px",
+    background: "#2563eb",
+    color: "white",
+    fontWeight: "bold" as const,
+    cursor: "pointer",
+  };
 
   async function loadPeople(accessToken: string) {
     const response = await fetch(
@@ -63,7 +92,7 @@ export default function AdminPage() {
     );
 
     if (!response.ok) {
-      throw new Error("خواندن اطلاعات ناموفق بود.");
+      throw new Error("خواندن اطلاعات میلیاردرها ناموفق بود.");
     }
 
     const data = await response.json();
@@ -95,9 +124,7 @@ export default function AdminPage() {
       );
 
       if (!response.ok) {
-        throw new Error(
-          "خواندن گزارش‌های تغییر ثروت ناموفق بود."
-        );
+        throw new Error("خواندن گزارش‌های تغییر ثروت ناموفق بود.");
       }
 
       setReports(await response.json());
@@ -112,7 +139,6 @@ export default function AdminPage() {
     }
   }
 
-  // پیدا کردن جدیدترین گزارش SuperRich برای یک میلیاردر
   function getSuperRichReport(
     person: Billionaire
   ): WealthReport | undefined {
@@ -126,7 +152,6 @@ export default function AdminPage() {
     );
   }
 
-  // دریافت اطلاعات جدید از SuperRich
   async function fetchSuperRichReports() {
     if (!token) {
       setMessage("ابتدا وارد حساب مدیر شو.");
@@ -154,15 +179,16 @@ export default function AdminPage() {
 
       if (!response.ok || !result.success) {
         throw new Error(
-          result.error ||
-            "دریافت اطلاعات SuperRich ناموفق بود."
+          result.error || "دریافت اطلاعات SuperRich ناموفق بود."
         );
       }
 
       await loadReports(token);
 
       setMessage(
-        `دریافت اطلاعات انجام شد؛ ${result.inserted_reports ?? 0} گزارش جدید ثبت شد.`
+        `دریافت اطلاعات انجام شد؛ ${
+          result.inserted_reports ?? 0
+        } گزارش جدید ثبت شد.`
       );
     } catch (error) {
       setMessage(
@@ -201,9 +227,7 @@ export default function AdminPage() {
       );
 
       if (!response.ok) {
-        throw new Error(
-          "ثبت نتیجه بررسی گزارش ناموفق بود."
-        );
+        throw new Error("ثبت نتیجه بررسی گزارش ناموفق بود.");
       }
 
       setMessage(
@@ -248,7 +272,7 @@ export default function AdminPage() {
 
       if (!response.ok || !data.access_token) {
         throw new Error(
-          "ورود ناموفق بود؛ ایمیل و رمز را بررسی کن."
+          "ورود ناموفق بود؛ ایمیل و رمز عبور را بررسی کن."
         );
       }
 
@@ -271,9 +295,7 @@ export default function AdminPage() {
         !Array.isArray(admins) ||
         admins.length === 0
       ) {
-        throw new Error(
-          "این حساب دسترسی مدیر ندارد."
-        );
+        throw new Error("این حساب دسترسی مدیر ندارد.");
       }
 
       setToken(accessToken);
@@ -287,7 +309,7 @@ export default function AdminPage() {
       setMessage(
         error instanceof Error
           ? error.message
-          : "خطایی رخ داد."
+          : "خطایی هنگام ورود رخ داد."
       );
     } finally {
       setBusy(false);
@@ -333,9 +355,7 @@ export default function AdminPage() {
       person.daily_change_source === "superrich" &&
       (!superRichReport ||
         superRichReport.change_pct === null ||
-        !Number.isFinite(
-          Number(superRichReport.change_pct)
-        ))
+        !Number.isFinite(Number(superRichReport.change_pct)))
     ) {
       setMessage(
         `برای ${person.name} گزارش معتبر SuperRich پیدا نشد. ابتدا اطلاعات جدید را دریافت کن.`
@@ -350,9 +370,7 @@ export default function AdminPage() {
       let selectedChange: number;
 
       if (person.daily_change_source === "superrich") {
-        selectedChange = Number(
-          superRichReport!.change_pct
-        );
+        selectedChange = Number(superRichReport!.change_pct);
       } else if (
         person.daily_change_source === "forbes" &&
         (person.forbes_change_period ?? "day") === "day"
@@ -362,17 +380,12 @@ export default function AdminPage() {
         );
       } else {
         selectedChange = Number(
-          String(person.daily_change_pct).replace(
-            /^\+/,
-            ""
-          )
+          String(person.daily_change_pct).replace(/^\+/, "")
         );
       }
 
       if (!Number.isFinite(selectedChange)) {
-        throw new Error(
-          "درصد تغییر واردشده معتبر نیست."
-        );
+        throw new Error("درصد تغییر واردشده معتبر نیست.");
       }
 
       const forbesNumber =
@@ -420,20 +433,17 @@ export default function AdminPage() {
 
       if (!response.ok) {
         throw new Error(
-          "ذخیره نشد؛ دسترسی مدیر و مقادیر را بررسی کن."
+          "ذخیره ناموفق بود؛ دسترسی مدیر و مقادیر را بررسی کن."
         );
       }
 
-      setMessage(
-        `اطلاعات ${person.name} ذخیره شد.`
-      );
-
+      setMessage(`اطلاعات ${person.name} ذخیره شد.`);
       await loadPeople(token);
     } catch (error) {
       setMessage(
         error instanceof Error
           ? error.message
-          : "خطا در ذخیره."
+          : "خطا در ذخیره اطلاعات."
       );
     } finally {
       setBusy(false);
@@ -446,7 +456,7 @@ export default function AdminPage() {
     setReports([]);
     setEmail("");
     setPassword("");
-    setMessage("خارج شدی.");
+    setMessage("از پنل خارج شدی.");
   }
 
   const visiblePeople = people.filter((person) =>
@@ -454,23 +464,7 @@ export default function AdminPage() {
       .toLowerCase()
       .includes(search.toLowerCase())
   );
-
-  const inputStyle = {
-    width: "100%",
-    boxSizing: "border-box" as const,
-    padding: "11px",
-    borderRadius: "9px",
-    border: "1px solid #334155",
-    background: "#0f172a",
-    color: "#f8fafc",
-    marginTop: "5px",
-  };
-
-  const selectStyle = {
-    ...inputStyle,
-    cursor: "pointer",
-  };
-    return (
+  return (
     <main
       dir="rtl"
       style={{
@@ -482,12 +476,12 @@ export default function AdminPage() {
       }}
     >
       <div style={{ maxWidth: "900px", margin: "auto" }}>
-        <h1 style={{ color: "#60a5fa" }}>
+        <h1 style={{ color: "#b9f27c" }}>
           پنل مدیریت Econova
         </h1>
 
         <p style={{ color: "#94a3b8" }}>
-          مدیریت اطلاعات ثروتمندان و تغییرات روزانه
+          مدیریت اطلاعات ثروتمندان و گزارش‌های تغییر ثروت
         </p>
 
         {message && (
@@ -602,7 +596,7 @@ export default function AdminPage() {
               تعداد رکوردها: {people.length}
             </p>
 
-            {/* گزارش‌های خودکار */}
+            {/* گزارش‌های خودکار تغییر ثروت */}
             <section
               style={{
                 background: "#111e30",
@@ -651,8 +645,7 @@ export default function AdminPage() {
                 در انتظار بررسی:{" "}
                 {
                   reports.filter(
-                    (report) =>
-                      report.status === "pending"
+                    (report) => report.status === "pending"
                   ).length
                 }
                 {" · "}کل گزارش‌ها: {reports.length}
@@ -664,12 +657,11 @@ export default function AdminPage() {
                 </p>
               )}
 
-              {!reportsLoading &&
-                reports.length === 0 && (
-                  <p style={{ color: "#94a3b8" }}>
-                    فعلاً گزارشی برای نمایش وجود ندارد.
-                  </p>
-                )}
+              {!reportsLoading && reports.length === 0 && (
+                <p style={{ color: "#94a3b8" }}>
+                  فعلاً گزارشی برای نمایش وجود ندارد.
+                </p>
+              )}
 
               {reports.map((report) => (
                 <div
@@ -693,9 +685,7 @@ export default function AdminPage() {
                   >
                     منبع: {report.source_name}
                     {" · "}تغییر ثروت:{" "}
-                    {Number(
-                      report.change_billions
-                    ).toFixed(3)}
+                    {Number(report.change_billions).toFixed(3)}
                     {" "}میلیارد دلار
                     {" · "}درصد:{" "}
                     {report.change_pct == null
@@ -738,7 +728,10 @@ export default function AdminPage() {
                       href={report.source_url}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ color: "#93c5fd" }}
+                      style={{
+                        color: "#93c5fd",
+                        fontSize: "13px",
+                      }}
                     >
                       مشاهده منبع
                     </a>
@@ -754,10 +747,7 @@ export default function AdminPage() {
                     >
                       <button
                         onClick={() =>
-                          reviewReport(
-                            report.id,
-                            "approved"
-                          )
+                          reviewReport(report.id, "approved")
                         }
                         disabled={busy}
                         style={{
@@ -770,10 +760,7 @@ export default function AdminPage() {
 
                       <button
                         onClick={() =>
-                          reviewReport(
-                            report.id,
-                            "rejected"
-                          )
+                          reviewReport(report.id, "rejected")
                         }
                         disabled={busy}
                         style={{
@@ -812,12 +799,9 @@ export default function AdminPage() {
                   Number(superRichReport.change_pct)
                 );
 
-              const superRichAmount =
-                hasSuperRichReport
-                  ? Number(
-                      superRichReport!.change_billions
-                    )
-                  : 0;
+              const superRichAmount = hasSuperRichReport
+                ? Number(superRichReport!.change_billions)
+                : 0;
 
               return (
                 <section
@@ -851,11 +835,7 @@ export default function AdminPage() {
                     label="رتبه"
                     value={String(person.rank)}
                     onChange={(value) =>
-                      changeField(
-                        person.id,
-                        "rank",
-                        value
-                      )
+                      changeField(person.id, "rank", value)
                     }
                   />
 
@@ -863,11 +843,7 @@ export default function AdminPage() {
                     label="نام"
                     value={person.name}
                     onChange={(value) =>
-                      changeField(
-                        person.id,
-                        "name",
-                        value
-                      )
+                      changeField(person.id, "name", value)
                     }
                   />
 
@@ -875,11 +851,7 @@ export default function AdminPage() {
                     label="شرکت"
                     value={person.company ?? ""}
                     onChange={(value) =>
-                      changeField(
-                        person.id,
-                        "company",
-                        value
-                      )
+                      changeField(person.id, "company", value)
                     }
                   />
 
@@ -887,11 +859,7 @@ export default function AdminPage() {
                     label="کشور"
                     value={person.country ?? ""}
                     onChange={(value) =>
-                      changeField(
-                        person.id,
-                        "country",
-                        value
-                      )
+                      changeField(person.id, "country", value)
                     }
                   />
 
@@ -909,9 +877,7 @@ export default function AdminPage() {
 
                   <Field
                     label="ثروت (میلیارد دلار)"
-                    value={String(
-                      person.net_worth_billions
-                    )}
+                    value={String(person.net_worth_billions)}
                     onChange={(value) =>
                       changeField(
                         person.id,
@@ -920,8 +886,7 @@ export default function AdminPage() {
                       )
                     }
                   />
-
-                  {/* گزارش فوربز */}
+                                    {/* گزارش فوربز */}
                   <div
                     style={{
                       marginTop: "20px",
@@ -963,8 +928,7 @@ export default function AdminPage() {
                       بازه گزارش فوربز
                       <select
                         value={
-                          person.forbes_change_period ??
-                          "day"
+                          person.forbes_change_period ?? "day"
                         }
                         onChange={(event) =>
                           changeField(
@@ -975,24 +939,10 @@ export default function AdminPage() {
                         }
                         style={selectStyle}
                       >
-                        <option value="day">
-                          روزانه
-                        </option>
-                        <option value="week">
-                          هفتگی
-                        </option>
+                        <option value="day">روزانه</option>
+                        <option value="week">هفتگی</option>
                       </select>
                     </label>
-
-                    <p
-                      style={{
-                        color: "#94a3b8",
-                        fontSize: "12px",
-                      }}
-                    >
-                      درصد مثبت یعنی افزایش ثروت و درصد
-                      منفی یعنی کاهش ثروت.
-                    </p>
 
                     {(() => {
                       const percentageText = String(
@@ -1034,13 +984,12 @@ export default function AdminPage() {
                               fontSize: "12px",
                             }}
                           >
-                            مبلغ تغییر محاسبه‌شده بر اساس
-                            فوربز (
-                            {person.forbes_change_period ===
-                            "week"
+                            مبلغ تغییر محاسبه‌شده بر اساس فوربز
+                            {" ("}
+                            {person.forbes_change_period === "week"
                               ? "هفتگی"
                               : "روزانه"}
-                            )
+                            {")"}
                           </div>
 
                           <strong
@@ -1067,8 +1016,8 @@ export default function AdminPage() {
                               marginTop: "5px",
                             }}
                           >
-                            این مبلغ تخمینی است و ثروت اصلی
-                            را تغییر نمی‌دهد.
+                            این مبلغ تخمینی است و ثروت اصلی را
+                            تغییر نمی‌دهد.
                           </div>
                         </div>
                       );
@@ -1090,8 +1039,7 @@ export default function AdminPage() {
 
                     <select
                       value={
-                        person.daily_change_source ??
-                        "manual"
+                        person.daily_change_source ?? "manual"
                       }
                       onChange={(event) => {
                         const source = event.target.value as
@@ -1105,16 +1053,208 @@ export default function AdminPage() {
                           source
                         );
 
-                        if (source === "superrich") {
+                        if (
+                          source === "superrich" &&
+                          !getSuperRichReport(person)
+                        ) {
                           fetchSuperRichReports();
                         }
                       }}
                       style={selectStyle}
                     >
-                      <option value="manual">
-                        ورود دستی
-                      </option>
-                      <option value="forbes">
-                        Forbes
-                      </option>
-                      <option value="
+                      <option value="manual">ورود دستی</option>
+                      <option value="forbes">Forbes</option>
+                      <option value="superrich">SuperRich</option>
+                    </select>
+
+                    {/* نمایش فوری گزارش SuperRich */}
+                    {person.daily_change_source === "superrich" && (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "13px",
+                          borderRadius: "10px",
+                          background: "#132a20",
+                          border: "1px solid #36533b",
+                        }}
+                      >
+                        <strong
+                          style={{
+                            color: "#b9f27c",
+                            display: "block",
+                            marginBottom: "9px",
+                          }}
+                        >
+                          گزارش SuperRich
+                        </strong>
+
+                        {hasSuperRichReport ? (
+                          <>
+                            <p
+                              style={{
+                                color: "#e2e8f0",
+                                margin: "6px 0",
+                              }}
+                            >
+                              درصد تغییر:{" "}
+                              <strong>
+                                {Number(
+                                  superRichReport!.change_pct
+                                ) > 0
+                                  ? "+"
+                                  : ""}
+                                {Number(
+                                  superRichReport!.change_pct
+                                ).toFixed(3)}
+                                ٪
+                              </strong>
+                            </p>
+
+                            <p
+                              style={{
+                                color: "#e2e8f0",
+                                margin: "6px 0",
+                              }}
+                            >
+                              مقدار تغییر ثروت:{" "}
+                              <strong>
+                                {superRichAmount > 0 ? "+" : ""}
+                                {superRichAmount.toFixed(3)}
+                                {" "}میلیارد دلار
+                              </strong>
+                            </p>
+
+                            <p
+                              style={{
+                                color: "#94a3b8",
+                                fontSize: "12px",
+                                lineHeight: 1.7,
+                              }}
+                            >
+                              زمان گزارش:{" "}
+                              {new Date(
+                                superRichReport!.observed_at
+                              ).toLocaleString("fa-IR")}
+                            </p>
+                          </>
+                        ) : (
+                          <p
+                            style={{
+                              color: "#fbbf24",
+                              fontSize: "13px",
+                              lineHeight: 1.8,
+                            }}
+                          >
+                            هنوز گزارشی برای این میلیاردر پیدا
+                            نشده است. از دکمه دریافت اطلاعات
+                            SuperRich استفاده کن.
+                          </p>
+                        )}
+
+                        <p
+                          style={{
+                            color: "#94a3b8",
+                            fontSize: "12px",
+                            lineHeight: 1.8,
+                            marginBottom: 0,
+                          }}
+                        >
+                          اطلاعات این قسمت فقط برای نمایش درصد
+                          و مقدار تغییر است؛ ثروت اصلی به‌صورت
+                          خودکار تغییر نمی‌کند.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* درصد تغییر دستی */}
+                    <Field
+                      label="درصد تغییر اصلی"
+                      value={String(
+                        person.daily_change_pct ?? ""
+                      )}
+                      onChange={(value) =>
+                        changeField(
+                          person.id,
+                          "daily_change_pct",
+                          value
+                        )
+                      }
+                    />
+
+                    <p
+                      style={{
+                        color: "#94a3b8",
+                        fontSize: "12px",
+                        lineHeight: 1.8,
+                      }}
+                    >
+                      اگر Forbes انتخاب شود، درصد روزانه فوربز
+                      هنگام ذخیره به‌عنوان درصد تغییر اصلی ثبت
+                      می‌شود. در حالت دستی یا SuperRich، درصد
+                      تغییر اصلی از منبع انتخاب‌شده گرفته می‌شود.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => savePerson(person)}
+                    disabled={busy}
+                    style={{
+                      ...buttonStyle,
+                      marginTop: "16px",
+                      width: "100%",
+                      background: "#15803d",
+                    }}
+                  >
+                    {busy
+                      ? "در حال ذخیره..."
+                      : "ذخیره تغییرات"}
+                  </button>
+                </section>
+              );
+            })}
+          </>
+        )}
+      </div>
+    </main>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label
+      style={{
+        display: "block",
+        marginTop: "12px",
+      }}
+    >
+      <span>{label}</span>
+
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          padding: "11px",
+          marginTop: "5px",
+          borderRadius: "9px",
+          border: "1px solid #334155",
+          background: "#0f172a",
+          color: "#f8fafc",
+        }}
+      />
+    </label>
+  );
+}
