@@ -550,66 +550,7 @@ export default function AdminPage() {
       .toLowerCase()
       .includes(search.toLowerCase())
   );
-              apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            rank: Number(person.rank),
-            name: person.name,
-            company: person.company,
-            country: person.country,
-            image_url: person.image_url,
-            bio: person.bio,
-            net_worth_billions: autoCalculatedNetWorth,
-            yesterday_net_worth_billions: person.daily_change_source === "manual" ? previousBase : person.yesterday_net_worth_billions ?? null,
-            daily_change_date: person.daily_change_source === "manual" ? todayKey : person.daily_change_date ?? null,
-            daily_change_pct: selectedChange,
-            forbes_change_pct: forbesNumber,
-            forbes_change_period:
-              person.forbes_change_period ?? "day",
-            daily_change_source:
-              person.daily_change_source ?? "manual",
-            updated_at: new Date().toISOString(),
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          "ذخیره ناموفق بود؛ دسترسی مدیر و مقادیر را بررسی کن."
-        );
-      }
-
-      setMessage(`اطلاعات ${person.name} ذخیره شد.`);
-      await loadPeople(token);
-    } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "خطا در ذخیره اطلاعات."
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function logout() {
-    setToken("");
-    setPeople([]);
-    setReports([]);
-    setEmail("");
-    setPassword("");
-    setMessage("از پنل خارج شدی.");
-  }
-
-  const visiblePeople = people.filter((person) =>
-    `${person.name} ${person.company ?? ""} ${person.country ?? ""}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
-  return (
+    return (
     <main
       dir="rtl"
       style={{
@@ -998,7 +939,7 @@ export default function AdminPage() {
                     onChange={(value) =>
                       changeField(person.id, "company", value)
                     }
-                                      />
+                  />
 
                   <Field
                     label="کشور"
@@ -1031,7 +972,8 @@ export default function AdminPage() {
                       )
                     }
                   />
-                                    {/* گزارش فوربز */}
+
+                  {/* گزارش فوربز */}
                   <div
                     style={{
                       marginTop: "20px",
@@ -1180,8 +1122,7 @@ export default function AdminPage() {
                       );
                     })()}
                   </div>
-
-                  {/* انتخاب منبع اصلی */}
+                                    {/* انتخاب منبع اصلی */}
                   <div
                     style={{
                       marginTop: "14px",
@@ -1368,17 +1309,60 @@ export default function AdminPage() {
                   </div>
 
                   {person.daily_change_source === "manual" && (
-                    <div style={{ marginTop: "12px", padding: "12px", border: "1px solid #36533b", borderRadius: "10px", background: "#0b1c1b", color: "#cbd5e1", lineHeight: 1.9, fontSize: "13px" }}>
+                    <div
+                      style={{
+                        marginTop: "12px",
+                        padding: "12px",
+                        border: "1px solid #36533b",
+                        borderRadius: "10px",
+                        background: "#0b1c1b",
+                        color: "#cbd5e1",
+                        lineHeight: 1.9,
+                        fontSize: "13px",
+                      }}
+                    >
                       {(() => {
                         const preview = getManualChangePreview(person);
-                        if (!preview) return "برای محاسبه خودکار، درصد معتبر (بزرگ‌تر یا مساوی ۱۰۰-٪) وارد کن.";
-                        return <>
-                          <strong style={{ color: "#b9f27c" }}>پیش‌نمایش محاسبه خودکار</strong>
-                          <div>ثروت پایه: {preview.base.toFixed(3)} میلیارد دلار</div>
-                          <div>مقدار تغییر: {preview.difference > 0 ? "+" : ""}{preview.difference.toFixed(3)} میلیارد دلار</div>
-                          <div style={{ color: "#b9f27c", fontWeight: "bold" }}>ثروت پس از ثبت: {preview.result.toFixed(3)} میلیارد دلار</div>
-                          <div style={{ color: "#94a3b8", fontSize: "12px" }}>ذخیره دوباره در همان روز درصد را دوباره روی ثروت جدید اعمال نمی‌کند.</div>
-                        </>;
+
+                        if (!preview) {
+                          return "برای محاسبه خودکار، درصد معتبر (بزرگ‌تر یا مساوی ۱۰۰-٪) وارد کن.";
+                        }
+
+                        return (
+                          <>
+                            <strong style={{ color: "#b9f27c" }}>
+                              پیش‌نمایش محاسبه خودکار
+                            </strong>
+
+                            <div>
+                              ثروت پایه: {preview.base.toFixed(3)} میلیارد دلار
+                            </div>
+
+                            <div>
+                              مقدار تغییر:{" "}
+                              {preview.difference > 0 ? "+" : ""}
+                              {preview.difference.toFixed(3)} میلیارد دلار
+                            </div>
+
+                            <div
+                              style={{
+                                color: "#b9f27c",
+                                fontWeight: "bold",
+                              }}
+                            >
+                              ثروت پس از ثبت: {preview.result.toFixed(3)} میلیارد دلار
+                            </div>
+
+                            <div
+                              style={{
+                                color: "#94a3b8",
+                                fontSize: "12px",
+                              }}
+                            >
+                              ذخیره دوباره در همان روز درصد را دوباره روی ثروت جدید اعمال نمی‌کند.
+                            </div>
+                          </>
+                        );
                       })()}
                     </div>
                   )}
