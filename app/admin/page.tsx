@@ -370,7 +370,7 @@ export default function AdminPage() {
     field: keyof Billionaire,
     value: string
   ) {
-    setPeople((current) =>
+        setPeople((current) =>
       current.map((person) =>
         person.id === id
           ? { ...person, [field]: value }
@@ -669,197 +669,6 @@ export default function AdminPage() {
               تعداد رکوردها: {people.length}
             </p>
 
-            {/* گزارش‌های خودکار تغییر ثروت */}
-            <section
-              style={{
-                background: "#111e30",
-                border: "1px solid #36533b",
-                borderRadius: "14px",
-                padding: "16px",
-                marginBottom: "20px",
-              }}
-            >
-              <h2
-                style={{
-                  color: "#b9f27c",
-                  marginTop: 0,
-                }}
-              >
-                گزارش‌های خودکار تغییر ثروت
-              </h2>
-
-              <p
-                style={{
-                  color: "#94a3b8",
-                  lineHeight: 1.8,
-                }}
-              >
-                گزارش‌های دریافتی از SuperRich در این قسمت
-                نمایش داده می‌شوند. گزارش‌ها ابتدا در انتظار
-                بررسی هستند. تأیید گزارش به‌تنهایی ثروت اصلی
-                را تغییر نمی‌دهد.
-              </p>
-
-              <button
-                onClick={fetchSuperRichReports}
-                disabled={busy}
-                style={{
-                  ...buttonStyle,
-                  background: "#15803d",
-                  marginTop: "5px",
-                }}
-              >
-                {busy
-                  ? "در حال دریافت..."
-                  : "دریافت اطلاعات جدید از SuperRich"}
-              </button>
-
-              <p style={{ color: "#cbd5e1" }}>
-                در انتظار بررسی:{" "}
-                {
-                  reports.filter(
-                    (report) => report.status === "pending"
-                  ).length
-                }
-                {" · "}کل گزارش‌ها: {reports.length}
-              </p>
-
-              {reportsLoading && (
-                <p style={{ color: "#94a3b8" }}>
-                  در حال دریافت گزارش‌ها...
-                </p>
-              )}
-
-              {!reportsLoading && reports.length === 0 && (
-                <p style={{ color: "#94a3b8" }}>
-                  فعلاً گزارشی برای نمایش وجود ندارد.
-                </p>
-              )}
-
-              {reports.map((report) => (
-                <div
-                  key={report.id}
-                  style={{
-                    borderTop: "1px solid #334155",
-                    padding: "13px 0",
-                    marginTop: "10px",
-                  }}
-                >
-                  <strong>
-                    {report.billionaire_name}
-                  </strong>
-
-                  <p
-                    style={{
-                      margin: "7px 0",
-                      color: "#cbd5e1",
-                      lineHeight: 1.8,
-                    }}
-                  >
-                    منبع: {report.source_name}
-                    {" · "}تغییر ثروت:{" "}
-                    {Number(report.change_billions).toFixed(3)}
-                    {" "}میلیارد دلار
-                    {" · "}درصد:{" "}
-                    {report.change_pct == null
-                      ? "—"
-                      : `${report.change_pct}%`}
-                  </p>
-
-                  <p
-                    style={{
-                      margin: "5px 0",
-                      color: "#94a3b8",
-                      fontSize: "12px",
-                    }}
-                  >
-                    {new Date(
-                      report.observed_at
-                    ).toLocaleString("fa-IR")}
-                    {" · "}وضعیت:{" "}
-                    {report.status === "pending"
-                      ? "در انتظار بررسی"
-                      : report.status === "approved"
-                      ? "تأییدشده"
-                      : "ردشده"}
-                  </p>
-
-                  {report.notes && (
-                    <p
-                      style={{
-                        color: "#94a3b8",
-                        fontSize: "12px",
-                        lineHeight: 1.7,
-                      }}
-                    >
-                      {report.notes}
-                    </p>
-                  )}
-
-                  {report.source_url && (
-                    <a
-                      href={report.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        color: "#93c5fd",
-                        fontSize: "13px",
-                      }}
-                    >
-                      مشاهده منبع
-                    </a>
-                  )}
-
-                  {report.status === "pending" && (
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <button
-                        onClick={() =>
-                          reviewReport(report.id, "approved")
-                        }
-                        disabled={busy}
-                        style={{
-                          ...buttonStyle,
-                          background: "#15803d",
-                        }}
-                      >
-                        تأیید گزارش
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          reviewReport(report.id, "rejected")
-                        }
-                        disabled={busy}
-                        style={{
-                          ...buttonStyle,
-                          background: "#b91c1c",
-                        }}
-                      >
-                        رد گزارش
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              <p
-                style={{
-                  color: "#94a3b8",
-                  fontSize: "12px",
-                  lineHeight: 1.8,
-                }}
-              >
-                تأیید گزارش فقط وضعیت بررسی را ثبت می‌کند؛
-                ثروت اصلی باید جداگانه توسط مدیر تغییر کند.
-              </p>
-            </section>
-
             {/* کارت‌های میلیاردرها */}
             {visiblePeople.map((person) => {
               const superRichReport =
@@ -933,7 +742,8 @@ export default function AdminPage() {
                     value={person.country ?? ""}
                     onChange={(value) =>
                       changeField(person.id, "country", value)
-                    }
+              }
+                                        }
                   />
 
                   <Field
@@ -1152,120 +962,6 @@ export default function AdminPage() {
                       <option value="superrich">SuperRich</option>
                     </select>
 
-                    {/* نمایش فوری گزارش SuperRich */}
-                    {person.daily_change_source === "superrich" && (
-                      <div
-                        style={{
-                          marginTop: "12px",
-                          padding: "13px",
-                          borderRadius: "10px",
-                          background: "#132a20",
-                          border: "1px solid #36533b",
-                        }}
-                      >
-                        <strong
-                          style={{
-                            color: "#b9f27c",
-                            display: "block",
-                            marginBottom: "9px",
-                          }}
-                        >
-                          گزارش SuperRich
-                        </strong>
-
-                        {hasSuperRichReport ? (
-                          <>
-                            <p
-                              style={{
-                                color: "#e2e8f0",
-                                margin: "6px 0",
-                              }}
-                            >
-                              درصد تغییر:{" "}
-                              <strong>
-                                {Number(
-                                  superRichReport!.change_pct
-                                ) > 0
-                                  ? "+"
-                                  : ""}
-                                {Number(
-                                  superRichReport!.change_pct
-                                ).toFixed(3)}
-                                ٪
-                              </strong>
-                            </p>
-
-                            <p
-                              style={{
-                                color: "#e2e8f0",
-                                margin: "6px 0",
-                              }}
-                            >
-                              مقدار تغییر ثروت:{" "}
-                              <strong>
-                                {superRichAmount > 0 ? "+" : ""}
-                                {superRichAmount.toFixed(3)}
-                                {" "}میلیارد دلار
-                              </strong>
-                            </p>
-
-                            <p
-                              style={{
-                                color: "#94a3b8",
-                                fontSize: "12px",
-                                lineHeight: 1.7,
-                              }}
-                            >
-                              زمان گزارش:{" "}
-                              {new Date(
-                                superRichReport!.observed_at
-                              ).toLocaleString("fa-IR")}
-                            </p>
-                          </>
-                        ) : (
-                          <p
-                            style={{
-                              color: "#fbbf24",
-                              fontSize: "13px",
-                              lineHeight: 1.8,
-                            }}
-                          >
-                            هنوز گزارشی برای این میلیاردر پیدا
-                            نشده است. از دکمه دریافت اطلاعات
-                            SuperRich استفاده کن.
-                          </p>
-                        )}
-
-                        <p
-                          style={{
-                            color: "#94a3b8",
-                            fontSize: "12px",
-                            lineHeight: 1.8,
-                            marginBottom: 0,
-                          }}
-                        >
-                          اطلاعات این قسمت فقط برای نمایش درصد
-                          و مقدار تغییر است؛ ثروت اصلی به‌صورت
-                          خودکار تغییر نمی‌کند.
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={fetchSuperRichReports}
-                          disabled={busy}
-                          style={{
-                            ...buttonStyle,
-                            width: "100%",
-                            background: "#166534",
-                          }}
-                        >
-                          {busy
-                            ? "در حال دریافت..."
-                            : "به‌روزرسانی گزارش SuperRich"}
-                        </button>
-                      </div>
-                    )}
-
                     {/* درصد تغییر دستی */}
                     <Field
                       label="درصد تغییر اصلی"
@@ -1417,4 +1113,3 @@ function Field({
     </label>
   );
 }
-          
