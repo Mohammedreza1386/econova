@@ -1,15 +1,20 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+"use client";
 
-export const revalidate = 300;
+import { useState } from "react";
 
-export const metadata: Metadata = {
-  title: "Top 25 Billionaires in the World | Econova",
-  description:
-    "Explore the world's top 25 billionaires, their net worth and daily wealth changes on Econova.",
-  alternates: {
-    canonical: "https://econova-nine.vercel.app/billionaires",
-  },
+const SUPABASE_URL = "https://zusbebjskchgehdjvpsm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_WGMEA7-K8FAResrVCL8GJQ_6KCxrvmK";
+
+type WealthReport = {
+  id: string;
+  billionaire_name: string;
+  change_billions: number | string;
+  change_pct: number | string | null;
+  source_name: string;
+  source_url: string | null;
+  observed_at: string;
+  status: "pending" | "approved" | "rejected";
+  notes: string | null;
 };
 
 type Billionaire = {
@@ -19,502 +24,931 @@ type Billionaire = {
   company: string | null;
   country: string | null;
   image_url: string | null;
-  net_worth_billions: number | string;
-  daily_change_pct: number | string | null;
-  daily_change_date: string | null;
-  daily_change_source: string | null;
-  yesterday_net_worth_billions: number | string | null;
-  updated_at: string | null;
+  bio: string | null;
+  net_worth_billions: number;
+  daily_change_pct: number | string;
+  forbes_change_pct?: number | string | null;
+  forbes_change_period?: "day" | "week";
+  daily_change_source?: "manual" | "forbes" | "superrich";
 };
 
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://zusbebjskchgehdjvpsm.supabase.co";
+export default function AdminPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [token, setToken] = useState("");
+  const [people, setPeople] = useState<Billionaire[]>([]);
+  const [reports, setReports] = useState<WealthReport[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
 
-const SUPABASE_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
-async function getTopBillionaires(): Promise<Billionaire[]> {
-  if (!SUPABASE_KEY) return [];
-
-  try {
-    const url = new URL("/rest/v1/billionaires", SUPABASE_URL);
-
-    url.searchParams.set(
-      "select",
-      "id,rank,name,company,country,image_url,net_worth_billions,daily_change_pct,daily_change_date,daily_change_source,yesterday_net_worth_billions,updated_at"
+  async function loadPeople(accessToken: string) {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/billionaires?select=id,rank,name,company,country,image_url,bio,net_worth_billions,daily_change_pct,forbes_change_pct,forbes_change_period,daily_change_source&order=rank.asc&limit=500`,
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
     );
 
-    url.searchParams.set("order", "rank.asc");
-    url.searchParams.set("limit", "25");
-
-    const response = await fetch(url.toString(), {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
-      next: { revalidate: 300 },
-    });
-
     if (!response.ok) {
-      console.error("Econova API error:", response.status);
-      return [];
+      throw new Error("خواندن اطلاعات ناموفق بود.");
     }
 
-    return (await response.json()) as Billionaire[];
-  } catch (error) {
-    console.error("Econova fetch failed:", error);
-    return [];
+    const data = await response.json();
+
+    setPeople(
+      data.map((person: Billionaire) => ({
+        ...person,
+        forbes_change_pct: person.forbes_change_pct ?? "",
+        forbes_change_period: person.forbes_change_period ?? "day",
+        daily_change_source: person.daily_change_source ?? "manual",
+      }))
+    );
   }
-}
 
-function numberValue(value: number | string | null | undefined) {
-  const result = Number(value ?? 0);
-  return Number.isFinite(result) ? result : 0;
-}
+  async function loadReports(accessToken: string) {
+    setReportsLoading(true);
 
-function money(value: number) {
-  return `$${value.toLocaleString("en-US", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 2,
-  })}B`;
-}
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/billionaire_wealth_change_reports?select=id,billionaire_name,change_billions,change_pct,source_name,source_url,observed_at,status,notes&order=observed_at.desc&limit=200`,
+        {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
 
-function signedMoney(value: number) {
-  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${sign}$${Math.abs(value).toFixed(2)}B`;
-}
+      if (!response.ok) {
+        throw new Error("خواندن گزارش‌های تغییر ثروت ناموفق بود.");
+      }
 
-function formatDate(value: string | null) {
-  if (!value) return "Date unavailable";
+      setReports(await response.json());
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "خطا در دریافت گزارش‌ها."
+      );
+    } finally {
+      setReportsLoading(false);
+    }
+  }
 
-  const date = new Date(value);
+  async function reviewReport(
+    reportId: string,
+    status: "approved" | "rejected"
+  ) {
+    setBusy(true);
+    setMessage("");
 
-  if (Number.isNaN(date.getTime())) return "Date unavailable";
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/billionaire_wealth_change_reports?id=eq.${reportId}`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            status,
+            reviewed_at: new Date().toISOString(),
+          }),
+        }
+      );
 
-  return new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "UTC",
-    timeZoneName: "short",
-  }).format(date);
-}
+      if (!response.ok) {
+        throw new Error("ثبت نتیجه بررسی گزارش ناموفق بود.");
+      }
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
+      setMessage(
+        status === "approved"
+          ? "گزارش تأیید شد؛ ثروت اصلی تغییر نکرد."
+          : "گزارش رد شد."
+      );
 
-export default async function BillionairesPage() {
-  const billionaires = await getTopBillionaires();
+      await loadReports(token);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "خطا در بررسی گزارش."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
-  const totalWealth = billionaires.reduce(
-    (sum, person) => sum + numberValue(person.net_worth_billions),
-    0
+  async function login(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: SUPABASE_KEY,
+          },
+          body: JSON.stringify({ email, password }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.access_token) {
+        throw new Error("ورود ناموفق بود؛ ایمیل و رمز را بررسی کن.");
+      }
+
+      const accessToken = data.access_token;
+
+      const adminResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/admin_users?select=user_id&user_id=eq.${data.user.id}`,
+        {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      const admins = await adminResponse.json();
+
+      if (
+        !adminResponse.ok ||
+        !Array.isArray(admins) ||
+        admins.length === 0
+      ) {
+        throw new Error("این حساب دسترسی مدیر ندارد.");
+      }
+
+      setToken(accessToken);
+      setPassword("");
+
+      await loadPeople(accessToken);
+      await loadReports(accessToken);
+
+      setMessage("ورود موفق بود.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "خطایی رخ داد."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function changeField(
+    id: string,
+    field: keyof Billionaire,
+    value: string
+  ) {
+    setPeople((current) =>
+      current.map((person) =>
+        person.id === id
+          ? { ...person, [field]: value }
+          : person
+      )
+    );
+  }
+
+  async function savePerson(person: Billionaire) {
+    const forbesValue = String(
+      person.forbes_change_pct ?? ""
+    ).trim();
+
+    if (
+      person.daily_change_source === "forbes" &&
+      (forbesValue === "" ||
+        !Number.isFinite(Number(forbesValue)))
+    ) {
+      setMessage(
+        "برای انتخاب فوربز، ابتدا درصد تغییر فوربز را وارد کن."
+      );
+      return;
+    }
+
+    setBusy(true);
+    setMessage("");
+
+    try {
+      const selectedChange =
+        person.daily_change_source === "forbes"
+          ? Number(forbesValue.replace(/^\+/, ""))
+          : Number(
+              String(person.daily_change_pct).replace(/^\+/, "")
+            );
+
+      if (!Number.isFinite(selectedChange)) {
+        throw new Error("درصد تغییر واردشده معتبر نیست.");
+      }
+
+      const forbesNumber =
+        forbesValue === ""
+          ? null
+          : Number(forbesValue.replace(/^\+/, ""));
+
+      if (
+        forbesNumber !== null &&
+        !Number.isFinite(forbesNumber)
+      ) {
+        throw new Error("درصد فوربز معتبر نیست.");
+      }
+
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/billionaires?id=eq.${person.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            rank: Number(person.rank),
+            name: person.name,
+            company: person.company,
+            country: person.country,
+            image_url: person.image_url,
+            bio: person.bio,
+            net_worth_billions: Number(
+              person.net_worth_billions
+            ),
+            daily_change_pct: selectedChange,
+            forbes_change_pct: forbesNumber,
+            forbes_change_period:
+              person.forbes_change_period ?? "day",
+            daily_change_source:
+              person.daily_change_source ?? "manual",
+            updated_at: new Date().toISOString(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "ذخیره نشد؛ دسترسی مدیر و مقادیر را بررسی کن."
+        );
+      }
+
+      setMessage(`اطلاعات ${person.name} ذخیره شد.`);
+      await loadPeople(token);
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "خطا در ذخیره."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function logout() {
+    setToken("");
+    setPeople([]);
+    setReports([]);
+    setEmail("");
+    setPassword("");
+    setMessage("خارج شدی.");
+  }
+
+  const visiblePeople = people.filter((person) =>
+    `${person.name} ${person.company ?? ""} ${person.country ?? ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
-  const latestUpdate = billionaires
-    .map((person) => person.updated_at)
-    .filter((value): value is string => Boolean(value))
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+  const inputStyle = {
+    width: "100%",
+    boxSizing: "border-box" as const,
+    padding: "11px",
+    borderRadius: "9px",
+    border: "1px solid #334155",
+    background: "#0f172a",
+    color: "#f8fafc",
+    marginTop: "5px",
+  };
 
-  const lastDailyDate = billionaires
-    .map((person) => person.daily_change_date)
-    .filter((value): value is string => Boolean(value))
-    .sort()
-    .reverse()[0];
+  const selectStyle = {
+    ...inputStyle,
+    cursor: "pointer",
+  };
 
   return (
     <main
       dir="rtl"
-      className="min-h-screen overflow-x-hidden bg-[#080b09] text-white"
+      style={{
+        minHeight: "100vh",
+        background: "#07111f",
+        color: "#f8fafc",
+        padding: "24px 14px",
+        fontFamily: "Arial, sans-serif",
+      }}
     >
-      <div className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
+      <div style={{ maxWidth: "900px", margin: "auto" }}>
+        <h1 style={{ color: "#60a5fa" }}>
+          پنل مدیریت Econova
+        </h1>
 
-        {/* HEADER */}
+        <p style={{ color: "#94a3b8" }}>
+          مدیریت اطلاعات ثروتمندان و تغییرات روزانه
+        </p>
 
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4 sm:pb-6">
-          <Link
-            href="/"
-            className="text-xl font-black tracking-[0.16em] text-[#b9f27c] sm:text-2xl sm:tracking-[0.2em]"
-          >
-            ECONOVA
-          </Link>
-
-          <nav
-            dir="ltr"
-            className="flex items-center gap-3 text-xs text-gray-400 sm:gap-5 sm:text-sm"
-          >
-            <Link href="/" className="transition hover:text-[#b9f27c]">
-              Home
-            </Link>
-
-            <Link
-              href="/billionaires/rankings"
-              className="transition hover:text-[#b9f27c]"
-            >
-              Full Rankings
-            </Link>
-          </nav>
-        </header>
-
-        {/* HERO */}
-
-        <section className="py-8 text-center sm:py-16">
-          <div
-            dir="ltr"
-            className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#b9f27c]/20 bg-[#b9f27c]/5 px-3 py-1.5 text-[10px] font-semibold tracking-wider text-[#b9f27c] sm:px-4 sm:py-2 sm:text-xs"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[#b9f27c]" />
-            ECONOVA WEALTH TRACKER
-          </div>
-
-          <h1
-            dir="ltr"
-            className="text-2xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl"
-          >
-            World&apos;s Top{" "}
-            <span className="text-[#b9f27c]">25</span>{" "}
-            Billionaires
-          </h1>
-
+        {message && (
           <p
-            dir="ltr"
-            className="mx-auto mt-3 max-w-2xl text-xs leading-6 text-gray-400 sm:mt-5 sm:text-base sm:leading-7"
+            role="status"
+            style={{
+              background: "#13243a",
+              padding: "12px",
+              borderRadius: "9px",
+            }}
           >
-            Discover the world&apos;s wealthiest individuals and follow their
-            daily net worth changes with Econova.
+            {message}
           </p>
-        </section>
+        )}
 
-        {/* STATISTICS */}
+        {!token ? (
+          <form
+            onSubmit={login}
+            style={{
+              background: "#111e30",
+              padding: "20px",
+              borderRadius: "14px",
+              maxWidth: "440px",
+            }}
+          >
+            <h2>ورود مدیر</h2>
 
-        <section className="grid grid-cols-2 gap-2.5 sm:gap-4">
-          <div className="min-w-0 rounded-xl border border-white/10 bg-[#101611] p-3 sm:rounded-2xl sm:p-6">
-            <p
-              dir="ltr"
-              className="text-[9px] font-semibold tracking-wider text-gray-500 sm:text-xs sm:tracking-widest"
+            <label>
+              ایمیل حساب Supabase
+              <input
+                style={inputStyle}
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(event) =>
+                  setEmail(event.target.value)
+                }
+                required
+              />
+            </label>
+
+            <label
+              style={{
+                display: "block",
+                marginTop: "14px",
+              }}
             >
-              COMBINED WEALTH
-            </p>
+              رمز عبور
+              <input
+                style={inputStyle}
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
+                required
+              />
+            </label>
 
-            <p
-              dir="ltr"
-              className="mt-2 break-all text-xl font-black text-[#b9f27c] sm:mt-3 sm:text-4xl"
+            <button
+              disabled={busy}
+              type="submit"
+              style={buttonStyle}
             >
-              <bdi>{money(totalWealth)}</bdi>
-            </p>
-
-            <p
-              dir="ltr"
-              className="mt-1 text-[9px] leading-4 text-gray-500 sm:mt-2 sm:text-xs"
+              {busy ? "در حال ورود..." : "ورود به پنل"}
+            </button>
+          </form>
+        ) : (
+          <>
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                flexWrap: "wrap",
+                margin: "20px 0",
+              }}
             >
-              Total wealth of the top 25
-            </p>
-          </div>
+              <input
+                style={{
+                  ...inputStyle,
+                  flex: "1 1 220px",
+                }}
+                placeholder="جست‌وجوی نام، شرکت یا کشور"
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+              />
 
-          <div className="min-w-0 rounded-xl border border-white/10 bg-[#101611] p-3 sm:rounded-2xl sm:p-6">
-            <p
-              dir="ltr"
-              className="text-[9px] font-semibold tracking-wider text-gray-500 sm:text-xs sm:tracking-widest"
-            >
-              PEOPLE TRACKED
-            </p>
-
-            <p
-              dir="ltr"
-              className="mt-2 text-2xl font-black sm:mt-3 sm:text-4xl"
-            >
-              {billionaires.length}
-              <span className="ml-1 text-sm font-medium text-gray-500 sm:ml-2 sm:text-base">
-                / 25
-              </span>
-            </p>
-
-            <p
-              dir="ltr"
-              className="mt-1 text-[9px] leading-4 text-gray-500 sm:mt-2 sm:text-xs"
-            >
-              Available ranking records
-            </p>
-          </div>
-        </section>
-
-        {/* RANKINGS */}
-
-        <section className="mt-8 sm:mt-10">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-2 sm:mb-5">
-            <div>
-              <p
-                dir="ltr"
-                className="text-[9px] font-bold tracking-[0.18em] text-[#b9f27c] sm:text-xs sm:tracking-[0.2em]"
+              <button
+                onClick={async () => {
+                  await loadPeople(token);
+                  await loadReports(token);
+                }}
+                disabled={busy}
+                style={buttonStyle}
               >
-                GLOBAL WEALTH LEADERS
-              </p>
+                بارگذاری دوباره
+              </button>
 
+              <button
+                onClick={logout}
+                style={buttonStyle}
+              >
+                خروج
+              </button>
+            </div>
+
+            <p style={{ color: "#94a3b8" }}>
+              تعداد رکوردها: {people.length}
+            </p>
+                        {/* گزارش‌های خودکار تغییر ثروت */}
+            <section
+              style={{
+                background: "#111e30",
+                border: "1px solid #36533b",
+                borderRadius: "14px",
+                padding: "16px",
+                marginBottom: "20px",
+              }}
+            >
               <h2
-                dir="ltr"
-                className="mt-1 text-xl font-black sm:mt-2 sm:text-3xl"
+                style={{
+                  color: "#b9f27c",
+                  marginTop: 0,
+                }}
               >
-                Top 25 Billionaire Rankings
+                گزارش‌های خودکار تغییر ثروت
               </h2>
-            </div>
-
-            <p
-              dir="ltr"
-              className="max-w-[150px] text-right text-[9px] leading-4 text-gray-500 sm:max-w-none sm:text-xs"
-            >
-              Daily changes based on Econova data
-            </p>
-          </div>
-
-          {billionaires.length === 0 ? (
-            <div className="rounded-xl border border-white/10 bg-[#101611] p-6 text-center sm:rounded-2xl sm:p-10">
-              <p className="text-base font-bold sm:text-lg">
-                Data temporarily unavailable
-              </p>
 
               <p
-                dir="ltr"
-                className="mt-2 text-xs text-gray-500 sm:text-sm"
+                style={{
+                  color: "#94a3b8",
+                  lineHeight: 1.8,
+                }}
               >
-                Please check the Supabase connection.
+                گزارش‌های SuperRich هر ۳۰ دقیقه جمع‌آوری
+                می‌شوند. تأیید گزارش فقط وضعیت آن را ثبت
+                می‌کند و ثروت اصلی را تغییر نمی‌دهد.
               </p>
-            </div>
-          ) : (
-            <div className="space-y-2 sm:space-y-3">
-              {billionaires.map((person) => {
-                const wealth = numberValue(person.net_worth_billions);
 
-                const previousWealth =
-                  person.yesterday_net_worth_billions;
+              <p style={{ color: "#cbd5e1" }}>
+                در انتظار بررسی:{" "}
+                {reports.filter(
+                  (r) => r.status === "pending"
+                ).length}
+                {" · "}کل گزارش‌ها: {reports.length}
+              </p>
 
-                const hasPrevious =
-                  previousWealth !== null &&
-                  previousWealth !== undefined;
+              {reportsLoading && (
+                <p style={{ color: "#94a3b8" }}>
+                  در حال دریافت گزارش‌ها...
+                </p>
+              )}
 
-                const percentage = numberValue(person.daily_change_pct);
+              {!reportsLoading &&
+                reports.length === 0 && (
+                  <p style={{ color: "#94a3b8" }}>
+                    فعلاً گزارشی برای نمایش وجود ندارد.
+                    گزارش‌های دارای تغییر غیرصفر پس از دریافت
+                    از منبع اینجا ظاهر می‌شوند.
+                  </p>
+                )}
 
-                // Forbes amount change is calculated from the
-                // current net worth without changing the principal wealth.
-                const change =
-                  person.daily_change_source === "forbes"
-                    ? (wealth * percentage) / 100
-                    : hasPrevious
-                      ? wealth - numberValue(previousWealth)
-                      : null;
+              {reports.map((report) => (
+                <div
+                  key={report.id}
+                  style={{
+                    borderTop: "1px solid #334155",
+                    padding: "13px 0",
+                    marginTop: "10px",
+                  }}
+                >
+                  <strong>
+                    {report.billionaire_name}
+                  </strong>
 
-                const isPositive = percentage > 0;
-                const isNegative = percentage < 0;
-
-                const changeColor = isPositive
-                  ? "text-[#65d99a]"
-                  : isNegative
-                    ? "text-[#ff7777]"
-                    : "text-gray-400";
-
-                return (
-                  <Link
-                    key={person.id}
-                    href={`/billionaires/${person.id}`}
-                    className="group grid grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-2 rounded-xl border border-white/10 bg-[#101611] p-2.5 transition duration-200 hover:border-[#b9f27c]/40 hover:bg-[#141d16] sm:grid-cols-[52px_minmax(0,1fr)_150px_150px] sm:gap-5 sm:rounded-2xl sm:p-5"
+                  <p
+                    style={{
+                      margin: "7px 0",
+                      color: "#cbd5e1",
+                      lineHeight: 1.8,
+                    }}
                   >
-                    {/* RANK */}
+                    منبع: {report.source_name}
+                    {" · "}تغییر ثروت:{" "}
+                    {Number(
+                      report.change_billions
+                    ).toFixed(3)}{" "}
+                    میلیارد دلار
+                    {" · "}درصد:{" "}
+                    {report.change_pct == null
+                      ? "—"
+                      : `${report.change_pct}%`}
+                  </p>
 
-                    <div className="row-span-2 text-center sm:row-span-1">
-                      <span
-                        dir="ltr"
-                        className={`text-base font-black sm:text-xl ${
-                          person.rank <= 3
-                            ? "text-[#b9f27c]"
-                            : "text-gray-500"
-                        }`}
+                  <p
+                    style={{
+                      margin: "5px 0",
+                      color: "#94a3b8",
+                      fontSize: "12px",
+                    }}
+                  >
+                    {new Date(
+                      report.observed_at
+                    ).toLocaleString("fa-IR")}
+                    {" · "}وضعیت:{" "}
+                    {report.status === "pending"
+                      ? "در انتظار بررسی"
+                      : report.status === "approved"
+                      ? "تأییدشده"
+                      : "ردشده"}
+                  </p>
+
+                  {report.notes && (
+                    <p
+                      style={{
+                        color: "#94a3b8",
+                        fontSize: "12px",
+                        lineHeight: 1.7,
+                      }}
+                    >
+                      {report.notes}
+                    </p>
+                  )}
+
+                  {report.source_url && (
+                    <a
+                      href={report.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: "#93c5fd" }}
+                    >
+                      مشاهده منبع
+                    </a>
+                  )}
+
+                  {report.status === "pending" && (
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        onClick={() =>
+                          reviewReport(
+                            report.id,
+                            "approved"
+                          )
+                        }
+                        disabled={busy}
+                        style={{
+                          ...buttonStyle,
+                          background: "#15803d",
+                        }}
                       >
-                        {String(person.rank).padStart(2, "0")}
-                      </span>
-                    </div>
+                        تأیید گزارش
+                      </button>
 
-                    {/* PERSON */}
-
-                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                      <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-[#1c281d] sm:h-12 sm:w-12">
-                        {person.image_url ? (
-                          <img
-                            src={person.image_url}
-                            alt={person.name}
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xs font-black text-[#b9f27c]">
-                            {getInitials(person.name)}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <h3
-                          dir="ltr"
-                          className="truncate text-xs font-bold text-right transition group-hover:text-[#b9f27c] sm:text-base"
-                        >
-                          {person.name}
-                        </h3>
-
-                        <p
-                          dir="ltr"
-                          className="mt-0.5 truncate text-right text-[9px] text-gray-500 sm:mt-1 sm:text-xs"
-                        >
-                          {person.company || "Company not specified"}
-                          {person.country ? ` · ${person.country}` : ""}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* DAILY CHANGE */}
-
-                    <div className="col-start-3 row-start-1 min-w-[76px] text-right sm:col-start-4 sm:row-start-1">
-                      <p
-                        dir="ltr"
-                        className="text-[8px] font-semibold tracking-wider text-gray-500 sm:text-[10px]"
+                      <button
+                        onClick={() =>
+                          reviewReport(
+                            report.id,
+                            "rejected"
+                          )
+                        }
+                        disabled={busy}
+                        style={{
+                          ...buttonStyle,
+                          background: "#b91c1c",
+                        }}
                       >
-                        DAILY CHANGE
-                      </p>
-
-                      {person.daily_change_date ? (
-                        <>
-                          <p
-                            dir="ltr"
-                            className={`mt-1 text-center text-[10px] font-bold sm:text-sm ${changeColor}`}
-                          >
-                            <bdi>
-                              {isPositive
-                                ? "▲ "
-                                : isNegative
-                                  ? "▼ "
-                                  : ""}
-                              {percentage > 0 ? "+" : ""}
-                              {percentage.toFixed(2)}%
-                            </bdi>
-                          </p>
-
-                          <p
-                            dir="ltr"
-                            className={`mt-0.5 text-center text-[8px] sm:mt-1 sm:text-[10px] ${changeColor}`}
-                          >
-                            <bdi>
-                              {change === null
-                                ? "Amount unavailable"
-                                : signedMoney(change)}
-                            </bdi>
-                          </p>
-                        </>
-                      ) : (
-                        <p className="mt-1 text-[9px] text-gray-500">
-                          Not available
-                        </p>
-                      )}
+                        رد گزارش
+                      </button>
                     </div>
-
-                    {/* NET WORTH */}
-
-                    <div className="col-start-2 row-start-2 sm:col-start-3 sm:row-start-1">
-                      <p
-                        dir="ltr"
-                        className="text-[8px] font-semibold tracking-wider text-gray-500 sm:hidden"
-                      >
-                        NET WORTH
-                      </p>
-
-                      <p
-                        dir="ltr"
-                        className="text-right text-xs font-black text-white sm:text-lg"
-                      >
-                        <bdi>{money(wealth)}</bdi>
-                      </p>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </section>
-                {/* DATA INFORMATION */}
-
-        <section className="mt-6 rounded-xl border border-white/10 bg-[#101611] p-3.5 sm:mt-8 sm:rounded-2xl sm:p-6">
-          <h2
-            dir="ltr"
-            className="text-sm font-bold text-white sm:text-base"
-          >
-            Data Information
-          </h2>
-
-          <div className="mt-3 grid gap-3 text-[10px] text-gray-400 sm:mt-4 sm:grid-cols-2 sm:gap-4 sm:text-xs">
-            <div>
-              <p dir="ltr" className="text-gray-500">
-                Latest database update
-              </p>
+                  )}
+                </div>
+              ))}
 
               <p
-                dir="ltr"
-                className="mt-1 text-right font-semibold text-gray-200"
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "12px",
+                }}
               >
-                <bdi>{formatDate(latestUpdate || null)}</bdi>
+                تأیید گزارش به معنی ثبت بررسی است و
+                مقدار ثروت اصلی را تغییر نمی‌دهد.
               </p>
-            </div>
+            </section>
 
-            <div>
-              <p dir="ltr" className="text-gray-500">
-                Daily change data date
-              </p>
-
-              <p
-                dir="ltr"
-                className="mt-1 text-right font-semibold text-gray-200"
+            {visiblePeople.map((person) => (
+              <section
+                key={person.id}
+                style={{
+                  background: "#111e30",
+                  border: "1px solid #24354b",
+                  borderRadius: "14px",
+                  padding: "16px",
+                  marginBottom: "16px",
+                }}
               >
-                <bdi>{lastDailyDate || "Not available"}</bdi>
-              </p>
-            </div>
-          </div>
+                <h3>
+                  رتبه {person.rank}: {person.name}
+                </h3>
 
-          <p
-            dir="ltr"
-            className="mt-4 border-t border-white/10 pt-3 text-[10px] leading-5 text-gray-500 sm:mt-5 sm:pt-4 sm:text-xs sm:leading-6"
-          >
-            Wealth figures and daily changes reflect the latest records
-            available in Econova&apos;s database. They are estimates and are
-            not guaranteed to represent real-time market values.
-          </p>
-        </section>
+                {person.image_url && (
+                  <img
+                    src={person.image_url}
+                    alt={person.name}
+                    style={{
+                      width: "76px",
+                      height: "76px",
+                      objectFit: "cover",
+                      borderRadius: "12px",
+                    }}
+                  />
+                )}
 
-        {/* FULL RANKINGS BUTTON */}
+                <Field
+                  label="رتبه"
+                  value={String(person.rank)}
+                  onChange={(v) =>
+                    changeField(person.id, "rank", v)
+                  }
+                />
 
-        <div className="mt-6 text-center sm:mt-8">
-          <Link
-            href="/billionaires/rankings"
-            dir="ltr"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#b9f27c] px-4 py-3 text-xs font-bold text-[#101610] transition hover:bg-[#d0ff9d] sm:w-auto sm:px-7 sm:py-3 sm:text-sm"
-          >
-            Explore Full Billionaire Rankings
-            <span>→</span>
-          </Link>
-        </div>
+                <Field
+                  label="نام"
+                  value={person.name}
+                  onChange={(v) =>
+                    changeField(person.id, "name", v)
+                  }
+                />
 
-        {/* FOOTER */}
+                <Field
+                  label="شرکت"
+                  value={person.company ?? ""}
+                  onChange={(v) =>
+                    changeField(person.id, "company", v)
+                  }
+                />
 
-        <footer
-          dir="ltr"
-          className="mt-10 border-t border-white/10 py-5 text-center text-[9px] text-gray-600 sm:mt-16 sm:py-7 sm:text-xs"
-        >
-          © {new Date().getFullYear()} ECONOVA. Global Wealth Intelligence.
-        </footer>
+                <Field
+                  label="کشور"
+                  value={person.country ?? ""}
+                  onChange={(v) =>
+                    changeField(person.id, "country", v)
+                  }
+                />
+
+                <Field
+                  label="لینک تصویر (URL)"
+                  value={person.image_url ?? ""}
+                  onChange={(v) =>
+                    changeField(
+                      person.id,
+                      "image_url",
+                      v
+                    )
+                  }
+                />
+
+                <Field
+                  label="ثروت (میلیارد دلار)"
+                  value={String(
+                    person.net_worth_billions
+                  )}
+                  onChange={(v) =>
+                    changeField(
+                      person.id,
+                      "net_worth_billions",
+                      v
+                    )
+                  }
+                />
+
+                <div
+                  style={{
+                    marginTop: "20px",
+                    padding: "15px",
+                    border: "1px solid #36533b",
+                    borderRadius: "12px",
+                    background: "#0b1c1b",
+                  }}
+                >
+                  <h3
+                    style={{
+                      color: "#b9f27c",
+                      marginTop: 0,
+                    }}
+                  >
+                    گزارش تغییر ثروت Forbes
+                  </h3>
+
+                  <Field
+                    label="درصد تغییر اعلام‌شده توسط فوربز"
+                    value={String(
+                      person.forbes_change_pct ?? ""
+                    )}
+                    onChange={(v) =>
+                      changeField(
+                        person.id,
+                        "forbes_change_pct",
+                        v
+                      )
+                    }
+                  />
+
+                  <label
+                    style={{
+                      display: "block",
+                      marginTop: "12px",
+                    }}
+                  >
+                    بازه گزارش فوربز
+                    <select
+                      value={
+                        person.forbes_change_period ??
+                        "day"
+                      }
+                      onChange={(event) =>
+                        changeField(
+                          person.id,
+                          "forbes_change_period",
+                          event.target.value
+                        )
+                      }
+                      style={selectStyle}
+                    >
+                      <option value="day">روزانه</option>
+                      <option value="week">هفتگی</option>
+                    </select>
+                  </label>
+
+                  <p
+                    style={{
+                      color: "#94a3b8",
+                      fontSize: "12px",
+                    }}
+                  >
+                    درصد مثبت یعنی افزایش ثروت و درصد
+                    منفی یعنی کاهش ثروت.
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: "14px",
+                    padding: "15px",
+                    border: "1px solid #334155",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <h3 style={{ marginTop: 0 }}>
+                    منبع درصد تغییر اصلی Econova
+                  </h3>
+
+                  <select
+                    value={
+                      person.daily_change_source ??
+                      "manual"
+                    }
+                    onChange={(event) =>
+                      changeField(
+                        person.id,
+                        "daily_change_source",
+                        event.target.value
+                      )
+                    }
+                    style={selectStyle}
+                  >
+                    <option value="manual">
+                      ورود دستی
+                    </option>
+                    <option value="forbes">
+                      Forbes
+                    </option>
+                    <option value="superrich">
+                      SuperRich
+                    </option>
+                  </select>
+
+                  <Field
+                    label="درصد تغییر اصلی"
+                    value={String(
+                      person.daily_change_pct
+                    )}
+                    onChange={(v) =>
+                      changeField(
+                        person.id,
+                        "daily_change_pct",
+                        v
+                      )
+                    }
+                  />
+
+                  <p
+                    style={{
+                      color: "#94a3b8",
+                      fontSize: "12px",
+                      lineHeight: 1.8,
+                    }}
+                  >
+                    اگر Forbes را انتخاب کنی، درصد فوربز
+                    هنگام ذخیره به‌عنوان درصد تغییر اصلی
+                    ثبت می‌شود. در حالت دستی یا SuperRich،
+                    مقدار درصد اصلی از فیلد بالا گرفته
+                    می‌شود.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => savePerson(person)}
+                  disabled={busy}
+                  style={{
+                    ...buttonStyle,
+                    marginTop: "16px",
+                  }}
+                >
+                  {busy
+                    ? "در حال ذخیره..."
+                    : "ذخیره تغییرات"}
+                </button>
+              </section>
+            ))}
+          </>
+        )}
       </div>
     </main>
   );
 }
+
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label
+      style={{
+        display: "block",
+        marginTop: "12px",
+      }}
+    >
+      <span>{label}</span>
+
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          padding: "11px",
+          marginTop: "5px",
+          borderRadius: "9px",
+          border: "1px solid #334155",
+          background: "#0f172a",
+          color: "#f8fafc",
+        }}
+      />
+    </label>
+  );
+}
+
+const buttonStyle = {
+  marginTop: "18px",
+  padding: "12px 20px",
+  border: 0,
+  borderRadius: "9px",
+  background: "#2563eb",
+  color: "white",
+  fontWeight: "bold" as const,
+  cursor: "pointer",
+};
