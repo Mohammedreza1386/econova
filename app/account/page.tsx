@@ -11,7 +11,7 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-let client: ReturnType<typeof createClient> | null = null;
+let client: any = null;
 
 function getSupabase() {
   if (!SUPABASE_KEY) {
