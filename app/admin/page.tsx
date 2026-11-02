@@ -351,48 +351,75 @@ export default function AdminPage() {
     return `${year}-${month}-${day}`;
   }
 
-  function getManualChangePreview(person: Billionaire) {
-    const pct = Number(
-      String(person.daily_change_pct ?? "").replace(/^\+/, "")
+  // اگر امروز قبلاً ذخیره شده باشد، پایه محاسبه همان ثروت دیروز است.
+  // اگر روز جدید باشد، ثروت فعلی به‌عنوان ثروت روز قبل ثبت می‌شود.
+  function getWealthCalculationBase(person: Billionaire) {
+    const todayKey = getLocalDateKey();
+
+    const savedYesterday = Number(
+      person.yesterday_net_worth_billions
     );
-    const base = Number(person.net_worth_billions);
+
+    const hasSavedYesterday =
+      person.yesterday_net_worth_billions !== null &&
+      person.yesterday_net_worth_billions !== undefined &&
+      Number.isFinite(savedYesterday) &&
+      savedYesterday >= 0;
 
     if (
-      !Number.isFinite(pct) ||
+      person.daily_change_date === todayKey &&
+      hasSavedYesterday
+    ) {
+      return savedYesterday;
+    }
+
+    return Number(person.net_worth_billions);
+  }
+
+  function calculateWealthPreview(
+    person: Billionaire,
+    percentage: number
+  ) {
+    const base = getWealthCalculationBase(person);
+
+    if (
+      !Number.isFinite(percentage) ||
       !Number.isFinite(base) ||
       base < 0 ||
-      pct < -100
+      percentage < -100
     ) {
       return null;
     }
 
+    const difference = Number(
+      (base * percentage / 100).toFixed(3)
+    );
+
+    const result = Number(
+      (base + difference).toFixed(3)
+    );
+
     return {
       base,
-      result: Number((base * (1 + pct / 100)).toFixed(3)),
-      difference: Number((base * pct / 100).toFixed(3)),
+      difference,
+      result,
     };
+  }
+
+  function getManualChangePreview(person: Billionaire) {
+    const pct = Number(
+      String(person.daily_change_pct ?? "").replace(/^\+/, "")
+    );
+
+    return calculateWealthPreview(person, pct);
   }
 
   function getForbesChangePreview(person: Billionaire) {
     const pct = Number(
       String(person.forbes_change_pct ?? "").replace(/^\+/, "")
     );
-    const base = Number(person.net_worth_billions);
 
-    if (
-      !Number.isFinite(pct) ||
-      !Number.isFinite(base) ||
-      base < 0 ||
-      pct < -100
-    ) {
-      return null;
-    }
-
-    return {
-      base,
-      result: Number((base * (1 + pct / 100)).toFixed(3)),
-      difference: Number((base * pct / 100).toFixed(3)),
-    };
+    return calculateWealthPreview(person, pct);
   }
 
   function changeField(
@@ -469,10 +496,31 @@ export default function AdminPage() {
       }
 
       const todayKey = getLocalDateKey();
-      const previousBase = currentNetWorth;
+      const isAlreadySavedToday =
+        person.daily_change_date === todayKey;
+
+      const savedYesterday = Number(
+        person.yesterday_net_worth_billions
+      );
+
+      const hasSavedYesterday =
+        person.yesterday_net_worth_billions !== null &&
+        person.yesterday_net_worth_billions !== undefined &&
+        Number.isFinite(savedYesterday) &&
+        savedYesterday >= 0;
+
+      // پایه روز جاری فقط یک بار تعیین می‌شود.
+      // ذخیره مجدد در همان روز، پایه قبلی را تغییر نمی‌دهد.
+      const previousBase =
+        isAlreadySavedToday && hasSavedYesterday
+          ? savedYesterday
+          : currentNetWorth;
 
       const autoCalculatedNetWorth = Number(
-        (currentNetWorth * (1 + selectedChange / 100)).toFixed(3)
+        (
+          previousBase *
+          (1 + selectedChange / 100)
+        ).toFixed(3)
       );
 
       const updateData: Record<string, unknown> = {
@@ -498,7 +546,7 @@ export default function AdminPage() {
 
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/billionaires?id=eq.${person.id}`,
-        {
+                {
           method: "PATCH",
           headers: {
             apikey: SUPABASE_KEY,
@@ -518,9 +566,10 @@ export default function AdminPage() {
       }
 
       setMessage(
-        `اطلاعات ${person.name} ذخیره شد. ثروت جدید: ${formatNumber(
-          autoCalculatedNetWorth
-        )} میلیارد دلار`
+        `اطلاعات ${person.name} ذخیره شد. ` +
+          `ثروت پایه: ${formatNumber(previousBase)} میلیارد دلار؛ ` +
+          `تغییر: ${selectedChange > 0 ? "+" : ""}${selectedChange}%؛ ` +
+          `ثروت جدید: ${formatNumber(autoCalculatedNetWorth)} میلیارد دلار`
       );
 
       await loadPeople(token);
@@ -643,7 +692,7 @@ export default function AdminPage() {
           </form>
         ) : (
           <>
-                        <div
+            <div
               style={{
                 display: "flex",
                 gap: "10px",
@@ -912,7 +961,7 @@ export default function AdminPage() {
                             lineHeight: 1.8,
                           }}
                         >
-                          درصد واردشده روی ثروت فعلی اعمال می‌شود.
+                          درصد تغییر بر اساس ثروت ذخیره‌شده روز قبل محاسبه می‌شود.
                         </p>
                       </div>
                     )}
@@ -1047,8 +1096,7 @@ export default function AdminPage() {
                       </div>
                     )}
                   </div>
-
-                  {/* پیش‌نمایش محاسبه */}
+                                    {/* پیش‌نمایش محاسبه */}
                   {(source === "manual" ||
                     source === "forbes") && (
                     <div
@@ -1098,7 +1146,7 @@ export default function AdminPage() {
                             )}
 
                             <div>
-                              ثروت پایه:{" "}
+                              ثروت پایه (روز قبل):{" "}
                               {formatNumber(preview.base)} میلیارد دلار
                             </div>
 
@@ -1124,15 +1172,16 @@ export default function AdminPage() {
                                 fontSize: "12px",
                               }}
                             >
-                              با ذخیره مجدد، درصد دوباره روی ثروت فعلی
-                              اعمال خواهد شد.
+                              ذخیره مجدد در همین روز، همچنان از ثروت روز قبل
+                              محاسبه می‌شود و تغییر تکراری اعمال نخواهد شد.
                             </div>
                           </>
                         );
                       })()}
                     </div>
                   )}
-                                    {source === "superrich" && superRichReport && (
+
+                  {source === "superrich" && superRichReport && (
                     <div
                       style={{
                         marginTop: "12px",
@@ -1144,33 +1193,47 @@ export default function AdminPage() {
                         fontSize: "13px",
                       }}
                     >
-                      <strong style={{ color: "#b9f27c" }}>
-                        پیش‌نمایش ثروت جدید
-                      </strong>
+                      {(() => {
+                        const preview = calculateWealthPreview(
+                          person,
+                          Number(superRichReport.change_pct)
+                        );
 
-                      <div>
-                        ثروت فعلی:{" "}
-                        {formatNumber(
-                          Number(person.net_worth_billions)
-                        )} میلیارد دلار
-                      </div>
+                        if (!preview) {
+                          return "اطلاعات لازم برای محاسبه ثروت معتبر نیست.";
+                        }
 
-                      <div>
-                        درصد تغییر:{" "}
-                        {Number(
-                          superRichReport.change_pct
-                        ).toFixed(3)}%
-                      </div>
+                        return (
+                          <>
+                            <strong style={{ color: "#b9f27c" }}>
+                              پیش‌نمایش ثروت جدید
+                            </strong>
 
-                      <div>
-                        ثروت پس از ثبت:{" "}
-                        {formatNumber(
-                          Number(person.net_worth_billions) *
-                            (1 +
-                              Number(superRichReport.change_pct) /
-                                100)
-                        )} میلیارد دلار
-                      </div>
+                            <div>
+                              ثروت پایه (روز قبل):{" "}
+                              {formatNumber(preview.base)} میلیارد دلار
+                            </div>
+
+                            <div>
+                              درصد تغییر:{" "}
+                              {Number(
+                                superRichReport.change_pct
+                              ).toFixed(3)}%
+                            </div>
+
+                            <div>
+                              مقدار تغییر:{" "}
+                              {preview.difference > 0 ? "+" : ""}
+                              {formatNumber(preview.difference)} میلیارد دلار
+                            </div>
+
+                            <div>
+                              ثروت پس از ثبت:{" "}
+                              {formatNumber(preview.result)} میلیارد دلار
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -1388,4 +1451,4 @@ function Field({
       />
     </label>
   );
-} 
+}
