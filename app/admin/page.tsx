@@ -112,7 +112,9 @@ export default function AdminPage() {
     );
   }
 
-  async function loadReports(accessToken: string): Promise<boolean> {
+  async function loadReports(
+    accessToken: string
+  ): Promise<boolean> {
     setReportsLoading(true);
 
     try {
@@ -127,7 +129,9 @@ export default function AdminPage() {
       );
 
       if (!response.ok) {
-        throw new Error("خواندن گزارش‌های تغییر ثروت ناموفق بود.");
+        throw new Error(
+          "خواندن گزارش‌های تغییر ثروت ناموفق بود."
+        );
       }
 
       setReports(await response.json());
@@ -191,14 +195,16 @@ export default function AdminPage() {
 
       if (!response.ok || !result.success) {
         throw new Error(
-          result.error || "دریافت اطلاعات SuperRich ناموفق بود."
+          result.error ||
+            "دریافت اطلاعات SuperRich ناموفق بود."
         );
       }
 
       const reportsLoaded = await loadReports(token);
+
       if (!reportsLoaded) {
         throw new Error(
-          "اطلاعات از SuperRich دریافت شد، اما بارگذاری گزارش‌های ذخیره‌شده ناموفق بود."
+          "اطلاعات دریافت شد، اما بارگذاری گزارش‌های ذخیره‌شده ناموفق بود."
         );
       }
 
@@ -245,7 +251,9 @@ export default function AdminPage() {
       );
 
       if (!response.ok) {
-        throw new Error("ثبت نتیجه بررسی گزارش ناموفق بود.");
+        throw new Error(
+          "ثبت نتیجه بررسی گزارش ناموفق بود."
+        );
       }
 
       setMessage(
@@ -313,7 +321,9 @@ export default function AdminPage() {
         !Array.isArray(admins) ||
         admins.length === 0
       ) {
-        throw new Error("این حساب دسترسی مدیر ندارد.");
+        throw new Error(
+          "این حساب دسترسی مدیر ندارد."
+        );
       }
 
       setToken(accessToken);
@@ -339,14 +349,17 @@ export default function AdminPage() {
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const day = String(now.getDate()).padStart(2, "0");
+
     return `${year}-${month}-${day}`;
   }
 
-  function getManualChangePreview(person: Billionaire) {
+  function getManualChangePreview(
+    person: Billionaire
+  ) {
     const pct = Number(
       String(person.daily_change_pct ?? "").replace(/^\+/, "")
     );
-    // درصد همیشه بر اساس ثروت فعلی نمایش‌داده‌شده در Econova محاسبه می‌شود.
+
     const base = Number(person.net_worth_billions);
 
     if (
@@ -360,8 +373,12 @@ export default function AdminPage() {
 
     return {
       base,
-      result: Number((base * (1 + pct / 100)).toFixed(3)),
-      difference: Number((base * pct / 100).toFixed(3)),
+      result: Number(
+        (base * (1 + pct / 100)).toFixed(3)
+      ),
+      difference: Number(
+        (base * pct / 100).toFixed(3)
+      ),
     };
   }
 
@@ -370,24 +387,25 @@ export default function AdminPage() {
     field: keyof Billionaire,
     value: string
   ) {
-        setPeople((current) =>
+    setPeople((current) =>
       current.map((person) =>
         person.id === id
           ? { ...person, [field]: value }
           : person
       )
     );
-  }
-
-  async function savePerson(person: Billionaire) {
+   }
+    async function savePerson(person: Billionaire) {
     const forbesValue = String(
       person.forbes_change_pct ?? ""
     ).trim();
 
     if (
       person.daily_change_source === "forbes" &&
-      (forbesValue === "" ||
-        !Number.isFinite(Number(forbesValue)))
+      (
+        forbesValue === "" ||
+        !Number.isFinite(Number(forbesValue))
+      )
     ) {
       setMessage(
         "برای انتخاب فوربز، ابتدا درصد تغییر فوربز را وارد کن."
@@ -402,9 +420,13 @@ export default function AdminPage() {
 
     if (
       person.daily_change_source === "superrich" &&
-      (!superRichReport ||
+      (
+        !superRichReport ||
         superRichReport.change_pct === null ||
-        !Number.isFinite(Number(superRichReport.change_pct)))
+        !Number.isFinite(
+          Number(superRichReport.change_pct)
+        )
+      )
     ) {
       setMessage(
         `برای ${person.name} گزارش معتبر SuperRich پیدا نشد. ابتدا اطلاعات جدید را دریافت کن.`
@@ -419,7 +441,9 @@ export default function AdminPage() {
       let selectedChange: number;
 
       if (person.daily_change_source === "superrich") {
-        selectedChange = Number(superRichReport!.change_pct);
+        selectedChange = Number(
+          superRichReport!.change_pct
+        );
       } else if (
         person.daily_change_source === "forbes" &&
         (person.forbes_change_period ?? "day") === "day"
@@ -434,25 +458,42 @@ export default function AdminPage() {
       }
 
       if (!Number.isFinite(selectedChange)) {
-        throw new Error("درصد تغییر واردشده معتبر نیست.");
-      }
-      if (selectedChange < -100) {
-        throw new Error("درصد کاهش نمی‌تواند کمتر از ۱۰۰- درصد باشد.");
+        throw new Error(
+          "درصد تغییر واردشده معتبر نیست."
+        );
       }
 
-      const currentNetWorth = Number(person.net_worth_billions);
-      if (!Number.isFinite(currentNetWorth) || currentNetWorth < 0) {
-        throw new Error("مقدار ثروت فعلی معتبر نیست.");
+      if (selectedChange < -100) {
+        throw new Error(
+          "درصد کاهش نمی‌تواند کمتر از ۱۰۰- درصد باشد."
+        );
+      }
+
+      const currentNetWorth = Number(
+        person.net_worth_billions
+      );
+
+      if (
+        !Number.isFinite(currentNetWorth) ||
+        currentNetWorth < 0
+      ) {
+        throw new Error(
+          "مقدار ثروت فعلی معتبر نیست."
+        );
       }
 
       const todayKey = getLocalDateKey();
 
-      // درصد دستی روی ثروت فعلی ثبت‌شده در Econova اعمال می‌شود.
       const previousBase = currentNetWorth;
 
       const autoCalculatedNetWorth =
         person.daily_change_source === "manual"
-          ? Number((currentNetWorth * (1 + selectedChange / 100)).toFixed(3))
+          ? Number(
+              (
+                currentNetWorth *
+                (1 + selectedChange / 100)
+              ).toFixed(3)
+            )
           : currentNetWorth;
 
       const forbesNumber =
@@ -464,14 +505,16 @@ export default function AdminPage() {
         forbesNumber !== null &&
         !Number.isFinite(forbesNumber)
       ) {
-        throw new Error("درصد فوربز معتبر نیست.");
+        throw new Error(
+          "درصد فوربز معتبر نیست."
+        );
       }
 
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/billionaires?id=eq.${person.id}`,
         {
           method: "PATCH",
-                    headers: {
+          headers: {
             apikey: SUPABASE_KEY,
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -484,21 +527,29 @@ export default function AdminPage() {
             country: person.country,
             image_url: person.image_url,
             bio: person.bio,
-            net_worth_billions: autoCalculatedNetWorth,
+
+            net_worth_billions:
+              autoCalculatedNetWorth,
+
             yesterday_net_worth_billions:
               person.daily_change_source === "manual"
                 ? previousBase
                 : person.yesterday_net_worth_billions ?? null,
+
             daily_change_date:
               person.daily_change_source === "manual"
                 ? todayKey
                 : person.daily_change_date ?? null,
+
             daily_change_pct: selectedChange,
             forbes_change_pct: forbesNumber,
+
             forbes_change_period:
               person.forbes_change_period ?? "day",
+
             daily_change_source:
               person.daily_change_source ?? "manual",
+
             updated_at: new Date().toISOString(),
           }),
         }
@@ -510,7 +561,10 @@ export default function AdminPage() {
         );
       }
 
-      setMessage(`اطلاعات ${person.name} ذخیره شد.`);
+      setMessage(
+        `اطلاعات ${person.name} ذخیره شد.`
+      );
+
       await loadPeople(token);
     } catch (error) {
       setMessage(
@@ -537,7 +591,8 @@ export default function AdminPage() {
       .toLowerCase()
       .includes(search.toLowerCase())
   );
-    return (
+
+  return (
     <main
       dir="rtl"
       style={{
@@ -548,13 +603,18 @@ export default function AdminPage() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div style={{ maxWidth: "900px", margin: "auto" }}>
+      <div
+        style={{
+          maxWidth: "900px",
+          margin: "auto",
+        }}
+      >
         <h1 style={{ color: "#b9f27c" }}>
           پنل مدیریت Econova
         </h1>
 
         <p style={{ color: "#94a3b8" }}>
-          مدیریت اطلاعات ثروتمندان و گزارش‌های تغییر ثروت
+          مدیریت اطلاعات ثروتمندان
         </p>
 
         {message && (
@@ -671,20 +731,6 @@ export default function AdminPage() {
 
             {/* کارت‌های میلیاردرها */}
             {visiblePeople.map((person) => {
-              const superRichReport =
-                getSuperRichReport(person);
-
-              const hasSuperRichReport =
-                superRichReport !== undefined &&
-                superRichReport.change_pct !== null &&
-                Number.isFinite(
-                  Number(superRichReport.change_pct)
-                );
-
-              const superRichAmount = hasSuperRichReport
-                ? Number(superRichReport!.change_billions)
-                : 0;
-
               return (
                 <section
                   key={person.id}
@@ -717,7 +763,11 @@ export default function AdminPage() {
                     label="رتبه"
                     value={String(person.rank)}
                     onChange={(value) =>
-                      changeField(person.id, "rank", value)
+                      changeField(
+                        person.id,
+                        "rank",
+                        value
+                      )
                     }
                   />
 
@@ -725,7 +775,11 @@ export default function AdminPage() {
                     label="نام"
                     value={person.name}
                     onChange={(value) =>
-                      changeField(person.id, "name", value)
+                      changeField(
+                        person.id,
+                        "name",
+                        value
+                      )
                     }
                   />
 
@@ -733,7 +787,11 @@ export default function AdminPage() {
                     label="شرکت"
                     value={person.company ?? ""}
                     onChange={(value) =>
-                      changeField(person.id, "company", value)
+                      changeField(
+                        person.id,
+                        "company",
+                        value
+                      )
                     }
                   />
 
@@ -741,9 +799,12 @@ export default function AdminPage() {
                     label="کشور"
                     value={person.country ?? ""}
                     onChange={(value) =>
-                      changeField(person.id, "country", value)
-              }
-                                        }
+                      changeField(
+                        person.id,
+                        "country",
+                        value
+                      )
+                    }
                   />
 
                   <Field
@@ -754,13 +815,15 @@ export default function AdminPage() {
                         person.id,
                         "image_url",
                         value
-                                              )
+                      )
                     }
                   />
 
                   <Field
                     label="ثروت (میلیارد دلار)"
-                    value={String(person.net_worth_billions)}
+                    value={String(
+                      person.net_worth_billions
+                    )}
                     onChange={(value) =>
                       changeField(
                         person.id,
@@ -769,8 +832,7 @@ export default function AdminPage() {
                       )
                     }
                   />
-
-                  {/* گزارش فوربز */}
+                                    {/* گزارش فوربز */}
                   <div
                     style={{
                       marginTop: "20px",
@@ -822,6 +884,7 @@ export default function AdminPage() {
                       }}
                     >
                       بازه گزارش فوربز
+
                       <select
                         value={
                           person.forbes_change_period ?? "day"
@@ -919,7 +982,8 @@ export default function AdminPage() {
                       );
                     })()}
                   </div>
-                                    {/* انتخاب منبع اصلی */}
+
+                  {/* انتخاب منبع اصلی */}
                   <div
                     style={{
                       marginTop: "14px",
@@ -1005,7 +1069,8 @@ export default function AdminPage() {
                       }}
                     >
                       {(() => {
-                        const preview = getManualChangePreview(person);
+                        const preview =
+                          getManualChangePreview(person);
 
                         if (!preview) {
                           return "برای محاسبه خودکار، درصد معتبر (بزرگ‌تر یا مساوی ۱۰۰-٪) وارد کن.";
@@ -1013,12 +1078,15 @@ export default function AdminPage() {
 
                         return (
                           <>
-                            <strong style={{ color: "#b9f27c" }}>
+                            <strong
+                              style={{ color: "#b9f27c" }}
+                            >
                               پیش‌نمایش محاسبه خودکار
                             </strong>
 
                             <div>
-                              ثروت پایه: {preview.base.toFixed(3)} میلیارد دلار
+                              ثروت پایه:{" "}
+                              {preview.base.toFixed(3)} میلیارد دلار
                             </div>
 
                             <div>
@@ -1033,7 +1101,8 @@ export default function AdminPage() {
                                 fontWeight: "bold",
                               }}
                             >
-                              ثروت پس از ثبت: {preview.result.toFixed(3)} میلیارد دلار
+                              ثروت پس از ثبت:{" "}
+                              {preview.result.toFixed(3)} میلیارد دلار
                             </div>
 
                             <div
