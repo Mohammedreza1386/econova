@@ -211,15 +211,15 @@ export default function AdminPage() {
 
       if (!reportsLoaded) {
         throw new Error(
-          "اطلاعات دریافت شد، اما بارگذاری گزارش‌های ذخیره‌شده ناموفق بود."
+          "دریافت انجام شد، اما بارگذاری گزارش‌های ذخیره‌شده ناموفق بود."
         );
       }
 
       setMessage(
-        `دریافت تمام شد: ${result.provider_records ?? 0} رکورد از منبع، ` +
-          `${result.matched_people ?? 0} میلیاردر تطبیق‌یافته، ` +
+        `دریافت تمام شد: ${result.provider_records ?? 0} رکورد، ` +
+          `${result.matched_people ?? 0} تطبیق، ` +
           `${result.inserted_reports ?? 0} گزارش جدید، ` +
-          `${result.unmatched_provider_records ?? 0} رکورد بدون تطبیق.`
+          `${result.unmatched_provider_records ?? 0} بدون تطبیق.`
       );
     } catch (error) {
       setMessage(
@@ -250,10 +250,7 @@ export default function AdminPage() {
             "Content-Type": "application/json",
             Prefer: "return=minimal",
           },
-          body: JSON.stringify({
-            status,
-            reviewed_at: new Date().toISOString(),
-          }),
+          body: JSON.stringify({ status }),
         }
       );
 
@@ -299,7 +296,7 @@ export default function AdminPage() {
 
       const data = await response.json();
 
-      if (!response.ok || !data.access_token) {
+      if (!response.ok || !data.access_token || !data.user?.id) {
         throw new Error(
           "ورود ناموفق بود؛ ایمیل و رمز عبور را بررسی کن."
         );
@@ -395,7 +392,6 @@ export default function AdminPage() {
       base,
       result: Number((base * (1 + pct / 100)).toFixed(3)),
       difference: Number((base * pct / 100).toFixed(3)),
-      period: person.forbes_change_period ?? "day",
     };
   }
 
@@ -470,14 +466,11 @@ export default function AdminPage() {
         currentNetWorth < 0
       ) {
         throw new Error("مقدار ثروت فعلی معتبر نیست.");
-  }
-              throw new Error("مقدار ثروت فعلی معتبر نیست.");
       }
 
       const todayKey = getLocalDateKey();
       const previousBase = currentNetWorth;
 
-      // درصد انتخاب‌شده روی ثروت فعلی اعمال می‌شود.
       const autoCalculatedNetWorth = Number(
         (currentNetWorth * (1 + selectedChange / 100)).toFixed(3)
       );
@@ -572,12 +565,7 @@ export default function AdminPage() {
         fontFamily: "Arial, sans-serif",
       }}
     >
-      <div
-        style={{
-          maxWidth: "900px",
-          margin: "auto",
-        }}
-      >
+      <div style={{ maxWidth: "900px", margin: "auto" }}>
         <h1 style={{ color: "#b9f27c" }}>
           پنل مدیریت Econova
         </h1>
@@ -620,9 +608,7 @@ export default function AdminPage() {
                 type="email"
                 autoComplete="username"
                 value={email}
-                onChange={(event) =>
-                  setEmail(event.target.value)
-                }
+                onChange={(event) => setEmail(event.target.value)}
                 required
               />
             </label>
@@ -639,9 +625,7 @@ export default function AdminPage() {
                 type="password"
                 autoComplete="current-password"
                 value={password}
-                onChange={(event) =>
-                  setPassword(event.target.value)
-                }
+                onChange={(event) => setPassword(event.target.value)}
                 required
               />
             </label>
@@ -659,7 +643,7 @@ export default function AdminPage() {
           </form>
         ) : (
           <>
-            <div
+                        <div
               style={{
                 display: "flex",
                 gap: "10px",
@@ -676,9 +660,7 @@ export default function AdminPage() {
                 }}
                 placeholder="جست‌وجوی نام، شرکت یا کشور"
                 value={search}
-                onChange={(event) =>
-                  setSearch(event.target.value)
-                }
+                onChange={(event) => setSearch(event.target.value)}
               />
 
               <button
@@ -922,6 +904,7 @@ export default function AdminPage() {
                             )
                           }
                         />
+
                         <p
                           style={{
                             color: "#94a3b8",
@@ -942,7 +925,7 @@ export default function AdminPage() {
                             person.forbes_change_pct ?? ""
                           )}
                           onChange={(value) =>
-                                                        changeField(
+                            changeField(
                               person.id,
                               "forbes_change_pct",
                               value
@@ -1047,6 +1030,7 @@ export default function AdminPage() {
                             <p>
                               گزارشی برای این میلیاردر پیدا نشد.
                             </p>
+
                             <button
                               type="button"
                               onClick={fetchSuperRichReports}
@@ -1148,8 +1132,7 @@ export default function AdminPage() {
                       })()}
                     </div>
                   )}
-
-                  {source === "superrich" && superRichReport && (
+                                    {source === "superrich" && superRichReport && (
                     <div
                       style={{
                         marginTop: "12px",
@@ -1405,4 +1388,4 @@ function Field({
       />
     </label>
   );
-}
+} 
