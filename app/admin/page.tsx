@@ -394,24 +394,11 @@ export default function AdminPage() {
           : person
       )
     );
-   }
+    }
     async function savePerson(person: Billionaire) {
     const forbesValue = String(
       person.forbes_change_pct ?? ""
     ).trim();
-
-    if (
-      person.daily_change_source === "forbes" &&
-      (
-        forbesValue === "" ||
-        !Number.isFinite(Number(forbesValue))
-      )
-    ) {
-      setMessage(
-        "برای انتخاب فوربز، ابتدا درصد تغییر فوربز را وارد کن."
-      );
-      return;
-    }
 
     const superRichReport =
       person.daily_change_source === "superrich"
@@ -443,13 +430,6 @@ export default function AdminPage() {
       if (person.daily_change_source === "superrich") {
         selectedChange = Number(
           superRichReport!.change_pct
-        );
-      } else if (
-        person.daily_change_source === "forbes" &&
-        (person.forbes_change_period ?? "day") === "day"
-      ) {
-        selectedChange = Number(
-          forbesValue.replace(/^\+/, "")
         );
       } else {
         selectedChange = Number(
@@ -496,20 +476,6 @@ export default function AdminPage() {
             )
           : currentNetWorth;
 
-      const forbesNumber =
-        forbesValue === ""
-          ? null
-          : Number(forbesValue.replace(/^\+/, ""));
-
-      if (
-        forbesNumber !== null &&
-        !Number.isFinite(forbesNumber)
-      ) {
-        throw new Error(
-          "درصد فوربز معتبر نیست."
-        );
-      }
-
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/billionaires?id=eq.${person.id}`,
         {
@@ -542,11 +508,6 @@ export default function AdminPage() {
                 : person.daily_change_date ?? null,
 
             daily_change_pct: selectedChange,
-            forbes_change_pct: forbesNumber,
-
-            forbes_change_period:
-              person.forbes_change_period ?? "day",
-
             daily_change_source:
               person.daily_change_source ?? "manual",
 
@@ -758,6 +719,67 @@ export default function AdminPage() {
                       }}
                     />
                   )}
+                                    flex: "1 1 220px",
+                }}
+                placeholder="جست‌وجوی نام، شرکت یا کشور"
+                value={search}
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+              />
+
+              <button
+                onClick={async () => {
+                  await loadPeople(token);
+                  await loadReports(token);
+                }}
+                disabled={busy}
+                style={buttonStyle}
+              >
+                بارگذاری دوباره
+              </button>
+
+              <button
+                onClick={logout}
+                style={buttonStyle}
+              >
+                خروج
+              </button>
+            </div>
+
+            <p style={{ color: "#94a3b8" }}>
+              تعداد رکوردها: {people.length}
+            </p>
+
+            {/* کارت‌های میلیاردرها */}
+            {visiblePeople.map((person) => {
+              return (
+                <section
+                  key={person.id}
+                  style={{
+                    background: "#111e30",
+                    border: "1px solid #24354b",
+                    borderRadius: "14px",
+                    padding: "16px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <h3>
+                    رتبه {person.rank}: {person.name}
+                  </h3>
+
+                  {person.image_url && (
+                    <img
+                      src={person.image_url}
+                      alt={person.name}
+                      style={{
+                        width: "76px",
+                        height: "76px",
+                        objectFit: "cover",
+                        borderRadius: "12px",
+                      }}
+                    />
+                  )}
 
                   <Field
                     label="رتبه"
@@ -832,156 +854,6 @@ export default function AdminPage() {
                       )
                     }
                   />
-                                    {/* گزارش فوربز */}
-                  <div
-                    style={{
-                      marginTop: "20px",
-                      padding: "15px",
-                      border: "1px solid #36533b",
-                      borderRadius: "12px",
-                      background: "#0b1c1b",
-                    }}
-                  >
-                    <h3
-                      style={{
-                        color: "#b9f27c",
-                        marginTop: 0,
-                      }}
-                    >
-                      گزارش تغییر ثروت Forbes
-                    </h3>
-
-                    <Field
-                      label="درصد تغییر فوربز (ورود دستی)"
-                      value={String(
-                        person.forbes_change_pct ?? ""
-                      )}
-                      onChange={(value) =>
-                        changeField(
-                          person.id,
-                          "forbes_change_pct",
-                          value
-                        )
-                      }
-                    />
-
-                    <p
-                      style={{
-                        color: "#94a3b8",
-                        fontSize: "12px",
-                        lineHeight: 1.8,
-                        margin: "7px 0",
-                      }}
-                    >
-                      درصد فوربز در حال حاضر به‌صورت دستی وارد می‌شود؛
-                      این بخش به API زنده فوربز متصل نیست.
-                    </p>
-
-                    <label
-                      style={{
-                        display: "block",
-                        marginTop: "12px",
-                      }}
-                    >
-                      بازه گزارش فوربز
-
-                      <select
-                        value={
-                          person.forbes_change_period ?? "day"
-                        }
-                        onChange={(event) =>
-                          changeField(
-                            person.id,
-                            "forbes_change_period",
-                            event.target.value
-                          )
-                        }
-                        style={selectStyle}
-                      >
-                        <option value="day">روزانه</option>
-                        <option value="week">هفتگی</option>
-                      </select>
-                    </label>
-
-                    {(() => {
-                      const percentageText = String(
-                        person.forbes_change_pct ?? ""
-                      ).trim();
-
-                      const percentage = Number(
-                        percentageText.replace(/^\+/, "")
-                      );
-
-                      const wealth = Number(
-                        person.net_worth_billions
-                      );
-
-                      if (
-                        percentageText === "" ||
-                        !Number.isFinite(percentage) ||
-                        !Number.isFinite(wealth)
-                      ) {
-                        return null;
-                      }
-
-                      const amount =
-                        (wealth * percentage) / 100;
-
-                      return (
-                        <div
-                          style={{
-                            marginTop: "12px",
-                            padding: "12px",
-                            borderRadius: "9px",
-                            background: "#132a20",
-                            border: "1px solid #36533b",
-                          }}
-                        >
-                          <div
-                            style={{
-                              color: "#94a3b8",
-                              fontSize: "12px",
-                            }}
-                          >
-                            مبلغ تغییر محاسبه‌شده بر اساس فوربز
-                            {" ("}
-                            {person.forbes_change_period === "week"
-                              ? "هفتگی"
-                              : "روزانه"}
-                            {")"}
-                          </div>
-
-                          <strong
-                            style={{
-                              display: "block",
-                              marginTop: "6px",
-                              color:
-                                amount > 0
-                                  ? "#b9f27c"
-                                  : amount < 0
-                                  ? "#fca5a5"
-                                  : "#f8fafc",
-                              fontSize: "18px",
-                            }}
-                          >
-                            {amount > 0 ? "+" : ""}
-                            {amount.toFixed(2)} میلیارد دلار
-                          </strong>
-
-                          <div
-                            style={{
-                              color: "#94a3b8",
-                              fontSize: "12px",
-                              marginTop: "5px",
-                            }}
-                          >
-                            این مبلغ تخمینی است و ثروت اصلی را
-                            تغییر نمی‌دهد.
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
 
                   {/* انتخاب منبع اصلی */}
                   <div
@@ -1003,7 +875,6 @@ export default function AdminPage() {
                       onChange={(event) => {
                         const source = event.target.value as
                           | "manual"
-                          | "forbes"
                           | "superrich";
 
                         changeField(
@@ -1022,7 +893,6 @@ export default function AdminPage() {
                       style={selectStyle}
                     >
                       <option value="manual">ورود دستی</option>
-                      <option value="forbes">Forbes</option>
                       <option value="superrich">SuperRich</option>
                     </select>
 
@@ -1041,18 +911,6 @@ export default function AdminPage() {
                       }
                     />
 
-                    <p
-                      style={{
-                        color: "#94a3b8",
-                        fontSize: "12px",
-                        lineHeight: 1.8,
-                      }}
-                    >
-                      اگر Forbes انتخاب شود، درصد روزانه فوربز
-                      هنگام ذخیره به‌عنوان درصد تغییر اصلی ثبت
-                      می‌شود. در حالت دستی یا SuperRich، درصد
-                      تغییر اصلی از منبع انتخاب‌شده گرفته می‌شود.
-                    </p>
                   </div>
 
                   {person.daily_change_source === "manual" && (
