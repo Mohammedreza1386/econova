@@ -246,7 +246,8 @@ export default function AdminPage() {
 
     try {
       const selectedChange =
-        person.daily_change_source === "forbes"
+        person.daily_change_source === "forbes" &&
+        (person.forbes_change_period ?? "day") === "day"
           ? Number(forbesValue.replace(/^\+/, ""))
           : Number(
               String(person.daily_change_pct).replace(/^\+/, "")
@@ -479,7 +480,8 @@ export default function AdminPage() {
             <p style={{ color: "#94a3b8" }}>
               تعداد رکوردها: {people.length}
             </p>
-                        {/* گزارش‌های خودکار تغییر ثروت */}
+
+            {/* گزارش‌های خودکار تغییر ثروت */}
             <section
               style={{
                 background: "#111e30",
@@ -543,7 +545,7 @@ export default function AdminPage() {
                 >
                   <strong>
                     {report.billionaire_name}
-                  </strong>
+                                      </strong>
 
                   <p
                     style={{
@@ -813,6 +815,81 @@ export default function AdminPage() {
                     درصد مثبت یعنی افزایش ثروت و درصد
                     منفی یعنی کاهش ثروت.
                   </p>
+
+                  {/* محاسبه مبلغ تغییر فوربز */}
+                  {(() => {
+                    const percentageText = String(
+                      person.forbes_change_pct ?? ""
+                    ).trim();
+
+                    const percentage = Number(
+                      percentageText.replace(/^\+/, "")
+                    );
+
+                    const wealth = Number(person.net_worth_billions);
+
+                    if (
+                      percentageText === "" ||
+                      !Number.isFinite(percentage) ||
+                      !Number.isFinite(wealth)
+                    ) {
+                      return null;
+                    }
+
+                    const amount = (wealth * percentage) / 100;
+
+                    return (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "12px",
+                          borderRadius: "9px",
+                          background: "#132a20",
+                          border: "1px solid #36533b",
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#94a3b8",
+                            fontSize: "12px",
+                          }}
+                        >
+                          مبلغ تغییر محاسبه‌شده بر اساس فوربز (
+                          {person.forbes_change_period === "week"
+                            ? "هفتگی"
+                            : "روزانه"}
+                          )
+                        </div>
+
+                        <strong
+                          style={{
+                            display: "block",
+                            marginTop: "6px",
+                            color:
+                              amount > 0
+                                ? "#b9f27c"
+                                : amount < 0
+                                ? "#fca5a5"
+                                : "#f8fafc",
+                            fontSize: "18px",
+                          }}
+                        >
+                          {amount > 0 ? "+" : ""}
+                          {amount.toFixed(2)} میلیارد دلار
+                        </strong>
+
+                        <div
+                          style={{
+                            color: "#94a3b8",
+                            fontSize: "12px",
+                            marginTop: "5px",
+                          }}
+                        >
+                          ثروت اصلی تغییر نمی‌کند؛ این فقط مبلغ تغییر تخمینی است.
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div
