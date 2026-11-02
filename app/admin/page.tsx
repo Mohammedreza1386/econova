@@ -411,8 +411,9 @@ export default function AdminPage() {
           : person
       )
     );
-    }
-    async function savePerson(person: Billionaire) {
+  }
+
+  async function savePerson(person: Billionaire) {
     const source = person.daily_change_source ?? "manual";
 
     const superRichReport =
@@ -469,6 +470,8 @@ export default function AdminPage() {
         currentNetWorth < 0
       ) {
         throw new Error("مقدار ثروت فعلی معتبر نیست.");
+  }
+              throw new Error("مقدار ثروت فعلی معتبر نیست.");
       }
 
       const todayKey = getLocalDateKey();
@@ -862,7 +865,8 @@ export default function AdminPage() {
                       )
                     }
                   />
-                                    {/* انتخاب منبع درصد تغییر */}
+
+                  {/* انتخاب منبع درصد تغییر */}
                   <div
                     style={{
                       marginTop: "16px",
@@ -938,7 +942,7 @@ export default function AdminPage() {
                             person.forbes_change_pct ?? ""
                           )}
                           onChange={(value) =>
-                            changeField(
+                                                        changeField(
                               person.id,
                               "forbes_change_pct",
                               value
@@ -1103,7 +1107,7 @@ export default function AdminPage() {
                             {source === "forbes" && (
                               <div>
                                 بازه:{" "}
-                                {preview.period === "week"
+                                {person.forbes_change_period === "week"
                                   ? "هفتگی"
                                   : "روزانه"}
                               </div>
@@ -1401,4 +1405,4 @@ function Field({
       />
     </label>
   );
- }
+}
