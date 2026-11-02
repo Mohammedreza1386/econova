@@ -2537,6 +2537,33 @@ const previousRows = previousResponse as {
           padding: 11px 17px;
           font-size: 12px;
         }
+        .eco-account-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 10px 15px;
+  border: 1px solid rgba(185, 242, 124, 0.35);
+  border-radius: 13px;
+  background: rgba(185, 242, 124, 0.08);
+  color: #b9f27c;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: 0.2s ease;
+}
+
+.eco-account-button:hover {
+  background: rgba(185, 242, 124, 0.16);
+  border-color: #b9f27c;
+  box-shadow: 0 0 20px rgba(185, 242, 124, 0.12);
+}
+
+.eco-account-button svg {
+  flex-shrink: 0;
+}
 
         .eco-hero {
           display: grid;
