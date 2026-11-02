@@ -100,6 +100,54 @@ export default function AdminPage() {
     }
   }
 
+  // دریافت گزارش‌های جدید از SuperRich
+  async function fetchSuperRichReports() {
+    if (!token) {
+      setMessage("ابتدا وارد حساب مدیر شو.");
+      return;
+    }
+
+    setBusy(true);
+    setMessage("در حال دریافت اطلاعات از SuperRich...");
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/econova-superrich-reports`,
+        {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.error || "دریافت اطلاعات SuperRich ناموفق بود."
+        );
+      }
+
+      await loadReports(token);
+
+      setMessage(
+        `دریافت اطلاعات انجام شد؛ ${result.inserted_reports} گزارش جدید ثبت شد.`
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "خطا در دریافت اطلاعات SuperRich."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function reviewReport(
     reportId: string,
     status: "approved" | "rejected"
@@ -476,12 +524,10 @@ export default function AdminPage() {
                 خروج
               </button>
             </div>
-
-            <p style={{ color: "#94a3b8" }}>
+                        <p style={{ color: "#94a3b8" }}>
               تعداد رکوردها: {people.length}
             </p>
 
-            {/* گزارش‌های خودکار تغییر ثروت */}
             <section
               style={{
                 background: "#111e30",
@@ -506,10 +552,25 @@ export default function AdminPage() {
                   lineHeight: 1.8,
                 }}
               >
-                گزارش‌های SuperRich هر ۳۰ دقیقه جمع‌آوری
-                می‌شوند. تأیید گزارش فقط وضعیت آن را ثبت
-                می‌کند و ثروت اصلی را تغییر نمی‌دهد.
+                گزارش‌های دریافتی از SuperRich در این قسمت
+                نمایش داده می‌شوند. گزارش‌ها ابتدا در انتظار
+                بررسی هستند و تأیید آن‌ها ثروت اصلی را تغییر
+                نمی‌دهد.
               </p>
+
+              <button
+                onClick={fetchSuperRichReports}
+                disabled={busy}
+                style={{
+                  ...buttonStyle,
+                  background: "#15803d",
+                  marginTop: "5px",
+                }}
+              >
+                {busy
+                  ? "در حال دریافت..."
+                  : "دریافت اطلاعات جدید از SuperRich"}
+              </button>
 
               <p style={{ color: "#cbd5e1" }}>
                 در انتظار بررسی:{" "}
@@ -525,14 +586,11 @@ export default function AdminPage() {
                 </p>
               )}
 
-              {!reportsLoading &&
-                reports.length === 0 && (
-                  <p style={{ color: "#94a3b8" }}>
-                    فعلاً گزارشی برای نمایش وجود ندارد.
-                    گزارش‌های دارای تغییر غیرصفر پس از دریافت
-                    از منبع اینجا ظاهر می‌شوند.
-                  </p>
-                )}
+              {!reportsLoading && reports.length === 0 && (
+                <p style={{ color: "#94a3b8" }}>
+                  فعلاً گزارشی برای نمایش وجود ندارد.
+                </p>
+              )}
 
               {reports.map((report) => (
                 <div
@@ -543,9 +601,7 @@ export default function AdminPage() {
                     marginTop: "10px",
                   }}
                 >
-                  <strong>
-                    {report.billionaire_name}
-                                      </strong>
+                  <strong>{report.billionaire_name}</strong>
 
                   <p
                     style={{
@@ -556,10 +612,8 @@ export default function AdminPage() {
                   >
                     منبع: {report.source_name}
                     {" · "}تغییر ثروت:{" "}
-                    {Number(
-                      report.change_billions
-                    ).toFixed(3)}{" "}
-                    میلیارد دلار
+                    {Number(report.change_billions).toFixed(3)}
+                    {" "}میلیارد دلار
                     {" · "}درصد:{" "}
                     {report.change_pct == null
                       ? "—"
@@ -617,10 +671,7 @@ export default function AdminPage() {
                     >
                       <button
                         onClick={() =>
-                          reviewReport(
-                            report.id,
-                            "approved"
-                          )
+                          reviewReport(report.id, "approved")
                         }
                         disabled={busy}
                         style={{
@@ -633,10 +684,7 @@ export default function AdminPage() {
 
                       <button
                         onClick={() =>
-                          reviewReport(
-                            report.id,
-                            "rejected"
-                          )
+                          reviewReport(report.id, "rejected")
                         }
                         disabled={busy}
                         style={{
@@ -657,8 +705,8 @@ export default function AdminPage() {
                   fontSize: "12px",
                 }}
               >
-                تأیید گزارش به معنی ثبت بررسی است و
-                مقدار ثروت اصلی را تغییر نمی‌دهد.
+                تأیید گزارش فقط وضعیت بررسی را ثبت می‌کند؛
+                ثروت اصلی باید جداگانه توسط مدیر تغییر کند.
               </p>
             </section>
 
@@ -726,19 +774,13 @@ export default function AdminPage() {
                   label="لینک تصویر (URL)"
                   value={person.image_url ?? ""}
                   onChange={(v) =>
-                    changeField(
-                      person.id,
-                      "image_url",
-                      v
-                    )
+                    changeField(person.id, "image_url", v)
                   }
                 />
 
                 <Field
                   label="ثروت (میلیارد دلار)"
-                  value={String(
-                    person.net_worth_billions
-                  )}
+                  value={String(person.net_worth_billions)}
                   onChange={(v) =>
                     changeField(
                       person.id,
@@ -789,8 +831,7 @@ export default function AdminPage() {
                     بازه گزارش فوربز
                     <select
                       value={
-                        person.forbes_change_period ??
-                        "day"
+                        person.forbes_change_period ?? "day"
                       }
                       onChange={(event) =>
                         changeField(
@@ -812,11 +853,10 @@ export default function AdminPage() {
                       fontSize: "12px",
                     }}
                   >
-                    درصد مثبت یعنی افزایش ثروت و درصد
-                    منفی یعنی کاهش ثروت.
+                    درصد مثبت یعنی افزایش ثروت و درصد منفی
+                    یعنی کاهش ثروت.
                   </p>
 
-                  {/* محاسبه مبلغ تغییر فوربز */}
                   {(() => {
                     const percentageText = String(
                       person.forbes_change_pct ?? ""
@@ -826,7 +866,9 @@ export default function AdminPage() {
                       percentageText.replace(/^\+/, "")
                     );
 
-                    const wealth = Number(person.net_worth_billions);
+                    const wealth = Number(
+                      person.net_worth_billions
+                    );
 
                     if (
                       percentageText === "" ||
@@ -836,7 +878,8 @@ export default function AdminPage() {
                       return null;
                     }
 
-                    const amount = (wealth * percentage) / 100;
+                    const amount =
+                      (wealth * percentage) / 100;
 
                     return (
                       <div
@@ -885,7 +928,8 @@ export default function AdminPage() {
                             marginTop: "5px",
                           }}
                         >
-                          ثروت اصلی تغییر نمی‌کند؛ این فقط مبلغ تغییر تخمینی است.
+                          این مبلغ تخمینی است و ثروت اصلی را
+                          تغییر نمی‌دهد.
                         </div>
                       </div>
                     );
@@ -906,34 +950,31 @@ export default function AdminPage() {
 
                   <select
                     value={
-                      person.daily_change_source ??
-                      "manual"
+                      person.daily_change_source ?? "manual"
                     }
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const source = event.target.value;
+
                       changeField(
                         person.id,
                         "daily_change_source",
-                        event.target.value
-                      )
-                    }
+                        source
+                      );
+
+                      if (source === "superrich") {
+                        fetchSuperRichReports();
+                      }
+                    }}
                     style={selectStyle}
                   >
-                    <option value="manual">
-                      ورود دستی
-                    </option>
-                    <option value="forbes">
-                      Forbes
-                    </option>
-                    <option value="superrich">
-                      SuperRich
-                    </option>
+                    <option value="manual">ورود دستی</option>
+                    <option value="forbes">Forbes</option>
+                    <option value="superrich">SuperRich</option>
                   </select>
 
                   <Field
                     label="درصد تغییر اصلی"
-                    value={String(
-                      person.daily_change_pct
-                    )}
+                    value={String(person.daily_change_pct)}
                     onChange={(v) =>
                       changeField(
                         person.id,
@@ -950,11 +991,10 @@ export default function AdminPage() {
                       lineHeight: 1.8,
                     }}
                   >
-                    اگر Forbes را انتخاب کنی، درصد فوربز
-                    هنگام ذخیره به‌عنوان درصد تغییر اصلی
-                    ثبت می‌شود. در حالت دستی یا SuperRich،
-                    مقدار درصد اصلی از فیلد بالا گرفته
-                    می‌شود.
+                    با انتخاب SuperRich، گزارش‌های منبع
+                    دریافت می‌شوند و در بخش گزارش‌ها نمایش
+                    داده می‌شوند. مقدار ثروت اصلی به‌صورت
+                    خودکار تغییر نمی‌کند.
                   </p>
                 </div>
 
@@ -966,9 +1006,7 @@ export default function AdminPage() {
                     marginTop: "16px",
                   }}
                 >
-                  {busy
-                    ? "در حال ذخیره..."
-                    : "ذخیره تغییرات"}
+                  {busy ? "در حال ذخیره..." : "ذخیره تغییرات"}
                 </button>
               </section>
             ))}
