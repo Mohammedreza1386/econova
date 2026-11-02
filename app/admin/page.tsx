@@ -40,7 +40,6 @@ type WealthReport = {
 };
 
 type NewPerson = {
-  rank: string;
   name: string;
   company: string;
   country: string;
@@ -57,7 +56,6 @@ type Preview = {
 };
 
 const emptyNewPerson: NewPerson = {
-  rank: "",
   name: "",
   company: "",
   country: "",
@@ -325,6 +323,86 @@ export default function AdminPage() {
     setNewPerson((current) => ({ ...current, [field]: value }));
   }
 
+  async function uploadPhoto(file: File, owner: string) {
+    if (!token) throw new Error("ابتدا وارد حساب مدیر شو.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      throw new Error("فقط عکس‌های JPG، PNG یا WEBP مجاز هستند.");
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error("حجم عکس نباید بیشتر از ۵ مگابایت باشد.");
+    }
+    const extension = file.type === "image/png" ? "png" :
+      file.type === "image/webp" ? "webp" : "jpg";
+    const filename = owner + "-" + Date.now() + "-" +
+      Math.random().toString(36).slice(2, 8) + "." + extension;
+    const path = "billionaires/" + filename;
+    const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+    const response = await fetch(
+      SUPABASE_URL + "/storage/v1/object/billionaire-photos/" + encodedPath,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + token,
+          "Content-Type": file.type,
+          "x-upsert": "true",
+        },
+        body: file,
+      }
+    );
+    if (!response.ok) throw new Error("آپلود عکس ناموفق بود: " + await response.text());
+    return SUPABASE_URL + "/storage/v1/object/public/billionaire-photos/" + encodedPath;
+  }
+
+  async function uploadNewPhoto(file: File) {
+    setBusy(true);
+    setMessage("در حال آپلود عکس...");
+    try {
+      const url = await uploadPhoto(file, "new");
+      changeNewPerson("image_url", url);
+      setMessage("عکس آپلود شد؛ با ثبت میلیاردر ذخیره نهایی می‌شود.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "خطا در آپلود عکس.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function uploadPersonPhoto(person: Billionaire, file: File) {
+    setBusy(true);
+    setMessage("در حال آپلود عکس " + person.name + "...");
+    try {
+      const url = await uploadPhoto(file, person.id);
+      const response = await fetch(
+        SUPABASE_URL + "/rest/v1/billionaires?id=eq." + person.id,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: "Bearer " + token,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            image_url: url,
+            updated_at: new Date().toISOString(),
+          }),
+        }
+      );
+      if (!response.ok) throw new Error(await response.text());
+      setPeople((current) =>
+        current.map((item) =>
+          item.id === person.id ? { ...item, image_url: url } : item
+        )
+      );
+      setMessage("عکس " + person.name + " با موفقیت ذخیره شد.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "خطا در ذخیره عکس.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function fetchSuperRichReports() {
     if (!token) return;
 
@@ -374,8 +452,7 @@ export default function AdminPage() {
     try {
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/billionaire_wealth_change_reports?id=eq.${reportId}`,
-        {
-          method: "PATCH",
+                  {          method: "PATCH",
           headers: {
             apikey: SUPABASE_KEY,
             Authorization: `Bearer ${token}`,
@@ -409,7 +486,6 @@ export default function AdminPage() {
 
     const name = newPerson.name.trim();
     const wealth = numberValue(newPerson.net_worth_billions);
-    const rank = Number(newPerson.rank);
 
     if (!name) {
       setMessage("نام میلیاردر را وارد کن.");
@@ -421,18 +497,8 @@ export default function AdminPage() {
       return;
     }
 
-    if (!Number.isInteger(rank) || rank < 1 || rank > 500) {
-      setMessage("رتبه باید عدد صحیح بین ۱ تا ۵۰۰ باشد.");
-      return;
-    }
-
     if (people.some((person) => normalizeName(person.name) === normalizeName(name))) {
       setMessage("این فرد قبلاً ثبت شده است.");
-      return;
-    }
-
-    if (people.some((person) => Number(person.rank) === rank)) {
-      setMessage("این رتبه قبلاً استفاده شده است.");
       return;
     }
 
@@ -449,7 +515,7 @@ export default function AdminPage() {
           Prefer: "return=representation",
         },
         body: JSON.stringify({
-          rank,
+          rank: Math.max(0, ...people.map((person) => Number(person.rank) || 0)) + 1,
           name,
           company: newPerson.company.trim() || null,
           country: newPerson.country.trim() || null,
@@ -518,14 +584,8 @@ export default function AdminPage() {
       return;
     }
 
-    const rank = Number(person.rank);
     const wealth = numberValue(person.net_worth_billions);
     const source = person.daily_change_source ?? "manual";
-
-    if (!Number.isInteger(rank) || rank < 1 || rank > 500) {
-      setMessage("رتبه باید عدد صحیح بین ۱ تا ۵۰۰ باشد.");
-      return;
-    }
 
     if (!person.name.trim()) {
       setMessage("نام میلیاردر نمی‌تواند خالی باشد.");
@@ -587,7 +647,6 @@ export default function AdminPage() {
       const now = new Date().toISOString();
 
       const updateData: Record<string, unknown> = {
-        rank,
         name: person.name.trim(),
         company: person.company?.trim() || null,
         country: person.country?.trim() || null,
@@ -838,9 +897,9 @@ export default function AdminPage() {
               ثبت میلیاردر جدید
             </h3>
 
-            <Field label="رتبه" value={newPerson.rank}
-              onChange={(value) => changeNewPerson("rank", value)}
-              style={inputStyle} type="number" />
+            <p style={{ color: "#94a3b8", fontSize: "13px" }}>
+              رتبه پس از ثبت، به‌صورت خودکار بر اساس ثروت تعیین می‌شود.
+            </p>
 
             <Field label="نام" value={newPerson.name}
               onChange={(value) => changeNewPerson("name", value)}
@@ -848,15 +907,38 @@ export default function AdminPage() {
 
             <Field label="شرکت" value={newPerson.company}
               onChange={(value) => changeNewPerson("company", value)}
-              style={inputStyle} />
+                            style={inputStyle} />
 
             <Field label="کشور" value={newPerson.country}
               onChange={(value) => changeNewPerson("country", value)}
               style={inputStyle} />
 
-            <Field label="لینک تصویر" value={newPerson.image_url}
+            <Field label="لینک تصویر (اختیاری)" value={newPerson.image_url}
               onChange={(value) => changeNewPerson("image_url", value)}
               style={inputStyle} />
+
+            <label style={{ display: "block", marginTop: "12px" }}>
+              انتخاب عکس از گالری گوشی
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={busy}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadNewPhoto(file);
+                  event.currentTarget.value = "";
+                }}
+                style={{ ...inputStyle, padding: "9px" }}
+              />
+            </label>
+
+            {newPerson.image_url && (
+              <img
+                src={newPerson.image_url}
+                alt="پیش‌نمایش عکس"
+                style={{ width: "90px", height: "90px", objectFit: "cover", borderRadius: "12px", marginTop: "10px" }}
+              />
+            )}
 
             <Field label="ثروت اولیه (میلیارد دلار)"
               value={newPerson.net_worth_billions}
@@ -966,9 +1048,9 @@ export default function AdminPage() {
               />
             )}
 
-            <Field label="رتبه" value={String(person.rank)}
-              onChange={(value) => changeField(person.id, "rank", value)}
-              style={inputStyle} type="number" />
+            <p style={{ color: "#b9f27c", fontSize: "13px" }}>
+              رتبه خودکار فعلی: {person.rank} · براساس ثروت ثبت‌شده
+            </p>
 
             <Field label="نام" value={person.name}
               onChange={(value) => changeField(person.id, "name", value)}
@@ -982,9 +1064,24 @@ export default function AdminPage() {
               onChange={(value) => changeField(person.id, "country", value)}
               style={inputStyle} />
 
-            <Field label="لینک تصویر" value={person.image_url ?? ""}
+            <Field label="لینک تصویر (اختیاری)" value={person.image_url ?? ""}
               onChange={(value) => changeField(person.id, "image_url", value)}
               style={inputStyle} />
+
+            <label style={{ display: "block", marginTop: "12px" }}>
+              تغییر عکس از گالری گوشی
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={busy}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadPersonPhoto(person, file);
+                  event.currentTarget.value = "";
+                }}
+                style={{ ...inputStyle, padding: "9px" }}
+              />
+            </label>
 
             <Field label="ثروت فعلی (میلیارد دلار)"
               value={String(person.net_worth_billions)}
@@ -1263,4 +1360,5 @@ function Field({
       />
     </label>
   );
-}
+                    }
+                    
