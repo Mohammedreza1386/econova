@@ -1279,6 +1279,9 @@ const saveNews = async () => {
       month: "2-digit",
       day: "2-digit",
     }).format(new Date());
+    const sourceCheckedAt = personSource.trim()
+  ? new Date().toISOString()
+  : null;
 
     try {
       // خواندن ثروت فعلی از دیتابیس، پیش از ثبت مقدار جدید
