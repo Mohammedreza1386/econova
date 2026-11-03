@@ -333,8 +333,17 @@ function MiniWealthChart({ person }: { person: Billionaire }) {
     const month = Number(parts.find((p) => p.type === "month")?.value);
     const day = Number(parts.find((p) => p.type === "day")?.value);
     if (selectedRange === "week") {
-      const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
-      return newYorkLocalMidnightUtc(year, month, day - weekday);
+      const weekday = new Date(
+  Date.UTC(year, month - 1, day)
+).getUTCDay();
+
+const daysSinceSaturday = (weekday + 6) % 7;
+
+return newYorkLocalMidnightUtc(
+  year,
+  month,
+  day - daysSinceSaturday
+);
     }
     if (selectedRange === "month") return newYorkLocalMidnightUtc(year, month, 1);
     return newYorkLocalMidnightUtc(year, 1, 1);
