@@ -363,6 +363,15 @@ export default async function BillionaireProfilePage({
     console.error("History fetch failed:", error);
     history = [];
   }
+  
+  let news: BillionaireNews[] = [];
+
+try {
+  news = await getBillionaireNews(person.id);
+} catch (error) {
+  console.error("News fetch failed:", error);
+  news = [];
+}
 
   const canonical =
     `${SITE_URL}/billionaires/${encodeURIComponent(id)}`;
