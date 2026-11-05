@@ -439,9 +439,10 @@ try {
       />
 
       <ProfileClient
-        person={person}
-        initialHistory={history}
-      />
+  person={person}
+  initialHistory={history}
+  initialNews={news}
+/>
     </>
   );
       }
