@@ -474,7 +474,96 @@ export default function ProfileClient({
         .history-card{margin-top:0}.section-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.section-heading h2{margin:4px 0 8px;font-size:clamp(20px,3vw,27px)}.section-heading p:not(.eyebrow){margin:0;color:#93a197;font-size:12px;line-height:1.8}.record-count{white-space:nowrap;color:#b9f27c;font-size:12px}
         .history-range{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 12px}.history-range button{border:1px solid #344a39;border-radius:999px;padding:9px 15px;color:#c9d4cb;background:#151f18;font:inherit;font-size:12px;cursor:pointer}.history-range button.active{color:#10160e;background:#b9f27c;border-color:#b9f27c;font-weight:800}
         .chart-wrap{padding:18px;border:1px solid #24372a;border-radius:14px;background:#0a110c}.wealth-chart{display:block;width:100%;height:230px;overflow:visible}.chart-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#9ba99e;font-size:10px}.chart-foot strong{color:#eaf2eb;font-size:13px}
-        .empty{padding:18px;color:#a7b4aa;line-height:1.9}.history-list{margin-top:20px}.history-list-heading{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;color:#dce6dd;font-size:12px}.history-list-heading span{color:#87968b;font-size:10px}.history-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid #25342a;color:#aab7ac;font-size:12px}.history-row strong{color:#e9f0e9;font-size:13px}.profile-footer{padding:22px 4px;color:#819087;font-size:11px;line-height:1.8}
+       .empty{padding:18px;color:#a7b4aa;line-height:1.9}.history-list{margin-top:20px}.history-list-heading{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;color:#dce6dd;font-size:12px}.history-list-heading span{color:#87968b;font-size:10px}.history-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid #25342a;color:#aab7ac;font-size:12px}.history-row strong{color:#e9f0e9;font-size:13px}.profile-footer{padding:22px 4px;color:#819087;font-size:11px;line-height:1.8}
+       .news-section{
+  width:min(1100px,100%);
+  margin:18px auto 0;
+  padding:22px;
+  border:1px solid #293b2e;
+  border-radius:17px;
+  background:#101812;
+}
+.news-heading{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  margin-bottom:18px;
+}
+.news-heading h2{
+  margin:5px 0;
+  font-size:25px;
+}
+.news-heading p:not(.eyebrow){
+  color:#93a197;
+  font-size:12px;
+}
+.news-count{
+  color:#b9f27c;
+  font-size:12px;
+}
+.news-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.news-card{
+  overflow:hidden;
+  border:1px solid #293b2e;
+  border-radius:14px;
+  background:#0b120d;
+}
+.news-image{
+  width:100%;
+  height:190px;
+  object-fit:cover;
+}
+.news-content{
+  padding:16px;
+}
+.news-source{
+  color:#b9f27c;
+  font-size:11px;
+  font-weight:800;
+}
+.news-content h3{
+  margin:10px 0;
+  color:#f3f6f1;
+  font-size:16px;
+  line-height:1.8;
+}
+.news-content>p{
+  color:#a7b4aa;
+  font-size:12px;
+  line-height:1.9;
+}
+.news-bottom{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-top:18px;
+  padding-top:12px;
+  border-top:1px solid #25342a;
+  font-size:11px;
+  color:#89988d;
+}
+.news-bottom a{
+  color:#b9f27c;
+  text-decoration:none;
+}
+.news-empty{
+  padding:24px;
+  text-align:center;
+  color:#9eafa2;
+  font-size:13px;
+}
+@media(max-width:650px){
+  .news-section{padding:16px}
+  .news-grid{grid-template-columns:1fr}
+  .news-image{height:180px}
+  .news-heading h2{font-size:20px}
+}
         @media(max-width:650px){.profile-page{padding:14px}.profile-header{margin-bottom:20px}.profile-hero{grid-template-columns:1fr;padding:18px;gap:18px}.profile-photo{max-width:210px;margin:0 auto}.stats-grid{grid-template-columns:1fr;gap:10px}.stat-card,.history-card{padding:16px}.section-heading{flex-direction:column}.wealth-chart{height:190px}.history-row{font-size:11px}}
       `}</style>
     </main>
