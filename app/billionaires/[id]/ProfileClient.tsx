@@ -25,6 +25,17 @@ type HistoryPoint = {
   source_url: string | null;
 };
 
+type BillionaireNews = {
+  id: string;
+  billionaire_id: string;
+  title: string;
+  summary: string | null;
+  source_name: string;
+  source_url: string;
+  image_url: string | null;
+  published_at: string | null;
+};
+
 type Props = {
   person: Billionaire;
   initialHistory: HistoryPoint[];
