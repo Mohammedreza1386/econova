@@ -389,6 +389,68 @@ export default function ProfileClient({
         )}
       </section>
 
+      <section className="news-section">
+  <div className="news-heading">
+    <div>
+      <p className="eyebrow">LATEST RELATED NEWS</p>
+      <h2>آخرین اخبار مرتبط</h2>
+      <p>جدیدترین خبرهای مرتبط با {person.name}</p>
+    </div>
+    <span className="news-count">
+      {initialNews.length.toLocaleString("fa-IR")} خبر
+    </span>
+  </div>
+
+  {initialNews.length === 0 ? (
+    <div className="news-empty">
+      هنوز خبری برای این شخص ثبت نشده است.
+    </div>
+  ) : (
+    <div className="news-grid">
+      {initialNews.map((news) => (
+        <article className="news-card" key={news.id}>
+          {news.image_url && (
+            <img
+              src={news.image_url}
+              alt={news.title}
+              loading="lazy"
+              className="news-image"
+            />
+          )}
+
+          <div className="news-content">
+            <span className="news-source">
+              {news.source_name}
+            </span>
+
+            <h3>{news.title}</h3>
+
+            {news.summary && (
+              <p>{news.summary}</p>
+            )}
+
+            <div className="news-bottom">
+              <span>
+                {news.published_at
+                  ? dateLabel(news.published_at)
+                  : "تاریخ نامشخص"}
+              </span>
+
+              <a
+                href={news.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                مطالعه خبر ↗
+              </a>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  )}
+</section>
+
       <footer className="profile-footer">
         تمام مقادیر بر اساس اطلاعات فعلی و تاریخچه ذخیره‌شده در پایگاه داده Econova نمایش داده می‌شوند.
       </footer>
