@@ -39,6 +39,7 @@ type BillionaireNews = {
 type Props = {
   person: Billionaire;
   initialHistory: HistoryPoint[];
+  initialNews: BillionaireNews[];
 };
 
 const money = (value: number | string | null | undefined) => {
