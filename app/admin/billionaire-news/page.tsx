@@ -3,7 +3,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 
 const SUPABASE_URL = "https://zusbebjskchgehdjvpsm.supabase.co";
-const SUPABASE_KEY = "sb_publishable_WGMEA7-K8FAResrVCL8GJQ_6KCxrvm";
+const SUPABASE_KEY = "sb_publishable_WGMEA7-K8FAResrVCL8GJQ_6KCxrvmK";
 
 type Person = {
   id: string;
