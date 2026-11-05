@@ -60,6 +60,7 @@ const dateLabel = (value: string) =>
 export default function ProfileClient({
   person,
   initialHistory,
+  initialNews,
 }: Props) {
   const [historyRange, setHistoryRange] = useState<
     "all" | "week" | "month" | "year"
