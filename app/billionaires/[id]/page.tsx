@@ -268,6 +268,33 @@ async function getBillionaireHistory(
     );
 }
 
+async function getBillionaireNews(
+  billionaireId: string | number
+): Promise<BillionaireNews[]> {
+  const query = new URLSearchParams({
+    select:
+      "id,billionaire_id,title,summary,source_name,source_url,image_url,published_at",
+    billionaire_id: `eq.${String(billionaireId)}`,
+    order: "published_at.desc.nullslast",
+    limit: "2",
+  });
+
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/billionaire_related_news?${query}`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!response.ok) return [];
+
+  return response.json();
+}
+
 export default async function BillionaireProfilePage({
   params,
 }: PageProps) {
