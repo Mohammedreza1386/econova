@@ -1116,7 +1116,6 @@ const [dailyTotalStatus, setDailyTotalStatus] = useState("در انتظار ثب
   };
 
   const openNewsEditor = (person: Billionaire, article?: BillionaireNews) => {
-    setEditingNewsRank(Number(person.rank));
     setEditingNewsPersonId(String(person.id));
     setEditingNewsId(article?.id || null);
     setNewsTitle(article?.title || "");
