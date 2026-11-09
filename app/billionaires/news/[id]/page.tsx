@@ -19,6 +19,15 @@ type Person = {
   company: string | null;
 };
 
+type RelatedArticle = {
+  id: string;
+  title: string;
+  summary: string | null;
+  image_url: string | null;
+  published_at: string | null;
+  created_at: string;
+};
+
 type PageProps = {
   params: Promise<{ id: string }>;
 };
