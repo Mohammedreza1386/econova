@@ -193,6 +193,7 @@ export default async function BillionaireNewsDetailPage({
   if (!article) notFound();
 
   const person = await getPerson(article.billionaire_id);
+  const relatedNews = await getRelatedNews(article.billionaire_id, article.id);
   const date = article.published_at || article.created_at;
 
   const canonical =
