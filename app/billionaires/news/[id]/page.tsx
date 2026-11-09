@@ -68,6 +68,36 @@ async function getArticle(id: string): Promise<Article | null> {
   return data[0] || null;
 }
 
+async function getRelatedNews(
+  billionaireId: string,
+  currentArticleId: string
+): Promise<RelatedArticle[]> {
+  if (!SUPABASE_KEY) return [];
+
+  const query = new URLSearchParams({
+    select: "id,title,summary,image_url,published_at,created_at",
+    billionaire_id: `eq.${billionaireId}`,
+    id: `neq.${currentArticleId}`,
+    order: "published_at.desc.nullslast,created_at.desc",
+    limit: "3",
+  });
+
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/billionaire_related_news?${query}`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!response.ok) return [];
+
+  return (await response.json()) as RelatedArticle[];
+}
+
 async function getPerson(
   id: string
 ): Promise<Person | null> {
