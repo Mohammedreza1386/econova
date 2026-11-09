@@ -539,12 +539,6 @@ return newYorkLocalMidnightUtc(
       <div className="eco-mini-chart-summary">
         <span>{rangeLabels[range]} · تغییر در بازه نمودار</span>
 
-        <strong dir="ltr" className={isUp ? "eco-positive" : "eco-negative"}>
-          {delta !== null
-            ? `${delta >= 0 ? "+" : "−"}$${Math.abs(delta).toFixed(2)}B`
-            : "—"}
-        </strong>
-
         <small dir="ltr" className={isUp ? "eco-positive" : "eco-negative"}>
           {changePercent !== null
             ? `${changePercent >= 0 ? "+" : ""}${changePercent.toFixed(2)}%`
