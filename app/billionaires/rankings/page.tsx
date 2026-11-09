@@ -1680,6 +1680,19 @@ const previousRows = previousResponse as {
                 <span className={`eco-forbes-change ${changeIsPositive(person) ? "eco-positive" : "eco-negative"}`}>
                   {changeIsPositive(person) ? "▲" : "▼"} {formatChange(person.daily_change_pct)} امروز
                 </span>
+                <span className={`eco-change-amount ${changeIsPositive(person) ? "eco-positive" : "eco-negative"}`}>
+  {(() => {
+    const exact = changeAmount(person);
+    const pct = Number(person.daily_change_pct);
+    const current = Number(person.net_worth_billions);
+    const approximate = Number.isFinite(pct) && Math.abs(pct) < 100 && (1 + pct / 100) !== 0
+      ? current - current / (1 + pct / 100)
+      : null;
+    const amount = exact !== null ? exact : approximate;
+    if (amount === null || !Number.isFinite(amount)) return "مبلغ تغییر ثبت نشده";
+    return `${amount >= 0 ? "+" : "−"}$${Math.abs(amount).toFixed(2)} میلیارد${exact === null ? " (تقریبی)" : ""}`;
+  })()}
+</span>
                 <MiniWealthChart person={person} />
                 {topFiveCategory === "top5" && person.rank >= 1 && person.rank <= 5 && (newsForPerson(person).length > 0 || isAdmin) && (
                   <div className="eco-forbes-news">
