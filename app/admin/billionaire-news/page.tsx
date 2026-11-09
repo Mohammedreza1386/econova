@@ -552,14 +552,52 @@ export default function BillionaireNewsAdminPage() {
             />
           </label>
 
+                    <label style={labelStyle}>
+            انتخاب عکس خبر از گالری گوشی
+
+            <input
+              style={inputStyle}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={busy}
+              onChange={(event) => {
+                handleImageSelect(event.target.files?.[0]);
+                event.currentTarget.value = "";
+              }}
+            />
+
+            <span style={mutedStyle}>
+              فرمت JPG، PNG یا WebP ـ حداکثر ۵ مگابایت
+            </span>
+
+            {draft.image_url && (
+              <img
+                src={draft.image_url}
+                alt="پیش‌نمایش عکس خبر"
+                style={{
+                  width: "100%",
+                  maxWidth: 360,
+                  maxHeight: 220,
+                  objectFit: "cover",
+                  borderRadius: 12,
+                  border: "1px solid #344638",
+                }}
+              />
+            )}
+          </label>
+
           <label style={labelStyle}>
-            لینک تصویر خبر
+            یا لینک تصویر خبر (اختیاری)
+
             <input
               style={inputStyle}
               type="url"
               value={draft.image_url}
               onChange={(event) =>
-                setDraft({ ...draft, image_url: event.target.value })
+                setDraft({
+                  ...draft,
+                  image_url: event.target.value,
+                })
               }
               placeholder="https://..."
             />
