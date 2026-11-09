@@ -386,6 +386,128 @@ export default async function BillionaireNewsDetailPage({
           </a>
         </section>
 
+        {relatedNews.length > 0 && (
+          <section
+            style={{
+              marginTop: 38,
+              paddingTop: 28,
+              borderTop: "1px solid #293b2e",
+            }}
+          >
+            <div
+              style={{
+                color: "#b9f27c",
+                fontSize: 12,
+                fontWeight: 800,
+                marginBottom: 8,
+              }}
+            >
+              ECONOVA · RELATED NEWS
+            </div>
+
+            <h2
+              style={{
+                fontSize: 23,
+                fontWeight: 900,
+                margin: "0 0 20px",
+              }}
+            >
+              خبرهای مرتبط
+            </h2>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(min(100%, 230px), 1fr))",
+                gap: 15,
+              }}
+            >
+              {relatedNews.map((item) => (
+                <a
+                  key={item.id}
+                  href={`/billionaires/news/${item.id}`}
+                  style={{
+                    display: "block",
+                    overflow: "hidden",
+                    border: "1px solid #293b2e",
+                    borderRadius: 15,
+                    background: "#101812",
+                    color: "#f3f6f1",
+                    textDecoration: "none",
+                  }}
+                >
+                  {item.image_url && (
+                    <img
+                      src={item.image_url}
+                      alt={item.title}
+                      loading="lazy"
+                      style={{
+                        width: "100%",
+                        height: 145,
+                        objectFit: "cover",
+                        display: "block",
+                        background: "#14271d",
+                      }}
+                    />
+                  )}
+
+                  <div style={{ padding: 16 }}>
+                    <div
+                      style={{
+                        color: "#91a095",
+                        fontSize: 11,
+                        marginBottom: 9,
+                      }}
+                    >
+                      {formatDate(
+                        item.published_at || item.created_at
+                      )}
+                    </div>
+
+                    <h3
+                      style={{
+                        fontSize: 15,
+                        lineHeight: 1.9,
+                        fontWeight: 800,
+                        margin: 0,
+                      }}
+                    >
+                      {item.title}
+                    </h3>
+
+                    {item.summary && (
+                      <p
+                        style={{
+                          color: "#aab7ad",
+                          fontSize: 12,
+                          lineHeight: 2,
+                          margin: "9px 0 0",
+                        }}
+                      >
+                        {item.summary.length > 115
+                          ? `${item.summary.slice(0, 115)}…`
+                          : item.summary}
+                      </p>
+                    )}
+
+                    <div
+                      style={{
+                        color: "#b9f27c",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        marginTop: 14,
+                      }}
+                    >
+                      مطالعه خبر ←
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+        
         <footer
           style={{
             marginTop: 30,
