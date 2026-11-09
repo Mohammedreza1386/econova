@@ -437,12 +437,10 @@ export default function ProfileClient({
               </span>
 
               <a
-                href={news.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                مطالعه خبر ↗
-              </a>
+  href={`/billionaires/news/${news.id}`}
+>
+  مطالعه خبر در اکونوا ↗
+</a>
             </div>
           </div>
         </article>
