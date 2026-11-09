@@ -1,96 +1,177 @@
 
-"use client";
-
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 type Article = {
   id: string;
-  billionaire_rank: number;
+  billionaire_id: string;
   title: string;
-  content: string | null;
+  summary: string | null;
+  source_name: string;
+  source_url: string;
   image_url: string | null;
-  source_url: string | null;
-  created_at: string | null;
-  updated_at: string | null;
+  published_at: string | null;
+  created_at: string;
 };
 
 type Person = {
-  rank: number;
   name: string;
-  image_url: string | null;
   company: string | null;
 };
 
-type PublicData = {
-  news?: Article[];
-  billionaires?: Person[];
+type PageProps = {
+  params: Promise<{ id: string }>;
 };
 
-const API =
-  "https://zusbebjskchgehdjvpsm.supabase.co/functions/v1/econova-public-billionaires";
+const SITE_URL = "https://econova-nine.vercel.app";
 
-export default function BillionaireNewsDetailPage() {
-  const params = useParams<{ id: string }>();
-  const id = params?.id;
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  "https://zusbebjskchgehdjvpsm.supabase.co";
 
-  const [article, setArticle] = useState<Article | null>(null);
-  const [person, setPerson] = useState<Person | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+const SUPABASE_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-  useEffect(() => {
-    if (!id) return;
+async function getArticle(id: string): Promise<Article | null> {
+  if (!SUPABASE_KEY) return null;
 
-    let active = true;
+  const query = new URLSearchParams({
+    select:
+      "id,billionaire_id,title,summary,source_name,source_url,image_url,published_at,created_at",
+    id: `eq.${id}`,
+    limit: "1",
+  });
 
-    fetch(API, { cache: "no-store" })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("دریافت خبر ناموفق بود.");
-        }
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/billionaire_related_news?${query}`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+      cache: "no-store",
+    }
+  );
 
-        return response.json() as Promise<PublicData>;
-      })
-      .then((data) => {
-        if (!active) return;
+  if (!response.ok) return null;
 
-        const found = (data.news || []).find(
-          (item) => item.id === id
-        );
+  const data = (await response.json()) as Article[];
+  return data[0] || null;
+}
 
-        if (!found) {
-          throw new Error("این خبر پیدا نشد یا حذف شده است.");
-        }
+async function getPerson(
+  id: string
+): Promise<Person | null> {
+  const query = new URLSearchParams({
+    select: "name,company",
+    id: `eq.${id}`,
+    limit: "1",
+  });
 
-        setArticle(found);
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/billionaires?${query}`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+      cache: "no-store",
+    }
+  );
 
-        setPerson(
-          (data.billionaires || []).find(
-            (p) => p.rank === found.billionaire_rank
-          ) || null
-        );
-      })
-      .catch((reason: unknown) => {
-        if (active) {
-          setError(
-            reason instanceof Error
-              ? reason.message
-              : "خطا در دریافت خبر."
-          );
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+  if (!response.ok) return null;
 
-    return () => {
-      active = false;
+  const data = (await response.json()) as Person[];
+  return data[0] || null;
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "تاریخ نامشخص";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "تاریخ نامشخص";
+  }
+
+  return new Intl.DateTimeFormat("fa-IR", {
+    dateStyle: "long",
+    timeStyle: "short",
+  }).format(date);
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const article = await getArticle(id);
+
+  if (!article) {
+    return {
+      title: "News Not Found | Econova",
+      robots: { index: false, follow: true },
     };
-  }, [id]);
+  }
 
-  const date = article?.created_at || article?.updated_at;
+  const canonical =
+    `${SITE_URL}/billionaires/news/${encodeURIComponent(id)}`;
+
+  return {
+    title: `${article.title} | Econova`,
+    description:
+      article.summary?.slice(0, 155) ||
+      `${article.title} - Econova News`,
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      title: article.title,
+      description: article.summary || article.title,
+      url: canonical,
+      siteName: "Econova",
+      images: article.image_url
+        ? [{ url: article.image_url, alt: article.title }]
+        : [],
+    },
+    twitter: {
+      card: article.image_url
+        ? "summary_large_image"
+        : "summary",
+      title: article.title,
+      description: article.summary || article.title,
+      images: article.image_url
+        ? [article.image_url]
+        : [],
+    },
+  };
+}
+
+export default async function BillionaireNewsDetailPage({
+  params,
+}: PageProps) {
+  const { id } = await params;
+  const article = await getArticle(id);
+
+  if (!article) notFound();
+
+  const person = await getPerson(article.billionaire_id);
+  const date = article.published_at || article.created_at;
+
+  const canonical =
+    `${SITE_URL}/billionaires/news/${encodeURIComponent(id)}`;
+
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: article.title,
+    image: article.image_url ? [article.image_url] : undefined,
+    datePublished: article.published_at || article.created_at,
+    description: article.summary || article.title,
+    mainEntityOfPage: canonical,
+    publisher: {
+      "@type": "Organization",
+      name: "Econova",
+    },
+  };
 
   return (
     <main
@@ -99,95 +180,185 @@ export default function BillionaireNewsDetailPage() {
         minHeight: "100vh",
         background: "#080d0a",
         color: "#f3f6f1",
-        padding: "28px 16px",
+        padding: "25px 16px 60px",
         fontFamily: "Arial,sans-serif",
       }}
     >
-      <article style={{ maxWidth: 900, margin: "0 auto" }}>
-        <Link
-          href="/billionaires/rankings"
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(schema).replace(/</g, "\\u003c"),
+        }}
+      />
+
+      <article
+        style={{
+          maxWidth: 900,
+          margin: "0 auto",
+        }}
+      >
+        <header
           style={{
-            color: "#b9f27c",
-            textDecoration: "none",
-            display: "inline-block",
-            marginBottom: 24,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 14,
+            borderBottom: "1px solid #293b2e",
+            paddingBottom: 20,
+            marginBottom: 30,
           }}
         >
-          ← بازگشت به رتبه‌بندی میلیاردها
-        </Link>
+          <a
+            href="/"
+            style={{
+              color: "#b9f27c",
+              fontSize: 23,
+              fontWeight: 900,
+              letterSpacing: 2,
+              textDecoration: "none",
+            }}
+          >
+            ECONOVA.
+          </a>
 
-        {loading ? (
-          <p>در حال دریافت خبر...</p>
-        ) : error ? (
-          <p role="alert">{error}</p>
-        ) : article ? (
-          <>
-            <div
-              style={{
-                color: "#b9f27c",
-                fontSize: 13,
-                marginBottom: 12,
-              }}
-            >
-              اخبار ثروتمندان برتر · رتبه {article.billionaire_rank}
-            </div>
+          <a
+            href="/billionaires"
+            style={{
+              color: "#b9f27c",
+              textDecoration: "none",
+              fontSize: 13,
+            }}
+          >
+            بازگشت به اکونوا ←
+          </a>
+        </header>
 
-            <h1
-              style={{
-                fontSize: "clamp(26px,5vw,42px)",
-                lineHeight: 1.5,
-                margin: "0 0 14px",
-              }}
-            >
-              {article.title}
-            </h1>
+        <div
+          style={{
+            color: "#b9f27c",
+            fontSize: 12,
+            marginBottom: 15,
+          }}
+        >
+          ECONOVA NEWS · اخبار ثروتمندان
+        </div>
 
-            {person && (
-              <div style={{ color: "#a8b6aa", marginBottom: 20 }}>
-                {person.name}
-                {person.company ? ` · ${person.company}` : ""}
-              </div>
-            )}
+        <h1
+          style={{
+            fontSize: "clamp(25px,5vw,43px)",
+            lineHeight: 1.7,
+            margin: "0 0 20px",
+            fontWeight: 900,
+          }}
+        >
+          {article.title}
+        </h1>
 
-            {article.image_url && (
-              <img
-                src={article.image_url}
-                alt={article.title}
-                style={{
-                  width: "100%",
-                  maxHeight: 480,
-                  objectFit: "cover",
-                  borderRadius: 18,
-                  marginBottom: 24,
-                  background: "#14271d",
-                }}
-              />
-            )}
+        {person && (
+          <div
+            style={{
+              color: "#b9f27c",
+              fontSize: 14,
+              marginBottom: 18,
+            }}
+          >
+            مرتبط با {person.name}
+            {person.company ? ` · ${person.company}` : ""}
+          </div>
+        )}
 
-            {date && (
-              <time
-                dateTime={date}
-                style={{ color: "#8d9b90", fontSize: 13 }}
-              >
-                {new Intl.DateTimeFormat("fa-IR", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                }).format(new Date(date))}
-              </time>
-            )}
+        <div
+          style={{
+            color: "#91a095",
+            fontSize: 12,
+            marginBottom: 22,
+          }}
+        >
+          {formatDate(date)}
+          {" · "}
+          {article.source_name}
+        </div>
 
-            <div
-              style={{
-                whiteSpace: "pre-wrap",
-                lineHeight: 2.2,
-                fontSize: 17,
-                marginTop: 24,
-              }}
-            >
-              {article.content}
-            </div>
-          </>
-        ) : null}
+        {article.image_url && (
+          <img
+            src={article.image_url}
+            alt={article.title}
+            style={{
+              width: "100%",
+              maxHeight: 490,
+              objectFit: "cover",
+              borderRadius: 20,
+              border: "1px solid #293b2e",
+              marginBottom: 28,
+              background: "#14271d",
+            }}
+          />
+        )}
+
+        <section
+          style={{
+            padding: "25px",
+            border: "1px solid #293b2e",
+            borderRadius: 18,
+            background: "#101812",
+          }}
+        >
+          <div
+            style={{
+              color: "#b9f27c",
+              fontSize: 12,
+              fontWeight: 800,
+              marginBottom: 16,
+            }}
+          >
+            خلاصه خبر
+          </div>
+
+          <div
+            style={{
+              color: "#d5ded6",
+              fontSize: 17,
+              lineHeight: 2.3,
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            {article.summary || "برای این خبر توضیحی ثبت نشده است."}
+          </div>
+
+          <a
+            href={article.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-block",
+              marginTop: 25,
+              padding: "12px 19px",
+              borderRadius: 10,
+              background: "#b9f27c",
+              color: "#101610",
+              fontSize: 13,
+              fontWeight: 800,
+              textDecoration: "none",
+            }}
+          >
+            مشاهده صفحه منبع خبر ↗
+          </a>
+        </section>
+
+        <footer
+          style={{
+            marginTop: 30,
+            paddingTop: 20,
+            borderTop: "1px solid #293b2e",
+            color: "#829087",
+            fontSize: 11,
+            lineHeight: 2,
+            textAlign: "center",
+          }}
+        >
+          © {new Date().getFullYear()} ECONOVA · Global Wealth Intelligence
+        </footer>
       </article>
     </main>
   );
