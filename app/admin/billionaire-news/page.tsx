@@ -186,6 +186,86 @@ export default function BillionaireNewsAdminPage() {
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+    async function handleImageSelect(file: File | undefined) {
+    if (!file) return;
+
+    if (!token) {
+      setMessage("ابتدا وارد پنل مدیریت شو.");
+      return;
+    }
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setMessage("فقط عکس JPG، PNG و WebP مجاز است.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage("حجم عکس نباید بیشتر از ۵ مگابایت باشد.");
+      return;
+    }
+
+    const extension =
+      file.type === "image/png"
+        ? "png"
+        : file.type === "image/webp"
+          ? "webp"
+          : "jpg";
+
+    const fileName =
+      `news-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 10)}.${extension}`;
+
+    setBusy(true);
+    setMessage("در حال آپلود عکس...");
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/news-images/${fileName}`,
+        {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${token}`,
+            "Content-Type": file.type,
+            "x-upsert": "false",
+          },
+          body: file,
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(
+          error?.message || "آپلود عکس ناموفق بود."
+        );
+      }
+
+      const imageUrl =
+        `${SUPABASE_URL}/storage/v1/object/public/news-images/${fileName}`;
+
+      setDraft((old) => ({
+        ...old,
+        image_url: imageUrl,
+      }));
+
+      setMessage("عکس با موفقیت آپلود شد.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "خطا در آپلود عکس"
+      );
+    } finally {
+      setBusy(false);
+    }
+    }
 
   async function saveNews(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
