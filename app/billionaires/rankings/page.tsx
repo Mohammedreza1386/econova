@@ -4030,33 +4030,94 @@ const previousRows = previousResponse as {
   border-radius: 12px;
   font: inherit;
   font-size: 12px;
-  cursor: pointer;
+.eco-advanced-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.7fr) repeat(3, minmax(110px, 1fr)) minmax(120px, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 11px;
+  margin-bottom: 16px;
+  background: linear-gradient(145deg, #101a14, #0a110d);
+  border: 1px solid rgba(185, 242, 124, 0.16);
+  border-radius: 15px;
 }
 
-.eco-advanced-toolbar .eco-show-all-button:hover {
-  background: rgba(185, 242, 124, 0.15);
+.eco-advanced-toolbar .eco-search-box {
+  max-width: none;
+  min-width: 0;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 0 11px;
+  border-radius: 10px;
+}
+
+.eco-filter-select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 10px;
+  color: #e8f0ea;
+  background: #101812;
+  border: 1px solid #293c30;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 11px;
+  outline: none;
+}
+
+.eco-filter-select:focus {
+  border-color: #b9f27c;
+  box-shadow: 0 0 0 2px rgba(185, 242, 124, 0.08);
+}
+
+.eco-filter-select option {
+  color: #e8f0ea;
+  background: #101812;
+}
+
+.eco-clear-filters-button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 10px;
+  color: #b9f27c;
+  background: rgba(185, 242, 124, 0.07);
+  border: 1px solid rgba(185, 242, 124, 0.22);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.eco-clear-filters-button:hover {
+  background: rgba(185, 242, 124, 0.14);
   border-color: #b9f27c;
 }
 
 @media (max-width: 760px) {
   .eco-advanced-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    padding: 12px;
-    gap: 9px;
+    gap: 8px;
+    padding: 10px;
   }
 
   .eco-advanced-toolbar .eco-search-box {
     grid-column: 1 / -1;
   }
+
+  .eco-clear-filters-button {
+    grid-column: 1 / -1;
+  }
 }
 
-@media (max-width: 420px) {
+@media (min-width: 761px) and (max-width: 1050px) {
   .eco-advanced-toolbar {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .eco-advanced-toolbar .eco-search-box {
-    grid-column: auto;
+    grid-column: span 2;
   }
 }
         
