@@ -684,6 +684,20 @@ const x = Math.max(
               </div>
             </div>
 
+            <div className="chart-x-labels">
+  {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
+    <span key={fraction}>
+      {new Date(
+        chartStart +
+          fraction * days * 24 * 60 * 60 * 1000
+      ).toLocaleDateString("fa-IR", {
+        month: "short",
+        day: "numeric",
+      })}
+    </span>
+  ))}
+</div>
+
             <p className="chart-note">
               محور افقی زمان واقعی ثبت داده‌ها را نشان می‌دهد؛ فاصله نقاط متناسب با فاصله زمانی رکوردهاست.
             </p>
