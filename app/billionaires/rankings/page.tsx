@@ -3991,15 +3991,6 @@ const previousRows = previousResponse as {
   background: #101b15;
 }
 
-.eco-advanced-toolbar .eco-show-all-button {
-  min-height: 44px;
-  padding: 10px 14px;
-  color: #b9f27c;
-  background: rgba(185, 242, 124, 0.07);
-  border: 1px solid rgba(185, 242, 124, 0.25);
-  border-radius: 12px;
-  font: inherit;
-  font-size: 12px;
 .eco-advanced-toolbar {
   display: grid;
   grid-template-columns: minmax(180px, 1.7fr) repeat(3, minmax(110px, 1fr)) minmax(120px, 1fr);
@@ -4057,7 +4048,6 @@ const previousRows = previousResponse as {
   font-size: 11px;
   white-space: nowrap;
   cursor: pointer;
-  transition: 0.2s ease;
 }
 
 .eco-clear-filters-button:hover {
@@ -4083,13 +4073,6 @@ const previousRows = previousResponse as {
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.eco-ranking-more-button:hover {
-  background: #203625;
-  border-color: #b9f27c;
-  box-shadow: 0 5px 20px rgba(185, 242, 124, 0.08);
 }
 
 @media (max-width: 760px) {
@@ -4099,10 +4082,7 @@ const previousRows = previousResponse as {
     padding: 10px;
   }
 
-  .eco-advanced-toolbar .eco-search-box {
-    grid-column: 1 / -1;
-  }
-
+  .eco-advanced-toolbar .eco-search-box,
   .eco-clear-filters-button {
     grid-column: 1 / -1;
   }
@@ -4117,7 +4097,7 @@ const previousRows = previousResponse as {
     grid-column: span 2;
   }
 }
-        
+      
 .eco-search-box {
   display: flex;
   align-items: center;
