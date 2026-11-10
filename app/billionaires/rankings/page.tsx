@@ -1946,6 +1946,29 @@ const previousRows = previousResponse as {
 
   <select
     className="eco-filter-select"
+    value={countryFilter}
+    onChange={(event) => setCountryFilter(event.target.value)}
+  >
+    <option value="">تمام کشورها</option>
+    {[...new Set(sortedPeople.map(p => p.country?.trim()).filter(Boolean))]
+      .sort()
+      .map(country => (
+        <option key={country} value={country}>{country}</option>
+      ))}
+  </select>
+
+  <button
+    className="eco-clear-filters-button"
+    onClick={() => {
+      setSearchTerm("");
+      setCountryFilter("");
+      setIndustryFilter("");
+      setAgeFilter("");
+    }}
+  >
+    پاک‌کردن فیلترها
+  </button>
+</div>
     
         <div className="eco-ranking-table-wrap">
           <table className="eco-ranking-table">
