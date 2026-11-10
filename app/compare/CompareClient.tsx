@@ -230,21 +230,39 @@ export default function CompareClient({
     range === "week" ? 7 : range === "month" ? 30 : 365;
 
   const chartData = useMemo(() => {
-    const cutoff =
-      Date.now() - days * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const cutoff =
+    now - days * 24 * 60 * 60 * 1000;
 
-    return selectedPeople.map((person) => {
-      const id = String(person.id);
-      const history = histories[id] || [];
+  return selectedPeople.map((person) => {
+    const id = String(person.id);
 
-      const points = history.filter(
-        (point) =>
-          Date.parse(point.recorded_at) >= cutoff
+    const history = (histories[id] || [])
+      .filter((point) => {
+        const timestamp = Date.parse(point.recorded_at);
+
+        return (
+          Number.isFinite(timestamp) &&
+          timestamp >= cutoff &&
+          timestamp <= now &&
+          Number.isFinite(
+            Number(point.net_worth_billions)
+          ) &&
+          Number(point.net_worth_billions) > 0
+        );
+      })
+      .sort(
+        (a, b) =>
+          Date.parse(a.recorded_at) -
+          Date.parse(b.recorded_at)
       );
 
-      return { person, points };
-    });
-  }, [selectedPeople, histories, days]);
+    return {
+      person,
+      points: history,
+    };
+  });
+}, [selectedPeople, histories, days]);
 
   const chartValues = chartData.flatMap((item) =>
     item.points.map((point) =>
