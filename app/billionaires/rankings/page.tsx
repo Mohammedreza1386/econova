@@ -1946,6 +1946,50 @@ const previousRows = previousResponse as {
 
   <select
     className="eco-filter-select"
+<div className="eco-ranking-toolbar eco-advanced-toolbar">
+  <label className="eco-search-box">
+    <span>⌕</span>
+    <input
+      type="search"
+      value={searchTerm}
+      onChange={(event) => setSearchTerm(event.target.value)}
+      placeholder="جست‌وجو..."
+      aria-label="جست‌وجوی ثروتمندان"
+    />
+    {searchTerm && (
+      <button type="button" onClick={() => setSearchTerm("")}>
+        ×
+      </button>
+    )}
+  </label>
+
+  <select
+    className="eco-filter-select"
+    value={industryFilter}
+    onChange={(event) => setIndustryFilter(event.target.value)}
+  >
+    <option value="">تمام صنایع</option>
+    {[...new Set(sortedPeople.map(p => p.industry?.trim()).filter(Boolean))]
+      .sort()
+      .map(industry => (
+        <option key={industry} value={industry}>{industry}</option>
+      ))}
+  </select>
+
+  <select
+    className="eco-filter-select"
+    value={ageFilter}
+    onChange={(event) => setAgeFilter(event.target.value)}
+  >
+    <option value="">تمام سنین</option>
+    <option value="under30">زیر ۳۰ سال</option>
+    <option value="30to49">۳۰ تا ۴۹ سال</option>
+    <option value="50to69">۵۰ تا ۶۹ سال</option>
+    <option value="70plus">۷۰ سال به بالا</option>
+  </select>
+
+  <select
+    className="eco-filter-select"
     value={countryFilter}
     onChange={(event) => setCountryFilter(event.target.value)}
   >
@@ -1958,20 +2002,12 @@ const previousRows = previousResponse as {
   </select>
 
   <button
-    className="eco-show-all-button"
-    onClick={() => setShowAll(current => !current)}
-  >
-    {showAll ? "نمایش ۱۰ نفر اول" : "نمایش همه افراد"}
-  </button>
-
-  <button
-    className="eco-show-all-button"
+    className="eco-clear-filters-button"
     onClick={() => {
       setSearchTerm("");
       setCountryFilter("");
       setIndustryFilter("");
       setAgeFilter("");
-      setShowAll(false);
     }}
   >
     پاک‌کردن فیلترها
