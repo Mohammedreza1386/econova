@@ -613,12 +613,17 @@ export default function CompareClient({
 
                     const coordinates = points.map(
                       (point, pointIndex) => {
-                        const x =
-                          points.length === 1
-                            ? 500
-                            : (pointIndex /
-                                (points.length - 1)) *
-                              1000;
+                        const timestamp = Date.parse(point.recorded_at);
+
+const x = Math.max(
+  0,
+  Math.min(
+    1000,
+    ((timestamp - chartStart) /
+      (days * 24 * 60 * 60 * 1000)) *
+      1000
+  )
+);
 
                         const value = numberValue(
                           point.net_worth_billions
