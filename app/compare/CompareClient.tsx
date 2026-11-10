@@ -612,7 +612,7 @@ export default function CompareClient({
                     if (points.length === 0) return null;
 
                     const coordinates = points.map(
-                      (point, pointIndex) => {
+                      (point) => {
                         const timestamp = Date.parse(point.recorded_at);
 
 const x = Math.max(
