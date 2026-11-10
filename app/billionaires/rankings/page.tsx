@@ -3898,6 +3898,84 @@ const previousRows = previousResponse as {
           gap: 12px;
           margin-bottom: 18px;
         }
+
+        .eco-advanced-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(130px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  background: linear-gradient(145deg, #111d15, #0a120d);
+  border: 1px solid rgba(185, 242, 124, 0.2);
+  border-radius: 18px;
+}
+
+.eco-advanced-toolbar .eco-search-box {
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.eco-filter-select {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 13px;
+  color: #e8f0ea;
+  background: #101b15;
+  border: 1px solid #294333;
+  border-radius: 13px;
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.eco-filter-select:focus {
+  border-color: #b9f27c;
+  box-shadow: 0 0 0 3px rgba(185, 242, 124, 0.1);
+}
+
+.eco-filter-select option {
+  color: #e8f0ea;
+  background: #101b15;
+}
+
+.eco-advanced-toolbar .eco-show-all-button {
+  min-height: 44px;
+  padding: 10px 14px;
+  color: #b9f27c;
+  background: rgba(185, 242, 124, 0.07);
+  border: 1px solid rgba(185, 242, 124, 0.25);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.eco-advanced-toolbar .eco-show-all-button:hover {
+  background: rgba(185, 242, 124, 0.15);
+  border-color: #b9f27c;
+}
+
+@media (max-width: 760px) {
+  .eco-advanced-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px;
+    gap: 9px;
+  }
+
+  .eco-advanced-toolbar .eco-search-box {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 420px) {
+  .eco-advanced-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .eco-advanced-toolbar .eco-search-box {
+    grid-column: auto;
+  }
+}
         
 .eco-search-box {
   display: flex;
