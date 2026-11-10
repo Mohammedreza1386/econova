@@ -4109,6 +4109,33 @@ const previousRows = previousResponse as {
   border-color: #b9f27c;
 }
 
+.eco-ranking-more {
+  display: flex;
+  justify-content: center;
+  margin: 18px 0 8px;
+}
+
+.eco-ranking-more-button {
+  width: min(100%, 340px);
+  min-height: 46px;
+  padding: 10px 20px;
+  color: #b9f27c;
+  background: linear-gradient(135deg, #18291d, #101a14);
+  border: 1px solid rgba(185, 242, 124, 0.35);
+  border-radius: 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.eco-ranking-more-button:hover {
+  background: #203625;
+  border-color: #b9f27c;
+  box-shadow: 0 5px 20px rgba(185, 242, 124, 0.08);
+}
+
 @media (max-width: 760px) {
   .eco-advanced-toolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
