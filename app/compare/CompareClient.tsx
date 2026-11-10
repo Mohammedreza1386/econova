@@ -40,16 +40,18 @@ const SUPABASE_KEY =
 const money = (value: number | string) => {
   const number = Number(value);
 
-  return `$${(Number.isFinite(number) ? number : 0).toLocaleString(
+  return (Number.isFinite(number) ? number : 0).toLocaleString(
     "en-US",
     {
       minimumFractionDigits: 1,
       maximumFractionDigits: 2,
     }
-  )}B`;
+  );
 };
 
-const numberValue = (value: number | string) => {
+const numberValue = (
+  value: number | string | null
+) => {
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
 };
@@ -93,7 +95,9 @@ async function getHistory(
 
     const data: unknown = await response.json();
 
-    if (!Array.isArray(data) || data.length === 0) break;
+    if (!Array.isArray(data) || data.length === 0) {
+      break;
+    }
 
     allHistory.push(...(data as HistoryPoint[]));
 
@@ -109,7 +113,8 @@ async function getHistory(
     )
     .sort(
       (a, b) =>
-        Date.parse(a.recorded_at) - Date.parse(b.recorded_at) ||
+        Date.parse(a.recorded_at) -
+          Date.parse(b.recorded_at) ||
         Number(a.id) - Number(b.id)
     );
 }
@@ -129,9 +134,11 @@ export default function CompareClient({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const [range, setRange] = useState<Range>("month");
+
   const [histories, setHistories] = useState<
     Record<string, HistoryPoint[]>
   >({});
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -143,7 +150,10 @@ export default function CompareClient({
             (person) => String(person.id) === id
           )
         )
-        .filter((person): person is Billionaire => Boolean(person)),
+        .filter(
+          (person): person is Billionaire =>
+            Boolean(person)
+        ),
     [selectedIds, initialBillionaires]
   );
 
@@ -156,18 +166,32 @@ export default function CompareClient({
           !selectedIds.includes(String(person.id)) &&
           (!term ||
             person.name.toLowerCase().includes(term) ||
-            (person.company || "").toLowerCase().includes(term) ||
-            (person.country || "").toLowerCase().includes(term))
+            (person.company || "")
+              .toLowerCase()
+              .includes(term) ||
+            (person.country || "")
+              .toLowerCase()
+              .includes(term))
       )
       .slice(0, 30);
   }, [initialBillionaires, selectedIds, search]);
 
   async function addPerson(person: Billionaire) {
-    if (selectedIds.length >= 5) return;
+    if (
+      selectedIds.length >= 5 ||
+      selectedIds.includes(String(person.id))
+    ) {
+      return;
+    }
 
     const id = String(person.id);
 
-    setSelectedIds((previous) => [...previous, id]);
+    setSelectedIds((previous) =>
+      previous.length < 5 && !previous.includes(id)
+        ? [...previous, id]
+        : previous
+    );
+
     setSearch("");
     setError("");
 
@@ -183,6 +207,11 @@ export default function CompareClient({
         [id]: history,
       }));
     } catch {
+      setHistories((previous) => ({
+        ...previous,
+        [id]: [],
+      }));
+
       setError(
         `دریافت تاریخچه ${person.name} با خطا مواجه شد.`
       );
@@ -201,20 +230,19 @@ export default function CompareClient({
     range === "week" ? 7 : range === "month" ? 30 : 365;
 
   const chartData = useMemo(() => {
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const cutoff =
+      Date.now() - days * 24 * 60 * 60 * 1000;
 
     return selectedPeople.map((person) => {
       const id = String(person.id);
       const history = histories[id] || [];
 
       const points = history.filter(
-        (point) => Date.parse(point.recorded_at) >= cutoff
+        (point) =>
+          Date.parse(point.recorded_at) >= cutoff
       );
 
-      return {
-        person,
-        points,
-      };
+      return { person, points };
     });
   }, [selectedPeople, histories, days]);
 
@@ -225,10 +253,14 @@ export default function CompareClient({
   );
 
   const chartMin =
-    chartValues.length > 0 ? Math.min(...chartValues) : 0;
+    chartValues.length > 0
+      ? Math.min(...chartValues)
+      : 0;
 
   const chartMax =
-    chartValues.length > 0 ? Math.max(...chartValues) : 1;
+    chartValues.length > 0
+      ? Math.max(...chartValues)
+      : 1;
 
   const chartSpread = chartMax - chartMin || 1;
 
@@ -255,10 +287,14 @@ export default function CompareClient({
       </header>
 
       <section className="hero">
-        <p className="eyebrow">ECONOVA COMPARISON</p>
+        <p className="eyebrow">
+          ECONOVA COMPARISON
+        </p>
+
         <h1>
           مقایسه <span>ثروتمندان جهان</span>
         </h1>
+
         <p className="hero-description">
           ثروت و روند تغییرات دارایی ثروتمندان را در یک صفحه
           مقایسه کن.
@@ -280,14 +316,18 @@ export default function CompareClient({
         <input
           className="search-input"
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) =>
+            setSearch(event.target.value)
+          }
           placeholder="جست‌وجوی نام، شرکت یا کشور..."
         />
 
         {search.trim() && (
           <div className="search-results">
             {filteredPeople.length === 0 ? (
-              <p className="empty">فردی پیدا نشد.</p>
+              <p className="empty">
+                فردی پیدا نشد.
+              </p>
             ) : (
               filteredPeople.map((person) => (
                 <button
@@ -305,8 +345,8 @@ export default function CompareClient({
                   <span className="result-info">
                     <strong>{person.name}</strong>
                     <small>
-                      رتبه #{person.rank} ·{" "}
-                      {money(person.net_worth_billions)}
+                      رتبه #{person.rank} · $
+                      {money(person.net_worth_billions)}B
                     </small>
                   </span>
 
@@ -330,9 +370,7 @@ export default function CompareClient({
 
               <div>
                 <strong>{person.name}</strong>
-                <small>
-                  رتبه #{person.rank}
-                </small>
+                <small>رتبه #{person.rank}</small>
               </div>
 
               <button
@@ -362,562 +400,806 @@ export default function CompareClient({
           </p>
         )}
       </section>
-        
-      {selectedPeople.length >= 2 && (
-        <section className="comparison-section">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">LIVE COMPARISON</span>
-              <h2>مقایسه ثروت</h2>
-              <p>مقایسه ارزش دارایی و روند تغییر ثروت افراد انتخاب‌شده</p>
-            </div>
-            <span className="people-count">
-              {selectedPeople.length} نفر
-            </span>
+      
+      <section className="comparison-section">
+        <div className="section-title">
+          <div>
+            <h2>مقایسه ثروت فعلی</h2>
+            <p>اطلاعات بر اساس داده‌های ثبت‌شده در اکونوا</p>
           </div>
+        </div>
 
+        {selectedPeople.length > 0 ? (
           <div className="wealth-grid">
             {selectedPeople.map((person, index) => {
-              const worth = numberValue(person.net_worth_billions);
-              const change = numberValue(person.daily_change_pct);
+              const change = numberValue(
+                person.daily_change_pct
+              );
 
               return (
-                <article className="wealth-card" key={person.id}>
+                <article
+                  className="wealth-card"
+                  key={person.id}
+                  style={{
+                    borderTopColor: colors[index],
+                  }}
+                >
                   <div className="wealth-card-top">
-                    <span
-                      className="person-color"
-                      style={{ background: colors[index] }}
-                    />
-                    <span className="person-rank">
+                    <span className="rank">
                       #{person.rank}
                     </span>
+
+                    <span
+                      className="person-color"
+                      style={{
+                        background: colors[index],
+                      }}
+                    />
                   </div>
 
-                  <div className="person-info">
-                    {personImage(person.image_url) ? (
-                      <img
-                        src={personImage(person.image_url)!}
-                        alt={person.name}
-                        className="person-avatar"
-                      />
-                    ) : (
-                      <div className="person-avatar placeholder">
-                        {person.name.slice(0, 1)}
-                      </div>
-                    )}
+                  <img
+                    className="wealth-avatar"
+                    src={personImage(person)}
+                    alt={person.name}
+                  />
 
-                    <div>
-                      <h3>{person.name}</h3>
-                      <p>{person.company || person.country || "—"}</p>
-                    </div>
-                  </div>
+                  <h3>{person.name}</h3>
+
+                  <p className="company">
+                    {person.company || "شرکت نامشخص"}
+                  </p>
 
                   <div className="wealth-value">
-                    <strong>${money(worth)}B</strong>
-                    <span>ثروت تخمینی فعلی</span>
+                    ${money(person.net_worth_billions)}B
                   </div>
 
                   <div
                     className={`daily-change ${
-                      change > 0 ? "positive" : change < 0 ? "negative" : ""
+                      change > 0
+                        ? "positive"
+                        : change < 0
+                          ? "negative"
+                          : ""
                     }`}
                   >
                     {change > 0 ? "+" : ""}
                     {change.toFixed(2)}%
-                    <span>تغییر روزانه</span>
+                    <span> تغییر روزانه</span>
+                  </div>
+
+                  <div className="card-footer">
+                    <span>
+                      {person.country || "کشور نامشخص"}
+                    </span>
+
+                    <span>
+                      {person.updated_at
+                        ? new Date(
+                            person.updated_at
+                          ).toLocaleDateString("fa-IR")
+                        : "تاریخ نامشخص"}
+                    </span>
                   </div>
                 </article>
               );
             })}
           </div>
+        ) : (
+          <p className="empty">
+            برای مشاهده مقایسه، افراد را از بخش بالا انتخاب کن.
+          </p>
+        )}
+      </section>
 
-          {(() => {
-            const sorted = [...selectedPeople].sort(
-              (a, b) =>
-                numberValue(b.net_worth_billions) -
-                numberValue(a.net_worth_billions)
-            );
+      <section className="chart-section">
+        <div className="section-title chart-heading">
+          <div>
+            <h2>نمودار مقایسه تاریخی</h2>
+            <p>
+              نمودار فقط از رکوردهای واقعی تاریخچه ثروت اکونوا
+              ساخته می‌شود.
+            </p>
+          </div>
 
-            const richest = sorted[0];
-            const poorest = sorted[sorted.length - 1];
+          <div className="range-switch">
+            <button
+              type="button"
+              className={range === "week" ? "active" : ""}
+              onClick={() => setRange("week")}
+            >
+              هفته
+            </button>
 
-            const richestWorth = numberValue(richest.net_worth_billions);
-            const poorestWorth = numberValue(poorest.net_worth_billions);
+            <button
+              type="button"
+              className={range === "month" ? "active" : ""}
+              onClick={() => setRange("month")}
+            >
+              ماه
+            </button>
 
-            const difference = richestWorth - poorestWorth;
-            const percentage =
-              poorestWorth > 0
-                ? (difference / poorestWorth) * 100
-                : 0;
+            <button
+              type="button"
+              className={range === "year" ? "active" : ""}
+              onClick={() => setRange("year")}
+            >
+              سال
+            </button>
+          </div>
+        </div>
 
-            return (
-              <div className="difference-card">
-                <div>
-                  <span className="eyebrow">WEALTH GAP</span>
-                  <h3>اختلاف ثروت</h3>
-                  <p>
-                    {richest.name} در مقایسه با {poorest.name}
-                  </p>
+        {!chartData.some(
+          (series) => series.points.length > 0
+        ) ? (
+          <div className="chart-empty">
+            <span>◷</span>
+            <h3>داده تاریخی کافی نیست</h3>
+            <p>
+              برای افراد انتخاب‌شده هنوز رکوردی در بازه زمانی
+              انتخابی ثبت نشده است.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="chart-legend">
+              {chartData.map((series, index) => (
+                <div
+                  className="legend-item"
+                  key={series.person.id}
+                >
+                  <span
+                    style={{
+                      background: colors[index],
+                    }}
+                  />
+                  {series.person.name}
+                </div>
+              ))}
+            </div>
+
+            <div className="chart-container">
+              <div className="chart-y-labels">
+                <span>${money(chartMax)}B</span>
+                <span>
+                  ${money(chartMin + chartSpread * 0.75)}B
+                </span>
+                <span>
+                  ${money(chartMin + chartSpread * 0.5)}B
+                </span>
+                <span>
+                  ${money(chartMin + chartSpread * 0.25)}B
+                </span>
+                <span>${money(chartMin)}B</span>
+              </div>
+
+              <div className="chart-plot">
+                <div className="chart-grid-lines">
+                  {[0, 1, 2, 3, 4].map((line) => (
+                    <span key={line} />
+                  ))}
                 </div>
 
-                <div className="difference-values">
-                  <strong>${money(difference)}B</strong>
-                  <span>
-                    {percentage.toFixed(2)}% اختلاف
-                  </span>
-                </div>
-              </div>
-            );
-          })()}
+                <svg
+                  className="wealth-chart"
+                  viewBox="0 0 1000 400"
+                  preserveAspectRatio="none"
+                  role="img"
+                  aria-label="نمودار مقایسه تاریخی ثروت"
+                >
+                  {chartData.map((series, index) => {
+                    const points = series.points;
 
-          <section className="chart-card">
-            <div className="chart-heading">
-              <div>
-                <span className="eyebrow">HISTORICAL DATA</span>
-                <h2>نمودار مقایسه تاریخی</h2>
-                <p>بر اساس اطلاعات ثبت‌شده در تاریخچه واقعی اکونوا</p>
-              </div>
+                    if (points.length === 0) return null;
 
-              <div className="range-selector">
-                {(
-                  [
-                    ["week", "۷ روز"],
-                    ["month", "۳۰ روز"],
-                    ["year", "یک سال"],
-                  ] as [Range, string][]
-                ).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={range === value ? "active" : ""}
-                    onClick={() => setRange(value)}
-                  >
-                    {label}
-                  </button>
-                ))}
+                    const coordinates = points.map(
+                      (point, pointIndex) => {
+                        const x =
+                          points.length === 1
+                            ? 500
+                            : (pointIndex /
+                                (points.length - 1)) *
+                              1000;
+
+                        const value = numberValue(
+                          point.net_worth_billions
+                        );
+
+                        const y =
+                          390 -
+                          ((value - chartMin) /
+                            chartSpread) *
+                            370;
+
+                        return `${x},${y}`;
+                      }
+                    );
+
+                    return (
+                      <g key={series.person.id}>
+                        {points.length > 1 && (
+                          <polyline
+                            points={coordinates.join(" ")}
+                            fill="none"
+                            stroke={colors[index]}
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                        )}
+
+                        {points.length === 1 && (
+                          <circle
+                            cx="500"
+                            cy={
+                              390 -
+                              ((numberValue(
+                                points[0].net_worth_billions
+                              ) -
+                                chartMin) /
+                                chartSpread) *
+                                370
+                            }
+                            r="6"
+                            fill={colors[index]}
+                          />
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
               </div>
             </div>
 
-            {loading ? (
-              <div className="chart-message">
-                در حال دریافت تاریخچه ثروت...
-              </div>
-            ) : error ? (
-              <div className="chart-message error-message">
-                {error}
-              </div>
-            ) : chartData.length === 0 ? (
-              <div className="chart-message">
-                برای افراد انتخاب‌شده در این بازه اطلاعات تاریخی کافی ثبت نشده است.
-              </div>
-            ) : (
-              <>
-                <div className="chart-summary">
-                  <span>بیشترین مقدار:</span>
-                  <strong>${money(chartMax)}B</strong>
-                  <span>کمترین مقدار:</span>
-                  <strong>${money(chartMin)}B</strong>
-                </div>
+            <p className="chart-note">
+              محور افقی ترتیب رکوردهای تاریخی هر فرد را نشان
+              می‌دهد؛ فاصله زمانی بین رکوردها لزوماً یکسان
+              نیست.
+            </p>
+          </>
+        )}
+      </section>
+      
+      <footer className="compare-footer">
+        <span>ECONOVA</span>
+        <p>مقایسه هوشمند ثروت در بازارهای جهانی</p>
+      </footer>
 
-                <div className="chart-container">
-                  <svg
-                    viewBox="0 0 900 320"
-                    preserveAspectRatio="none"
-                    className="comparison-chart"
-                    role="img"
-                    aria-label="نمودار مقایسه تاریخی ثروت"
-                  >
-                    {[0, 1, 2, 3, 4].map((line) => {
-                      const y = 25 + line * 65;
+      <style jsx>{`
+        .compare-page {
+          min-height: 100vh;
+          background: #080d0a;
+          color: #f2f5f0;
+          padding: 24px;
+          position: relative;
+          overflow: hidden;
+          font-family: inherit;
+        }
 
-                      return (
-                        <line
-                          key={line}
-                          x1="55"
-                          y1={y}
-                          x2="880"
-                          y2={y}
-                          className="chart-grid-line"
-                        />
-                      );
-                    })}
+        .background-glow {
+          position: absolute;
+          width: 650px;
+          height: 650px;
+          border-radius: 50%;
+          background: #b9f27c;
+          opacity: 0.035;
+          filter: blur(150px);
+          top: -300px;
+          right: -200px;
+          pointer-events: none;
+        }
 
-                    {chartData.map((series, index) => {
-                      const points = series.points
-                        .map((point, pointIndex) => {
-                          const x =
-                            series.points.length > 1
-                              ? 55 +
-                                (pointIndex /
-                                  (series.points.length - 1)) *
-                                  825
-                              : 55;
+        .topbar,
+        .hero,
+        .selector-card,
+        .comparison-section,
+        .chart-section,
+        .compare-footer {
+          max-width: 1200px;
+          margin-left: auto;
+          margin-right: auto;
+          position: relative;
+        }
 
-                          const value = numberValue(
-                            point.net_worth_billions
-                          );
+        .topbar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 0 35px;
+        }
 
-                          const y =
-                            285 -
-                            ((value - chartMin) / chartSpread) * 260;
+        .brand {
+          color: #f2f5f0;
+          font-size: 22px;
+          font-weight: 900;
+          letter-spacing: 2px;
+          text-decoration: none;
+        }
 
-                          return `${x},${y}`;
-                        })
-                        .join(" ");
+        .brand span,
+        .hero h1 span {
+          color: #b9f27c;
+        }
 
-                      return (
-                        <polyline
-                          key={series.id}
-                          points={points}
-                          fill="none"
-                          stroke={colors[index]}
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="chart-line"
-                        />
-                      );
-                    })}
-                  </svg>
-                </div>
+        .back-link {
+          color: #b9f27c;
+          text-decoration: none;
+          font-size: 13px;
+        }
 
-                <div className="chart-legend">
-                  {chartData.map((series, index) => (
-                    <div className="legend-item" key={series.id}>
-                      <span
-                        className="legend-dot"
-                        style={{ background: colors[index] }}
-                      />
-                      <span>{series.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </section>
-        </section>
-      )}
+        .hero {
+          padding: 45px 0 35px;
+        }
+
+        .eyebrow {
+          color: #b9f27c;
+          font-size: 11px;
+          letter-spacing: 3px;
+          font-weight: 800;
+        }
+
+        .hero h1 {
+          font-size: clamp(30px, 5vw, 48px);
+          margin: 12px 0;
+          font-weight: 900;
+        }
+
+        .hero-description {
+          color: #89958c;
+          line-height: 2;
+          font-size: 14px;
+        }
+
+        .selector-card,
+        .chart-section {
+          background: #101813;
+          border: 1px solid #243328;
+          border-radius: 22px;
+          padding: 25px;
+          margin-bottom: 28px;
+        }
+
+        .section-title {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 15px;
+          margin-bottom: 22px;
+        }
+
+        .section-title h2 {
+          font-size: 20px;
+          margin: 0 0 8px;
+        }
+
+        .section-title p {
+          color: #829087;
+          font-size: 12px;
+          margin: 0;
+          line-height: 1.8;
+        }
+
+        .counter {
+          color: #b9f27c;
+          background: #1b2b1e;
+          border: 1px solid #385438;
+          border-radius: 30px;
+          padding: 8px 14px;
+          direction: ltr;
+          font-size: 13px;
+        }
+
+        .search-input {
+          width: 100%;
+          box-sizing: border-box;
+          background: #080f0b;
+          border: 1px solid #2a3b2e;
+          color: white;
+          padding: 15px;
+          border-radius: 12px;
+          outline: none;
+          font: inherit;
+          font-size: 13px;
+        }
+
+        .search-input:focus {
+          border-color: #b9f27c;
+        }
+
+        .search-results {
+          margin-top: 10px;
+          background: #0b120e;
+          border: 1px solid #26372b;
+          border-radius: 13px;
+          overflow: hidden;
+          max-height: 320px;
+          overflow-y: auto;
+        }
+
+        .search-result {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          padding: 12px;
+          background: transparent;
+          border: none;
+          border-bottom: 1px solid #1d2b21;
+          color: white;
+          text-align: right;
+          cursor: pointer;
+          font: inherit;
+        }
+
+        .search-result:hover {
+          background: #17241a;
+        }
+
+        .search-result:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+
+        .search-result img,
+        .selected-person img {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
+        .result-info {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          flex: 1;
+        }
+
+        .result-info strong {
+          font-size: 13px;
+        }
+
+        .result-info small,
+        .selected-person small {
+          color: #829087;
+          font-size: 11px;
+        }
+
+        .add-icon {
+          color: #b9f27c;
+          font-size: 25px;
+        }
+
+        .selected-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 20px;
+        }
+
+        .selected-person {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: #18241b;
+          border: 1px solid #304532;
+          padding: 9px 12px;
+          border-radius: 13px;
+        }
+
+        .selected-person div {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .selected-person strong {
+          font-size: 12px;
+        }
+
+        .selected-person button {
+          background: transparent;
+          border: none;
+          color: #ff8585;
+          font-size: 22px;
+          cursor: pointer;
+          margin-right: 5px;
+        }
+
+        .empty {
+          color: #829087;
+          text-align: center;
+          padding: 22px 5px;
+          font-size: 13px;
+        }
+
+        .error {
+          color: #ff8585;
+          font-size: 12px;
+        }
+
+        .loading {
+          color: #b9f27c;
+          font-size: 12px;
+        }
+
+        .comparison-section {
+          margin-bottom: 35px;
+        }
+
+        .comparison-section > .section-title {
+          padding: 0 3px;
+        }
+
+        .wealth-grid {
+          display: grid;
+          grid-template-columns: repeat(
+            auto-fit,
+            minmax(190px, 1fr)
+          );
+          gap: 15px;
+        }
+
+        .wealth-card {
+          background: #101813;
+          border: 1px solid #26372b;
+          border-top: 3px solid #b9f27c;
+          border-radius: 18px;
+          padding: 20px;
+          text-align: center;
+          min-width: 0;
+        }
+
+        .wealth-card-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .rank {
+          color: #b9f27c;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .person-color {
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+        }
+
+        .wealth-avatar {
+          width: 76px;
+          height: 76px;
+          border-radius: 50%;
+          object-fit: cover;
+          margin: 18px auto 10px;
+          border: 2px solid #344c37;
+        }
+
+        .wealth-card h3 {
+          font-size: 16px;
+          margin: 8px 0;
+        }
+
+        .company {
+          color: #849087;
+          font-size: 11px;
+          min-height: 18px;
+        }
+
+        .wealth-value {
+          color: #b9f27c;
+          font-size: 25px;
+          font-weight: 900;
+          direction: ltr;
+          margin: 20px 0 10px;
+        }
+
+        .daily-change {
+          color: #89958c;
+          font-size: 12px;
+          direction: ltr;
+        }
+
+        .daily-change.positive {
+          color: #83e5a0;
+        }
+
+        .daily-change.negative {
+          color: #ff8585;
+        }
+
+        .daily-change span {
+          direction: rtl;
+        }
+
+        .card-footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 5px;
+          color: #738078;
+          font-size: 10px;
+          border-top: 1px solid #26372b;
+          margin-top: 18px;
+          padding-top: 12px;
+        }
+
+        .chart-heading {
+          flex-wrap: wrap;
+        }
+
+        .range-switch {
+          display: flex;
+          gap: 5px;
+          background: #080f0b;
+          border: 1px solid #293a2d;
+          border-radius: 10px;
+          padding: 4px;
+        }
+
+        .range-switch button {
+          background: transparent;
+          border: none;
+          color: #849087;
+          padding: 8px 15px;
+          border-radius: 7px;
+          cursor: pointer;
+          font: inherit;
+          font-size: 12px;
+        }
+
+        .range-switch button.active {
+          background: #b9f27c;
+          color: #101810;
+          font-weight: 800;
+        }
+
+        .chart-legend {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 18px;
+          margin: 20px 0;
+        }
+
+        .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 12px;
+          color: #c5cec6;
+        }
+
+        .legend-item span {
+          width: 9px;
+          height: 9px;
+          border-radius: 50%;
+        }
+
+        .chart-container {
+          display: flex;
+          height: 300px;
+          gap: 12px;
+          direction: ltr;
+        }
+
+        .chart-y-labels {
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          color: #829087;
+          font-size: 10px;
+          text-align: right;
+          padding: 0 0 2px;
+          min-width: 65px;
+        }
+
+        .chart-plot {
+          position: relative;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .chart-grid-lines {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+
+        .chart-grid-lines span {
+          width: 100%;
+          border-top: 1px dashed #29382d;
+        }
+
+        .wealth-chart {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+        }
+
+        .chart-empty {
+          text-align: center;
+          padding: 50px 15px;
+          border: 1px dashed #304532;
+          border-radius: 15px;
+        }
+
+        .chart-empty > span {
+          color: #b9f27c;
+          font-size: 32px;
+        }
+
+        .chart-empty h3 {
+          font-size: 16px;
+        }
+
+        .chart-empty p,
+        .chart-note {
+          color: #829087;
+          font-size: 12px;
+          line-height: 2;
+        }
+
+        .chart-note {
+          margin-top: 20px;
+        }
+
+        .compare-footer {
+          text-align: center;
+          padding: 30px 0 15px;
+          color: #657269;
+          font-size: 11px;
+        }
+
+        .compare-footer span {
+          color: #b9f27c;
+          font-weight: 900;
+          letter-spacing: 3px;
+        }
+
+        @media (max-width: 600px) {
+          .compare-page {
+            padding: 15px;
+          }
+
+          .selector-card,
+          .chart-section {
+            padding: 17px;
+          }
+
+          .section-title {
+            align-items: flex-start;
+          }
+
+          .chart-heading {
+            flex-direction: column;
+          }
+
+          .range-switch {
+            width: 100%;
+          }
+
+          .range-switch button {
+            flex: 1;
+          }
+
+          .chart-container {
+            height: 230px;
+          }
+
+          .wealth-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .wealth-value {
+            font-size: 20px;
+          }
+        }
+      `}</style>
     </main>
   );
-</>
-                                  
-<style jsx>{`
-  .comparison-section {
-    margin-top: 38px;
-  }
-
-  .section-heading,
-  .chart-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    margin-bottom: 22px;
-  }
-
-  .eyebrow {
-    display: block;
-    color: #b9f27c;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 2px;
-    margin-bottom: 8px;
-  }
-
-  .section-heading h2,
-  .chart-heading h2 {
-    font-size: 23px;
-    margin: 0;
-    color: #f5f7f2;
-  }
-
-  .section-heading p,
-  .chart-heading p {
-    color: #929b8c;
-    font-size: 12px;
-    margin: 8px 0 0;
-  }
-
-  .people-count {
-    border: 1px solid #35452d;
-    color: #b9f27c;
-    border-radius: 30px;
-    padding: 8px 14px;
-    font-size: 12px;
-  }
-
-  .wealth-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 14px;
-  }
-
-  .wealth-card,
-  .difference-card,
-  .chart-card {
-    background: #111710;
-    border: 1px solid #293426;
-    border-radius: 18px;
-    padding: 19px;
-  }
-
-  .wealth-card-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .person-color,
-  .legend-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    display: inline-block;
-  }
-
-  .person-rank {
-    color: #8d9886;
-    font-size: 11px;
-  }
-
-  .person-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 19px 0;
-  }
-
-  .person-avatar {
-    width: 43px;
-    height: 43px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: #263122;
-  }
-
-  .placeholder {
-    display: grid;
-    place-items: center;
-    color: #b9f27c;
-    font-weight: 800;
-  }
-
-  .person-info h3 {
-    margin: 0;
-    color: #f1f4ed;
-    font-size: 15px;
-  }
-
-  .person-info p {
-    color: #929b8c;
-    font-size: 11px;
-    margin: 5px 0 0;
-  }
-
-  .wealth-value strong {
-    display: block;
-    color: #b9f27c;
-    font-size: 25px;
-    direction: ltr;
-    text-align: right;
-  }
-
-  .wealth-value span,
-  .daily-change span {
-    display: block;
-    color: #929b8c;
-    font-size: 11px;
-    margin-top: 6px;
-  }
-
-  .daily-change {
-    border-top: 1px solid #293426;
-    margin-top: 16px;
-    padding-top: 13px;
-    color: #c4cbbd;
-    font-weight: 700;
-    font-size: 13px;
-  }
-
-  .daily-change.positive {
-    color: #9ee879;
-  }
-
-  .daily-change.negative {
-    color: #ff8585;
-  }
-
-  .difference-card {
-    margin-top: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .difference-card h3 {
-    color: #f2f5ed;
-    margin: 0;
-    font-size: 17px;
-  }
-
-  .difference-card p {
-    color: #929b8c;
-    font-size: 12px;
-    margin: 8px 0 0;
-  }
-
-  .difference-values {
-    text-align: left;
-    flex-shrink: 0;
-  }
-
-  .difference-values strong {
-    display: block;
-    color: #b9f27c;
-    font-size: 23px;
-    direction: ltr;
-  }
-
-  .difference-values span {
-    display: block;
-    color: #929b8c;
-    font-size: 11px;
-    margin-top: 7px;
-  }
-
-  .chart-card {
-    margin-top: 17px;
-  }
-
-  .range-selector {
-    display: flex;
-    gap: 5px;
-    padding: 4px;
-    background: #0b100a;
-    border: 1px solid #293426;
-    border-radius: 10px;
-  }
-
-  .range-selector button {
-    border: 0;
-    background: transparent;
-    color: #9ca595;
-    padding: 8px 11px;
-    border-radius: 7px;
-    font-size: 11px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .range-selector button.active {
-    background: #b9f27c;
-    color: #10170c;
-    font-weight: 800;
-  }
-
-  .chart-summary {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    margin: 20px 0 12px;
-    color: #929b8c;
-    font-size: 11px;
-  }
-
-  .chart-summary strong {
-    color: #dce6d3;
-    margin-left: 12px;
-    direction: ltr;
-  }
-
-  .chart-container {
-    width: 100%;
-    overflow: hidden;
-    border-radius: 12px;
-    background: #0c120b;
-    padding: 10px 0;
-  }
-
-  .comparison-chart {
-    width: 100%;
-    height: 260px;
-    overflow: visible;
-  }
-
-  .chart-grid-line {
-    stroke: #293426;
-    stroke-width: 1;
-    stroke-dasharray: 4 5;
-  }
-
-  .chart-line {
-    vector-effect: non-scaling-stroke;
-  }
-
-  .chart-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 17px;
-    margin-top: 18px;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    color: #c2cbbb;
-    font-size: 12px;
-  }
-
-  .chart-message {
-    min-height: 150px;
-    display: grid;
-    place-items: center;
-    text-align: center;
-    color: #a8b19e;
-    font-size: 13px;
-    padding: 20px;
-  }
-
-  .error-message {
-    color: #ff9292;
-  }
-
-  @media (max-width: 650px) {
-    .section-heading,
-    .chart-heading {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    .wealth-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .difference-card {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    .difference-values {
-      text-align: right;
-    }
-
-    .range-selector {
-      width: 100%;
-    }
-
-    .range-selector button {
-      flex: 1;
-    }
-
-    .comparison-chart {
-      height: 210px;
-    }
-  }
-`}</style>
-    );
-  }
-  
+}
