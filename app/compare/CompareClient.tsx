@@ -655,7 +655,15 @@ const x = Math.max(
 
                         {points.length === 1 && (
                           <circle
-                            cx="500"
+                            cx={Math.max(
+  0,
+  Math.min(
+    1000,
+    ((Date.parse(points[0].recorded_at) - chartStart) /
+      (days * 24 * 60 * 60 * 1000)) *
+      1000
+  )
+)}
                             cy={
                               390 -
                               ((numberValue(
