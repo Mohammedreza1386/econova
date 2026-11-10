@@ -3952,44 +3952,7 @@ const previousRows = previousResponse as {
           margin-bottom: 18px;
         }
 
-        .eco-advanced-toolbar {
-  display: grid;
-  grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(130px, 1fr));
-  gap: 12px;
-  padding: 16px;
-  background: linear-gradient(145deg, #111d15, #0a120d);
-  border: 1px solid rgba(185, 242, 124, 0.2);
-  border-radius: 18px;
-}
-
-.eco-advanced-toolbar .eco-search-box {
-  max-width: none;
-  box-sizing: border-box;
-}
-
-.eco-filter-select {
-  width: 100%;
-  min-width: 0;
-  min-height: 48px;
-  padding: 0 13px;
-  color: #e8f0ea;
-  background: #101b15;
-  border: 1px solid #294333;
-  border-radius: 13px;
-  font: inherit;
-  font-size: 12px;
-  outline: none;
-}
-
-.eco-filter-select:focus {
-  border-color: #b9f27c;
-  box-shadow: 0 0 0 3px rgba(185, 242, 124, 0.1);
-}
-
-.eco-filter-select option {
-  color: #e8f0ea;
-  background: #101b15;
-}
+        
 
 .eco-advanced-toolbar {
   display: grid;
