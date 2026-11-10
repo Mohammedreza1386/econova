@@ -178,6 +178,46 @@ function getPersonAge(person: Billionaire): number | null {
   return age > 0 && age < 120 ? age : null;
 }
 
+function inferIndustry(person: Partial<Billionaire>): string {
+  const name = String(person.name || "").toLowerCase();
+  const text = `${person.company || ""} ${person.bio || ""}`.toLowerCase();
+
+  const rules: Array<[RegExp, string]> = [
+    [/elon musk|tesla|spacex/, "Technology & Automotive"],
+    [/jeff bezos|amazon/, "E-commerce & Technology"],
+    [/bernard arnault|lvmh|louis vuitton|dior/, "Luxury & Fashion"],
+    [/mark zuckerberg|meta platforms|facebook|instagram/, "Technology & Social Media"],
+    [/larry page|sergey brin|google|alphabet/, "Technology & Software"],
+    [/warren buffett|berkshire hathaway/, "Finance & Investments"],
+    [/larry ellison|oracle/, "Technology & Software"],
+    [/jensen huang|nvidia|semiconductor/, "Semiconductors & Technology"],
+    [/steve ballmer|microsoft/, "Technology & Software"],
+    [/michael dell|dell technologies/, "Technology & Hardware"],
+    [/amancio ortega|zara|inditex|fashion|apparel/, "Fashion & Retail"],
+    [/carlos slim|america movil|telecom/, "Telecommunications"],
+    [/mukesh ambani|reliance industries/, "Energy & Diversified Industries"],
+    [/gautam adani|adani group|mining|infrastructure/, "Energy & Infrastructure"],
+    [/banking|investment|asset management|hedge fund|insurance/, "Finance & Investments"],
+    [/real estate|property|املاک/, "Real Estate"],
+    [/oil|gas|petroleum|energy|نفت|گاز|انرژی/, "Energy & Natural Resources"],
+    [/pharmaceutical|biotech|healthcare|medical|داروسازی/, "Healthcare & Pharmaceuticals"],
+    [/food|beverage|restaurant|غذا|نوشیدنی/, "Food & Beverage"],
+    [/media|entertainment|film|music|streaming/, "Media & Entertainment"],
+    [/automotive|automobile|خودروسازی/, "Automotive"],
+    [/retail|e-commerce|marketplace|فروشگاه/, "E-commerce & Retail"],
+    [/manufacturing|industrial|steel|cement|فولاد/, "Manufacturing & Industrials"],
+    [/technology|software|computer|internet|فناوری|نرم‌افزار/, "Technology & Software"],
+  ];
+
+  for (const [pattern, industry] of rules) {
+    if (pattern.test(name) || pattern.test(text)) {
+      return industry;
+    }
+  }
+
+  return "Diversified Holdings";
+}
+
 function isWomanBillionaire(person: Billionaire): boolean {
   const gender = String(person.gender || "").toLowerCase();
   return ["female", "woman", "f"].includes(gender) ||
