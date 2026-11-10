@@ -1193,6 +1193,22 @@ const x = Math.max(
           margin-top: 20px;
         }
 
+        .chart-x-labels {
+  display: flex;
+  justify-content: space-between;
+  direction: ltr;
+  margin-left: 77px;
+  margin-top: 10px;
+  color: #829087;
+  font-size: 10px;
+  gap: 5px;
+}
+
+.chart-x-labels span {
+  white-space: nowrap;
+  text-align: center;
+}
+
         .compare-footer {
           text-align: center;
           padding: 30px 0 15px;
