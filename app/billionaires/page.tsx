@@ -157,6 +157,13 @@ export default async function BillionairesPage() {
             </Link>
 
             <Link
+  href="/compare"
+  className="transition hover:text-[#b9f27c]"
+>
+  Compare Wealth
+</Link>
+
+            <Link
               href="/billionaires/rankings"
               className="transition hover:text-[#b9f27c]"
             >
