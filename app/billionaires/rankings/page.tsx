@@ -972,14 +972,55 @@ const [dailyTotalStatus, setDailyTotalStatus] = useState("در انتظار ثب
 
   // جدول اصلی همیشه فهرست کامل ثروتمندان را نشان می‌دهد؛ فیلترهای دسته‌بندی
   // فقط روی نوار کارت‌های Forbes-style اعمال می‌شوند.
-  const filteredPeople = useMemo(() => {
-    const query = searchTerm.trim().toLocaleLowerCase();
-    if (!query) return sortedPeople;
-    return sortedPeople.filter((person) =>
-      [person.name, person.company || "", person.country || "", String(person.rank)]
-        .some((value) => value.toLocaleLowerCase().includes(query))
+  
+const filteredPeople = useMemo(() => {
+  const query = searchTerm.trim().toLocaleLowerCase();
+
+  return sortedPeople.filter((person) => {
+    const matchesSearch =
+      !query ||
+      [
+        person.name,
+        person.company || "",
+        person.country || "",
+        String(person.rank),
+      ].some((value) =>
+        value.toLocaleLowerCase().includes(query)
+      );
+
+    const matchesCountry =
+      !countryFilter || person.country === countryFilter;
+
+    const matchesIndustry =
+      !industryFilter || person.industry === industryFilter;
+
+    const age = getPersonAge(person);
+
+    const matchesAge =
+      !ageFilter ||
+      (age !== null &&
+        (ageFilter === "under30"
+          ? age < 30
+          : ageFilter === "30to49"
+          ? age >= 30 && age <= 49
+          : ageFilter === "50to69"
+          ? age >= 50 && age <= 69
+          : age >= 70));
+
+    return (
+      matchesSearch &&
+      matchesCountry &&
+      matchesIndustry &&
+      matchesAge
     );
-  }, [sortedPeople, searchTerm]);
+  });
+}, [
+  sortedPeople,
+  searchTerm,
+  countryFilter,
+  industryFilter,
+  ageFilter,
+]);
 
   const visiblePeople = showAll ? filteredPeople : filteredPeople.slice(0, 10);
 
