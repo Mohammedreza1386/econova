@@ -1259,6 +1259,15 @@ const x = Math.max(
           .wealth-value {
             font-size: 20px;
           }
+          .chart-x-labels {
+  margin-left: 77px;
+  font-size: 8px;
+  gap: 2px;
+}
+
+.chart-x-labels span {
+  white-space: normal;
+}
         }
       `}</style>
     </main>
