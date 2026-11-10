@@ -793,8 +793,13 @@ const [dailyTotalStatus, setDailyTotalStatus] = useState("در انتظار ثب
       const payload = await response.json();
 
       const peopleData: Billionaire[] = Array.isArray(payload.billionaires)
-        ? payload.billionaires
-        : [];
+  ? payload.billionaires.map((person) => ({
+      ...person,
+      industry:
+        person.industry?.trim() ||
+        inferIndustry(person),
+    }))
+  : [];
 
       const endpointNews: BillionaireNews[] = Array.isArray(payload.news)
         ? payload.news
