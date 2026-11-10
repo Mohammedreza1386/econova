@@ -992,7 +992,9 @@ const filteredPeople = useMemo(() => {
       !countryFilter || person.country === countryFilter;
 
     const matchesIndustry =
-      !industryFilter || person.industry === industryFilter;
+  !industryFilter ||
+  String(person.industry || "").trim().toLowerCase() ===
+    industryFilter.trim().toLowerCase();
 
     const age = getPersonAge(person);
 
