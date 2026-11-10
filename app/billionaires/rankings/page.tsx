@@ -696,7 +696,11 @@ const [historyRange, setHistoryRange] = useState<"week" | "month" | "year">("mon
   const [errorMessage, setErrorMessage] = useState("");
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [showAll, setShowAll] = useState(false);
+const [showAll, setShowAll] = useState(false);
+
+const [countryFilter, setCountryFilter] = useState("");
+const [industryFilter, setIndustryFilter] = useState("");
+const [ageFilter, setAgeFilter] = useState("");
   const [topFiveCategory, setTopFiveCategory] = useState<"top5" | "women" | "youngest" | "nontech" | "athletes">("top5");
   const [activeRank, setActiveRank] = useState(1);
 
