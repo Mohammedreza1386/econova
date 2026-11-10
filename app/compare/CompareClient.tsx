@@ -228,6 +228,8 @@ export default function CompareClient({
 
   const days =
     range === "week" ? 7 : range === "month" ? 30 : 365;
+  const chartStart =
+  Date.now() - days * 24 * 60 * 60 * 1000;
 
   const chartData = useMemo(() => {
   const now = Date.now();
