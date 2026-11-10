@@ -2084,8 +2084,22 @@ const previousRows = previousResponse as {
                 </tr>
               )}
             </tbody>
-          </table>
+                    </table>
         </div>
+
+        {filteredPeople.length > 10 && (
+          <div className="eco-ranking-more">
+            <button
+              type="button"
+              className="eco-ranking-more-button"
+              onClick={() => setShowAll(current => !current)}
+            >
+              {showAll
+                ? "نمایش ۱۰ نفر اول"
+                : `مشاهده همه ثروتمندان (${filteredPeople.length} نفر)`}
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="eco-trillionaire-section" id="trillionaires" aria-label="تریلیونرها">
