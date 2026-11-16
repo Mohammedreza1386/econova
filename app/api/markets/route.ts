@@ -1,28 +1,11 @@
 
 import { NextResponse } from "next/server";
 
-export const revalidate = 180;
+export const revalidate = 300;
 
 const SYMBOLS = {
-  indices: [
-    "SPX",
-    "DJI",
-    "IXIC",
-    "DAX",
-    "FTSE",
-    "CAC",
-    "N225",
-    "HSI",
-  ],
-  stocks: [
-    "AAPL",
-    "MSFT",
-    "NVDA",
-    "AMZN",
-    "GOOGL",
-    "META",
-    "TSLA",
-  ],
+  indices: ["DAX", "CAC"],
+  stocks: ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"],
 };
 
 type Quote = {
@@ -45,7 +28,6 @@ type Quote = {
   volume?: string | number;
   is_market_open?: boolean;
   status?: string;
-  message?: string;
 };
 
 function normalizeQuote(
@@ -54,20 +36,20 @@ function normalizeQuote(
 ) {
   return {
     symbol: quote.symbol || fallbackSymbol,
-    name: quote.name || quote.instrument_name || fallbackSymbol,
+    name:
+      quote.name ||
+      quote.instrument_name ||
+      fallbackSymbol,
     exchange: quote.exchange || "",
     currency: quote.currency || "USD",
     datetime: quote.datetime || "",
     timestamp: quote.timestamp || null,
-
     price: quote.close ?? quote.price ?? null,
     change: quote.change ?? null,
-
     changePercent:
       quote.percent_change ??
       quote.change_percentage ??
       null,
-
     previousClose: quote.previous_close ?? null,
     open: quote.open ?? null,
     high: quote.high ?? null,
@@ -85,7 +67,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           configured: false,
-          error: "کلید API در تنظیمات امن Vercel ثبت نشده است.",
+          error: "کلید API در Vercel ثبت نشده است.",
           items: [],
         },
         { status: 503 }
@@ -121,19 +103,23 @@ export async function GET(request: Request) {
         Accept: "application/json",
       },
       next: {
-        revalidate: 180,
+        revalidate: 300,
       },
     });
 
     const result = await response.json();
 
-    if (!response.ok || result.status === "error" || result.code) {
+    if (
+      !response.ok ||
+      result.status === "error" ||
+      result.code
+    ) {
       return NextResponse.json(
         {
           configured: true,
           error:
             result.message ||
-            "منبع اطلاعات بازار درخواست را نپذیرفت.",
+            "خطا در دریافت اطلاعات از Twelve Data.",
           items: [],
         },
         { status: response.status || 502 }
@@ -144,7 +130,10 @@ export async function GET(request: Request) {
       .map((symbol) => {
         let quote: Quote | undefined;
 
-        if (result[symbol] && typeof result[symbol] === "object") {
+        if (
+          result[symbol] &&
+          typeof result[symbol] === "object"
+        ) {
           quote = result[symbol] as Quote;
         } else if (
           result.symbol &&
@@ -173,11 +162,13 @@ export async function GET(request: Request) {
         group,
         count: items.length,
         updatedAt: new Date().toISOString(),
+        cacheSeconds: 300,
         items,
       },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=180, stale-while-revalidate=60",
+          "Cache-Control":
+            "public, s-maxage=300, stale-while-revalidate=120",
         },
       }
     );
@@ -191,4 +182,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-           }
+}
