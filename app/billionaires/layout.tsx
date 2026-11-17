@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 const pageUrl = "https://econova-nine.vercel.app/billionaires";
 
 export const metadata: Metadata = {
-  title: "Top Billionaires in the World | Econova",
+  title: "Top Billionaires in the World",
   description:
     "Explore the world's top billionaires, estimated net worth and global wealth rankings on Econova.",
   keywords: [
