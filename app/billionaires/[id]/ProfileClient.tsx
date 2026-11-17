@@ -275,14 +275,14 @@ export default function ProfileClient({
         <div
   className="history-range"
   role="group"
-  aria-label="Wealth history range"
-  dir="ltr"
+  aria-label="بازه زمانی تاریخچه"
 >
   {(
     [
-      ["week", "Week"],
-      ["month", "Month"],
-      ["year", "Year"],
+      ["all", "کل تاریخچه"],
+      ["week", "هفته"],
+      ["month", "ماه"],
+      ["year", "سال"],
     ] as const
   ).map(([value, label]) => (
     <button
