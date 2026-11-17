@@ -341,7 +341,7 @@ async function loadCompleteWealthHistory(
 function MiniWealthChart({ person }: { person: Billionaire }) {
   const [points, setPoints] = useState<WealthHistoryPoint[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [range, setRange] = useState<"all" | "week" | "month" | "year">("all");
+  const [range, setRange] = useState<"all" | "week" | "month" | "year">("year");
 
   useEffect(() => {
     let cancelled = false;
