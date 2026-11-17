@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Top Billionaires | Econova",
+    title: "Top Billionaires",
     description:
       "Explore global billionaire rankings and estimated net worth.",
   },
