@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     canonical: pageUrl,
   },
   openGraph: {
-    title: "Top Billionaires | Econova",
+    title: "Top Billionaires",
     description:
       "Explore the world's wealthiest people and their estimated fortunes.",
     url: pageUrl,
