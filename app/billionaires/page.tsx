@@ -4,7 +4,7 @@ import Link from "next/link";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: "Top 25 Billionaires in the World | Econova",
+  title: "Top 25 Billionaires in the World",
   description:
     "Explore the world's top 25 billionaires, their net worth and daily wealth changes on Econova.",
   alternates: {
