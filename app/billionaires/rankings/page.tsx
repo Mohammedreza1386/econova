@@ -470,6 +470,21 @@ return newYorkLocalMidnightUtc(
     role="group"
     aria-label="Wealth chart range"
     dir="ltr"
+    style={{
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      gap: "4px",
+      width: "fit-content",
+      maxWidth: "100%",
+      margin: "12px auto 10px 0",
+      padding: "4px",
+      border: "1px solid rgba(255,255,255,.14)",
+      borderRadius: "999px",
+      background: "#151a16",
+      boxSizing: "border-box",
+    }}
   >
     {(
       [
@@ -481,11 +496,25 @@ return newYorkLocalMidnightUtc(
       <button
         key={value}
         type="button"
-        className={range === value ? "active" : ""}
         aria-pressed={range === value}
         onClick={() => {
           setRange(value);
           setSelectedIndex(null);
+        }}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: "76px",
+          padding: "9px 12px",
+          border: "0",
+          borderRadius: "999px",
+          background: range === value ? "#b9f27c" : "transparent",
+          color: range === value ? "#10160e" : "#aeb8af",
+          fontSize: "12px",
+          fontWeight: range === value ? 850 : 650,
+          whiteSpace: "nowrap",
+          cursor: "pointer",
         }}
       >
         {label}
@@ -493,7 +522,6 @@ return newYorkLocalMidnightUtc(
     ))}
   </div>
 );
-
   if (!hasChart) {
     return (
       <div className="eco-mini-chart-wrap">
