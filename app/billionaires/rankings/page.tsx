@@ -465,34 +465,34 @@ return newYorkLocalMidnightUtc(
   };
 
   const rangeControls = (
-    <div
-      className="eco-mini-chart-ranges"
-      role="group"
-      aria-label="بازه زمانی نمودار ثروت"
-    >
-      {(
-        [
-          ["all", "همه"],
-          ["week", "هفته"],
-          ["month", "ماه"],
-          ["year", "سال"],
-        ] as const
-      ).map(([value, label]) => (
-        <button
-          key={value}
-          type="button"
-          className={range === value ? "active" : ""}
-          aria-pressed={range === value}
-          onClick={() => {
-            setRange(value);
-            setSelectedIndex(null);
-          }}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
+  <div
+    className="eco-mini-chart-ranges"
+    role="group"
+    aria-label="Wealth chart range"
+    dir="ltr"
+  >
+    {(
+      [
+        ["week", "Week"],
+        ["month", "Month"],
+        ["year", "Year"],
+      ] as const
+    ).map(([value, label]) => (
+      <button
+        key={value}
+        type="button"
+        className={range === value ? "active" : ""}
+        aria-pressed={range === value}
+        onClick={() => {
+          setRange(value);
+          setSelectedIndex(null);
+        }}
+      >
+        {label}
+      </button>
+    ))}
+  </div>
+);
 
   if (!hasChart) {
     return (
