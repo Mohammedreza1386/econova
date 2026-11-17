@@ -470,7 +470,64 @@ export default function ProfileClient({
         .lifetime-card{border-color:#536d3d;background:linear-gradient(145deg,#172218,#101812 70%)}.positive{color:#b9f27c}.negative{color:#ff8585}
         [dir="ltr"]{direction:ltr;unicode-bidi:isolate;text-align:left;font-variant-numeric:tabular-nums}
         .history-card{margin-top:0}.section-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.section-heading h2{margin:4px 0 8px;font-size:clamp(20px,3vw,27px)}.section-heading p:not(.eyebrow){margin:0;color:#93a197;font-size:12px;line-height:1.8}.record-count{white-space:nowrap;color:#b9f27c;font-size:12px}
-        .history-range{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 12px}.history-range button{border:1px solid #344a39;border-radius:999px;padding:9px 15px;color:#c9d4cb;background:#151f18;font:inherit;font-size:12px;cursor:pointer}.history-range button.active{color:#10160e;background:#b9f27c;border-color:#b9f27c;font-weight:800}
+        .history-range {
+  display: flex;
+  direction: ltr;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+
+  width: fit-content;
+  max-width: 100%;
+
+  margin: 20px auto 12px 0;
+  padding: 4px;
+
+  border: 1px solid #344a39;
+  border-radius: 999px;
+  background: #0b120d;
+}
+
+.history-range button {
+  min-width: 65px;
+  border: none;
+  border-radius: 999px;
+
+  padding: 9px 17px;
+
+  color: #aeb9b0;
+  background: transparent;
+
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+.history-range button:hover {
+  color: #ffffff;
+  background: #18231a;
+}
+
+.history-range button.active {
+  color: #10160e;
+  background: #b9f27c;
+  font-weight: 900;
+}
+
+@media(max-width:650px) {
+  .history-range {
+    margin: 18px auto 12px 0;
+  }
+
+  .history-range button {
+    min-width: 65px;
+    padding: 9px 16px;
+    font-size: 11px;
+  }
+}
         .chart-wrap{padding:18px;border:1px solid #24372a;border-radius:14px;background:#0a110c}.wealth-chart{display:block;width:100%;height:230px;overflow:visible}.chart-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#9ba99e;font-size:10px}.chart-foot strong{color:#eaf2eb;font-size:13px}
        .empty{padding:18px;color:#a7b4aa;line-height:1.9}.history-list{margin-top:20px}.history-list-heading{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;color:#dce6dd;font-size:12px}.history-list-heading span{color:#87968b;font-size:10px}.history-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid #25342a;color:#aab7ac;font-size:12px}.history-row strong{color:#e9f0e9;font-size:13px}.profile-footer{padding:22px 4px;color:#819087;font-size:11px;line-height:1.8}
        .news-section{
