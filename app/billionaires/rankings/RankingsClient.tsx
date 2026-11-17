@@ -753,7 +753,17 @@ function changeAmount(person: Billionaire): number | null {
   return current - Number(previous);
 }
 
-export default function BillionairesPage() {
+
+export default function BillionairesPage({
+  initialPeople = [],
+  initialNews = [],
+  initialError = "",
+}: {
+  initialPeople?: Billionaire[];
+  initialNews?: BillionaireNews[];
+  initialError?: string;
+}) {
+
   const [people, setPeople] = useState<Billionaire[]>([]);
   const [news, setNews] = useState<BillionaireNews[]>([]);
 const [wealthHistory, setWealthHistory] = useState<WealthHistoryPoint[]>([]);
