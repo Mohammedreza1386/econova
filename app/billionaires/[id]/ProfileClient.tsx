@@ -273,29 +273,29 @@ export default function ProfileClient({
         </div>
 
         <div
-          className="history-range"
-          role="group"
-          aria-label="بازه زمانی تاریخچه"
-        >
-          {(
-            [
-              ["all", "کل تاریخچه"],
-              ["week", "هفته"],
-              ["month", "ماه"],
-              ["year", "سال"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={historyRange === value ? "active" : ""}
-              aria-pressed={historyRange === value}
-              onClick={() => setHistoryRange(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+  className="history-range"
+  role="group"
+  aria-label="Wealth history range"
+  dir="ltr"
+>
+  {(
+    [
+      ["week", "Week"],
+      ["month", "Month"],
+      ["year", "Year"],
+    ] as const
+  ).map(([value, label]) => (
+    <button
+      key={value}
+      type="button"
+      className={historyRange === value ? "active" : ""}
+      aria-pressed={historyRange === value}
+      onClick={() => setHistoryRange(value)}
+    >
+      {label}
+    </button>
+  ))}
+</div>
 
         {history.length === 0 ? (
           <p className="empty">
