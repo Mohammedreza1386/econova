@@ -6154,43 +6154,57 @@ const previousRows = previousResponse as {
     transition: none !important;
   }
 }
+
 /* Forbes-style TOP 5 range selector */
-.eco-legacy-top-five .eco-mini-chart-ranges {
-  display: flex;
-  flex-direction: row;
-  direction: ltr;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 3px;
-  width: fit-content;
+:global(.eco-legacy-top-five .eco-mini-chart-ranges) {
+  display: flex !important;
+  flex-direction: row !important;
+  direction: ltr !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 4px !important;
+  width: fit-content !important;
   max-width: 100%;
-  margin: 12px auto 10px 0;
-  padding: 4px;
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 999px;
-  background: #151a16;
+  margin: 12px auto 10px 0 !important;
+  padding: 4px !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 999px !important;
+  background: #151a16 !important;
   box-sizing: border-box;
 }
 
-.eco-legacy-top-five .eco-mini-chart-ranges button {
-  flex: 1;
-  min-width: 76px;
-  padding: 9px 14px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: #aeb8af;
-  font-size: 12px;
-  font-weight: 650;
+:global(.eco-legacy-top-five .eco-mini-chart-ranges button) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 1 0 !important;
+  min-width: 76px !important;
+  padding: 9px 14px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: #aeb8af !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  white-space: nowrap !important;
   cursor: pointer;
-  white-space: nowrap;
-  transition: background .2s ease, color .2s ease;
 }
 
-.eco-legacy-top-five .eco-mini-chart-ranges button.active {
-  background: #b9f27c;
-  color: #10160e;
-  font-weight: 850;
+:global(.eco-legacy-top-five .eco-mini-chart-ranges button.active) {
+  background: #b9f27c !important;
+  color: #10160e !important;
+  font-weight: 850 !important;
+}
+
+@media (max-width: 420px) {
+  :global(.eco-legacy-top-five .eco-mini-chart-ranges) {
+    width: 100% !important;
+  }
+
+  :global(.eco-legacy-top-five .eco-mini-chart-ranges button) {
+    min-width: 0 !important;
+    padding: 9px 8px !important;
+  }
 }
 
 @media (max-width: 420px) {
