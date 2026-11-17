@@ -763,7 +763,6 @@ export default function BillionairesPage({
   initialNews?: BillionaireNews[];
   initialError?: string;
 }) {
-
   const [people, setPeople] = useState<Billionaire[]>([]);
   const [news, setNews] = useState<BillionaireNews[]>([]);
 const [wealthHistory, setWealthHistory] = useState<WealthHistoryPoint[]>([]);
