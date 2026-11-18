@@ -769,8 +769,11 @@ const [wealthHistory, setWealthHistory] = useState<WealthHistoryPoint[]>([]);
 const [historyLoading, setHistoryLoading] = useState(false);
 const [historyRange, setHistoryRange] = useState<"week" | "month" | "year">("month");
   
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(
+  initialPeople.length === 0 && !initialError
+);
+
+const [errorMessage, setErrorMessage] = useState(initialError);
 
   const [searchTerm, setSearchTerm] = useState("");
 const [showAll, setShowAll] = useState(false);
