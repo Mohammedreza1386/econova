@@ -792,6 +792,24 @@ const [historyRange, setHistoryRange] =
       flex-wrap: wrap;
     }
     .footer-brand { color: #d9bd77; font-weight: 900; letter-spacing: 1px; }
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-top: 13px;
+}
+
+.footer-links a {
+  color: #aab4c0;
+  transition: color .2s ease;
+}
+
+.footer-links a:hover,
+.footer-links a:focus-visible {
+  color: #e2c77f;
+}
     
     .history-controls {
       display: flex;
