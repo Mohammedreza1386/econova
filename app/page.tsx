@@ -1407,14 +1407,23 @@ const [historyRange, setHistoryRange] =
       </section>
 
       <footer id="about">
-        <div className="wrap footer-inner">
-          <div>
-            <div className="footer-brand">ECONOVA</div>
-            <div>داشبورد بازارها و اطلاعات اقتصادی</div>
-          </div>
-          <div>© Econova · داده‌ها ممکن است با تأخیر همراه باشند.</div>
-        </div>
-      </footer>
+  <div className="wrap footer-inner">
+    <div>
+      <div className="footer-brand">ECONOVA</div>
+      <div>داشبورد بازارها و اطلاعات اقتصادی</div>
+
+      <nav className="footer-links" aria-label="پیوندهای اطلاعاتی">
+        <a href="/about">درباره اکونوا</a>
+        <a href="/methodology">روش‌شناسی</a>
+        <a href="/editorial-policy">سیاست تحریریه</a>
+        <a href="/contact">تماس با ما</a>
+        <a href="/data-license">مجوز داده‌ها</a>
+      </nav>
+    </div>
+
+    <div>© Econova · داده‌ها ممکن است با تأخیر همراه باشند.</div>
+  </div>
+</footer>
     </main>
   );
 }
