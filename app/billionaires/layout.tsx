@@ -59,6 +59,7 @@ export default function BillionairesLayout({
     description:
       "Estimated net worth and rankings of the world's wealthiest people. Figures are estimates and may change as the dataset is updated.",
     url: pageUrl,
+    license: "https://econova-nine.vercel.app/data-license",
     keywords: [
       "billionaires",
       "net worth estimates",
