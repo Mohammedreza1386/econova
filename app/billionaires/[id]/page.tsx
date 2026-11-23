@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import { cache } from "react";
 import { notFound } from "next/navigation";
@@ -38,6 +37,23 @@ type BillionaireNews = {
   source_url: string;
   image_url: string | null;
   published_at: string | null;
+};
+
+type YearlyRankingEntry = {
+  id: string;
+  name: string;
+  image_url: string | null;
+  current_net_worth: number;
+  baseline_net_worth: number;
+  baseline_date: string;
+  change: number;
+  change_pct: number | null;
+  rank: number;
+};
+
+type YearlyRanking = {
+  year: number;
+  people: YearlyRankingEntry[];
 };
 
 type PageProps = {
@@ -125,14 +141,12 @@ export async function generateMetadata({
     if (!person) {
       return {
         title: "Profile Not Found | Econova",
-        robots: {
-          index: false,
-          follow: true,
-        },
+        robots: { index: false, follow: true },
       };
     }
 
-    const canonical = `${SITE_URL}/billionaires/${encodeURIComponent(id)}`;
+    const canonical =
+      `${SITE_URL}/billionaires/${encodeURIComponent(id)}`;
 
     const description = cleanDescription(
       person.bio,
@@ -140,17 +154,12 @@ export async function generateMetadata({
     );
 
     const image = validUrl(person.image_url);
-
     const title = `${person.name} Net Worth & Wealth History | Econova`;
 
     return {
       title,
       description,
-
-      alternates: {
-        canonical,
-      },
-
+      alternates: { canonical },
       robots: {
         index: true,
         follow: true,
@@ -160,7 +169,6 @@ export async function generateMetadata({
           "max-image-preview": "large",
         },
       },
-
       openGraph: {
         type: "profile",
         url: canonical,
@@ -168,22 +176,15 @@ export async function generateMetadata({
         title,
         description,
         images: image
-          ? [
-              {
-                url: image,
-                alt: `${person.name} - Econova`,
-              },
-            ]
+          ? [{ url: image, alt: `${person.name} - Econova` }]
           : [],
       },
-
       twitter: {
         card: image ? "summary_large_image" : "summary",
         title,
         description,
         images: image ? [image] : [],
       },
-
       keywords: [
         person.name,
         `${person.name} net worth`,
@@ -198,10 +199,7 @@ export async function generateMetadata({
 
     return {
       title: "Billionaire Profile | Econova",
-      robots: {
-        index: false,
-        follow: true,
-      },
+      robots: { index: false, follow: true },
     };
   }
 }
@@ -243,15 +241,11 @@ async function getBillionaireHistory(
 
     const data: unknown = await response.json();
 
-    if (!Array.isArray(data) || data.length === 0) {
-      break;
-    }
+    if (!Array.isArray(data) || data.length === 0) break;
 
     allHistory.push(...(data as HistoryPoint[]));
 
-    if (data.length < pageSize) {
-      break;
-    }
+    if (data.length < pageSize) break;
   }
 
   return allHistory
@@ -266,6 +260,184 @@ async function getBillionaireHistory(
         Date.parse(a.recorded_at) - Date.parse(b.recorded_at) ||
         Number(a.id) - Number(b.id)
     );
+}
+async function getAllYearlyRankings(): Promise<YearlyRanking[]> {
+  const peopleQuery = new URLSearchParams({
+    select: "id,name,image_url,net_worth_billions",
+    order: "name.asc",
+    limit: "2000",
+  });
+
+  const peopleResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/billionaires?${peopleQuery}`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!peopleResponse.ok) {
+    throw new Error("Failed to fetch billionaire list.");
+  }
+
+  const people = (await peopleResponse.json()) as Array<{
+    id: string | number;
+    name: string;
+    image_url: string | null;
+    net_worth_billions: number | string;
+  }>;
+
+  const currentById = new Map(
+    people.map((person) => [
+      String(person.id),
+      {
+        name: person.name,
+        image_url: person.image_url,
+        current: Number(person.net_worth_billions),
+      },
+    ])
+  );
+
+  const allHistory: Array<{
+    id: number;
+    billionaire_id: string;
+    net_worth_billions: number | string;
+    recorded_at: string;
+  }> = [];
+
+  const pageSize = 1000;
+  const maxPages = 500;
+
+  for (let page = 0; page < maxPages; page++) {
+    const offset = page * pageSize;
+
+    const query = new URLSearchParams({
+      select: "id,billionaire_id,net_worth_billions,recorded_at",
+      order: "recorded_at.asc,id.asc",
+      limit: String(pageSize),
+    });
+
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/billionaire_wealth_history?${query}`,
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Range-Unit": "items",
+          Range: `${offset}-${offset + pageSize - 1}`,
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch all wealth history.");
+    }
+
+    const data = (await response.json()) as typeof allHistory;
+
+    if (!data.length) break;
+
+    allHistory.push(...data);
+
+    if (data.length < pageSize) break;
+  }
+
+  const grouped = new Map<string, typeof allHistory>();
+
+  for (const point of allHistory) {
+    const value = Number(point.net_worth_billions);
+
+    if (
+      !Number.isFinite(value) ||
+      value <= 0 ||
+      !Number.isFinite(Date.parse(point.recorded_at))
+    ) {
+      continue;
+    }
+
+    const id = String(point.billionaire_id);
+    const list = grouped.get(id) || [];
+    list.push(point);
+    grouped.set(id, list);
+  }
+
+  const yearly = new Map<number, YearlyRankingEntry[]>();
+
+  for (const [id, records] of grouped.entries()) {
+    const person = currentById.get(id);
+
+    if (!person || !Number.isFinite(person.current)) continue;
+
+    records.sort(
+      (a, b) =>
+        Date.parse(a.recorded_at) - Date.parse(b.recorded_at) ||
+        Number(a.id) - Number(b.id)
+    );
+
+    const firstYear = new Date(records[0].recorded_at).getFullYear();
+    const years = [...new Set(
+      records.map((record) =>
+        new Date(record.recorded_at).getFullYear()
+      )
+    )];
+
+    for (const year of years) {
+      const yearRecords = records.filter(
+        (record) =>
+          new Date(record.recorded_at).getFullYear() === year
+      );
+
+      const baseline =
+        year === firstYear
+          ? yearRecords[4] || null
+          : yearRecords[0] || null;
+
+      if (!baseline) continue;
+
+      const baselineValue = Number(baseline.net_worth_billions);
+      const change = person.current - baselineValue;
+
+      const entry: YearlyRankingEntry = {
+        id,
+        name: person.name,
+        image_url: person.image_url,
+        current_net_worth: person.current,
+        baseline_net_worth: baselineValue,
+        baseline_date: baseline.recorded_at,
+        change,
+        change_pct:
+          baselineValue > 0
+            ? (change / baselineValue) * 100
+            : null,
+        rank: 0,
+      };
+
+      const list = yearly.get(year) || [];
+      list.push(entry);
+      yearly.set(year, list);
+    }
+  }
+
+  return [...yearly.entries()]
+    .sort(([a], [b]) => b - a)
+    .map(([year, entries]) => {
+      const sorted = entries.sort(
+        (a, b) =>
+          b.baseline_net_worth - a.baseline_net_worth
+      );
+
+      return {
+        year,
+        people: sorted.map((entry, index) => ({
+          ...entry,
+          rank: index + 1,
+        })),
+      };
+    });
 }
 
 async function getBillionaireNews(
@@ -351,27 +523,29 @@ export default async function BillionaireProfilePage({
     );
   }
 
-  if (!person) {
-    notFound();
-  }
+  if (!person) notFound();
 
   let history: HistoryPoint[] = [];
+  let news: BillionaireNews[] = [];
+  let yearlyRankings: YearlyRanking[] = [];
 
   try {
     history = await getBillionaireHistory(person.id);
   } catch (error) {
     console.error("History fetch failed:", error);
-    history = [];
   }
-  
-  let news: BillionaireNews[] = [];
 
-try {
-  news = await getBillionaireNews(person.id);
-} catch (error) {
-  console.error("News fetch failed:", error);
-  news = [];
-}
+  try {
+    news = await getBillionaireNews(person.id);
+  } catch (error) {
+    console.error("News fetch failed:", error);
+  }
+
+  try {
+    yearlyRankings = await getAllYearlyRankings();
+  } catch (error) {
+    console.error("Yearly rankings fetch failed:", error);
+  }
 
   const canonical =
     `${SITE_URL}/billionaires/${encodeURIComponent(id)}`;
@@ -439,10 +613,11 @@ try {
       />
 
       <ProfileClient
-  person={person}
-  initialHistory={history}
-  initialNews={news}
-/>
+        person={person}
+        initialHistory={history}
+        initialNews={news}
+        yearlyRankings={yearlyRankings}
+      />
     </>
   );
-      }
+}
