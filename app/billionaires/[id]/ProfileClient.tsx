@@ -52,6 +52,13 @@ type YearlyRanking = {
   people: YearlyRankingEntry[];
 };
 
+type ProfileNavPerson = {
+  id: string | number;
+  rank: number;
+  name: string;
+  image_url: string | null;
+};
+
 type Props = {
   person: Billionaire;
   initialHistory: HistoryPoint[];
