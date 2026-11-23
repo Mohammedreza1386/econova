@@ -556,8 +556,9 @@ export default async function BillionaireProfilePage({
   if (!person) notFound();
 
   let history: HistoryPoint[] = [];
-  let news: BillionaireNews[] = [];
-  let yearlyRankings: YearlyRanking[] = [];
+let news: BillionaireNews[] = [];
+let yearlyRankings: YearlyRanking[] = [];
+let profileNavigation: ProfileNavPerson[] = [];
 
   try {
     history = await getBillionaireHistory(person.id);
