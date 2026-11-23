@@ -1486,6 +1486,72 @@ const nextPerson =
             flex-direction: column;
           }
         }
+        .profile-navigation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 1100px;
+  margin: 18px auto 24px;
+  direction: rtl;
+}
+
+.profile-nav-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 17px 20px;
+  border: 1px solid rgba(185, 242, 124, 0.2);
+  border-radius: 16px;
+  background: linear-gradient(
+    145deg,
+    rgba(185, 242, 124, 0.09),
+    rgba(255, 255, 255, 0.025)
+  );
+  color: #f4f7ef;
+  text-decoration: none;
+  transition: 0.2s ease;
+}
+
+a.profile-nav-card:hover {
+  border-color: #b9f27c;
+  background: rgba(185, 242, 124, 0.13);
+  transform: translateY(-2px);
+}
+
+.profile-nav-card span {
+  color: #b9f27c;
+  font-size: 12px;
+}
+
+.profile-nav-card strong {
+  font-size: 16px;
+}
+
+.profile-nav-card small {
+  color: #9ca99a;
+  font-size: 12px;
+}
+
+.profile-nav-card.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .profile-navigation {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .profile-nav-card {
+    padding: 13px 11px;
+  }
+
+  .profile-nav-card strong {
+    font-size: 13px;
+  }
+}
       `}</style>
     </>
   );
