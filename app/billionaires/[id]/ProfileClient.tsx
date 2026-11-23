@@ -272,6 +272,38 @@ const nextPerson =
         </div>
       </header>
 
+        <nav className="profile-navigation">
+  {previousPerson ? (
+    <a
+      className="profile-nav-card"
+      href={`/billionaires/${encodeURIComponent(String(previousPerson.id))}`}
+    >
+      <span>← نفر قبلی</span>
+      <strong>{previousPerson.name}</strong>
+      <small>رتبه #{previousPerson.rank}</small>
+    </a>
+  ) : (
+    <span className="profile-nav-card disabled">
+      نفر قبلی وجود ندارد
+    </span>
+  )}
+
+  {nextPerson ? (
+    <a
+      className="profile-nav-card"
+      href={`/billionaires/${encodeURIComponent(String(nextPerson.id))}`}
+    >
+      <span>نفر بعدی →</span>
+      <strong>{nextPerson.name}</strong>
+      <small>رتبه #{nextPerson.rank}</small>
+    </a>
+  ) : (
+    <span className="profile-nav-card disabled">
+      نفر بعدی وجود ندارد
+    </span>
+  )}
+</nav>
+
       <section className="profile-hero">
         <img
           className="profile-photo"
