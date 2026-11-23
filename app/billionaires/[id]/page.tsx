@@ -137,6 +137,29 @@ const getBillionaire = cache(
   }
 );
 
+async function getProfileNavigation(): Promise<ProfileNavPerson[]> {
+  const query = new URLSearchParams({
+    select: "id,rank,name,image_url",
+    order: "rank.asc",
+    limit: "2000",
+  });
+
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/billionaires?${query}`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!response.ok) return [];
+
+  return response.json();
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
