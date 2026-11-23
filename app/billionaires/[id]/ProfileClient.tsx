@@ -79,6 +79,7 @@ export default function ProfileClient({
   person,
   initialHistory,
   initialNews,
+  yearlyRankings,
 }: Props) {
   const [historyRange, setHistoryRange] = useState<
     "all" | "week" | "month" | "year"
