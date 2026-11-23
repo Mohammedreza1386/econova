@@ -93,6 +93,17 @@ export default function ProfileClient({
   yearlyRankings,
   profileNavigation,
 }: Props) {
+  const currentIndex = profileNavigation.findIndex(
+  (item) => String(item.id) === String(person.id)
+);
+
+const previousPerson =
+  currentIndex > 0 ? profileNavigation[currentIndex - 1] : null;
+
+const nextPerson =
+  currentIndex >= 0 && currentIndex < profileNavigation.length - 1
+    ? profileNavigation[currentIndex + 1]
+    : null;
   const [historyRange, setHistoryRange] = useState<
     "all" | "week" | "month" | "year"
   >("all");
