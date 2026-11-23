@@ -63,25 +63,50 @@ export default function ProfileClient({
   initialNews,
 }: Props) {
   const [historyRange, setHistoryRange] = useState<
-  "all" | "week" | "month" | "year"
->("all");
+    "all" | "week" | "month" | "year"
+  >("all");
 
   const history = initialHistory;
 
   const firstHistoryRecord = history[0] ?? null;
 
-  const lifetimeDelta = firstHistoryRecord
-    ? Number(person.net_worth_billions) -
-      Number(firstHistoryRecord.net_worth_billions)
+  const firstHistoryYear = firstHistoryRecord
+    ? new Date(firstHistoryRecord.recorded_at).getFullYear()
     : null;
 
-  const lifetimePercent =
-    lifetimeDelta !== null &&
-    firstHistoryRecord &&
-    Number(firstHistoryRecord.net_worth_billions) > 0
-      ? (lifetimeDelta /
-          Number(firstHistoryRecord.net_worth_billions)) *
-        100
+  const currentYear = new Date().getFullYear();
+
+  const activeYear = history.some(
+    (point) =>
+      new Date(point.recorded_at).getFullYear() === currentYear
+  )
+    ? currentYear
+    : history.length > 0
+      ? new Date(history[history.length - 1].recorded_at).getFullYear()
+      : null;
+
+  const activeYearRecords = activeYear
+    ? history.filter(
+        (point) =>
+          new Date(point.recorded_at).getFullYear() === activeYear
+      )
+    : [];
+
+  const yearBaseline =
+    activeYear === firstHistoryYear
+      ? history[4] ?? null
+      : activeYearRecords[0] ?? null;
+
+  const yearDelta = yearBaseline
+    ? Number(person.net_worth_billions) -
+      Number(yearBaseline.net_worth_billions)
+    : null;
+
+  const yearPercent =
+    yearDelta !== null &&
+    yearBaseline &&
+    Number(yearBaseline.net_worth_billions) > 0
+      ? (yearDelta / Number(yearBaseline.net_worth_billions)) * 100
       : null;
 
   const chartHistory = useMemo(() => {
@@ -171,28 +196,55 @@ export default function ProfileClient({
               "زندگی‌نامه‌ای برای این فرد در اکونوا ثبت نشده است."}
           </p>
 
-          {person.source_url && (
-            <a
-              className="source-link"
-              href={person.source_url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              مشاهده منبع اطلاعات ↗
-            </a>
-          )}
+          <div className="hero-wealth">
+            <span>ثروت فعلی تخمینی</span>
+
+            <strong dir="ltr">
+              {money(person.net_worth_billions)}
+            </strong>
+
+            <small>میلیارد دلار آمریکا</small>
+
+            <div className="hero-year-change">
+              <span>تغییر ثروت در سال {activeYear ?? "—"}</span>
+
+              {yearDelta !== null && yearPercent !== null && yearBaseline ? (
+                <>
+                  <strong
+                    dir="ltr"
+                    className={yearDelta >= 0 ? "positive" : "negative"}
+                  >
+                    {yearDelta >= 0 ? "+" : "−"}
+                    {money(Math.abs(yearDelta))}
+                  </strong>
+
+                  <b
+                    dir="ltr"
+                    className={yearDelta >= 0 ? "positive" : "negative"}
+                  >
+                    {yearPercent >= 0 ? "+" : ""}
+                    {yearPercent.toFixed(2)}%
+                  </b>
+
+                  <small>
+                    ثروت مبنا: {money(yearBaseline.net_worth_billions)}
+                  </small>
+
+                  <small>
+                    تاریخ مبنا: {dateLabel(yearBaseline.recorded_at)}
+                  </small>
+                </>
+              ) : (
+                <small>
+                  رکورد مبنای کافی برای محاسبه موجود نیست.
+                </small>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
       <section className="stats-grid">
-        <article className="stat-card">
-          <span>ثروت فعلی تخمینی</span>
-          <strong dir="ltr">
-            {money(person.net_worth_billions)}
-          </strong>
-          <small>میلیارد دلار آمریکا</small>
-        </article>
-
         <article className="stat-card">
           <span>تغییر روزانه</span>
           <strong
@@ -209,51 +261,6 @@ export default function ProfileClient({
           <span>رتبه جهانی</span>
           <strong dir="ltr">#{person.rank}</strong>
           <small>رتبه فعلی در فهرست اکونوا</small>
-        </article>
-
-        <article className="stat-card lifetime-card">
-          <span>تغییر ثروت از آغاز ثبت در اکونوا</span>
-
-          {lifetimeDelta !== null &&
-          lifetimePercent !== null &&
-          firstHistoryRecord ? (
-            <>
-              <strong
-                dir="ltr"
-                className={
-                  lifetimeDelta >= 0 ? "positive" : "negative"
-                }
-              >
-                {lifetimeDelta >= 0 ? "+" : "−"}
-                {money(Math.abs(lifetimeDelta))}
-              </strong>
-
-              <b
-                dir="ltr"
-                className={
-                  lifetimeDelta >= 0 ? "positive" : "negative"
-                }
-              >
-                {lifetimePercent >= 0 ? "+" : ""}
-                {lifetimePercent.toFixed(2)}%
-              </b>
-
-              <small>
-                مبنای اولیه:{" "}
-                {money(firstHistoryRecord.net_worth_billions)}
-              </small>
-
-              <small>
-                تاریخ اولین ثبت:{" "}
-                {dateLabel(firstHistoryRecord.recorded_at)}
-              </small>
-            </>
-          ) : (
-            <>
-              <strong>—</strong>
-              <small>رکورد آغازین معتبر موجود نیست</small>
-            </>
-          )}
         </article>
       </section>
 
@@ -273,29 +280,29 @@ export default function ProfileClient({
         </div>
 
         <div
-  className="history-range"
-  role="group"
-  aria-label="بازه زمانی تاریخچه"
->
-  {(
-    [
-      ["all", "کل تاریخچه"],
-      ["week", "هفته"],
-      ["month", "ماه"],
-      ["year", "سال"],
-    ] as const
-  ).map(([value, label]) => (
-    <button
-      key={value}
-      type="button"
-      className={historyRange === value ? "active" : ""}
-      aria-pressed={historyRange === value}
-      onClick={() => setHistoryRange(value)}
-    >
-      {label}
-    </button>
-  ))}
-</div>
+          className="history-range"
+          role="group"
+          aria-label="بازه زمانی تاریخچه"
+        >
+          {(
+            [
+              ["all", "کل تاریخچه"],
+              ["week", "هفته"],
+              ["month", "ماه"],
+              ["year", "سال"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={historyRange === value ? "active" : ""}
+              aria-pressed={historyRange === value}
+              onClick={() => setHistoryRange(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         {history.length === 0 ? (
           <p className="empty">
@@ -360,7 +367,7 @@ export default function ProfileClient({
             </div>
           </div>
         )}
-
+        
         {history.length > 0 && (
           <div className="history-list">
             <div className="history-list-heading">
@@ -390,64 +397,62 @@ export default function ProfileClient({
       </section>
 
       <section className="news-section">
-  <div className="news-heading">
-    <div>
-      <p className="eyebrow">LATEST RELATED NEWS</p>
-      <h2>آخرین اخبار مرتبط</h2>
-      <p>جدیدترین خبرهای مرتبط با {person.name}</p>
-    </div>
-    <span className="news-count">
-      {initialNews.length.toLocaleString("fa-IR")} خبر
-    </span>
-  </div>
-
-  {initialNews.length === 0 ? (
-    <div className="news-empty">
-      هنوز خبری برای این شخص ثبت نشده است.
-    </div>
-  ) : (
-    <div className="news-grid">
-      {initialNews.map((news) => (
-        <article className="news-card" key={news.id}>
-          {news.image_url && (
-            <img
-              src={news.image_url}
-              alt={news.title}
-              loading="lazy"
-              className="news-image"
-            />
-          )}
-
-          <div className="news-content">
-            <span className="news-source">
-              {news.source_name}
-            </span>
-
-            <h3>{news.title}</h3>
-
-            {news.summary && (
-              <p>{news.summary}</p>
-            )}
-
-            <div className="news-bottom">
-              <span>
-                {news.published_at
-                  ? dateLabel(news.published_at)
-                  : "تاریخ نامشخص"}
-              </span>
-
-              <a
-  href={`/billionaires/news/${news.id}`}
->
-  مطالعه خبر در اکونوا ↗
-</a>
-            </div>
+        <div className="news-heading">
+          <div>
+            <p className="eyebrow">LATEST RELATED NEWS</p>
+            <h2>آخرین اخبار مرتبط</h2>
+            <p>جدیدترین خبرهای مرتبط با {person.name}</p>
           </div>
-        </article>
-      ))}
-    </div>
-  )}
-</section>
+          <span className="news-count">
+            {initialNews.length.toLocaleString("fa-IR")} خبر
+          </span>
+        </div>
+
+        {initialNews.length === 0 ? (
+          <div className="news-empty">
+            هنوز خبری برای این شخص ثبت نشده است.
+          </div>
+        ) : (
+          <div className="news-grid">
+            {initialNews.map((news) => (
+              <article className="news-card" key={news.id}>
+                {news.image_url && (
+                  <img
+                    src={news.image_url}
+                    alt={news.title}
+                    loading="lazy"
+                    className="news-image"
+                  />
+                )}
+
+                <div className="news-content">
+                  <span className="news-source">
+                    {news.source_name}
+                  </span>
+
+                  <h3>{news.title}</h3>
+
+                  {news.summary && (
+                    <p>{news.summary}</p>
+                  )}
+
+                  <div className="news-bottom">
+                    <span>
+                      {news.published_at
+                        ? dateLabel(news.published_at)
+                        : "تاریخ نامشخص"}
+                    </span>
+
+                    <a href={`/billionaires/news/${news.id}`}>
+                      مطالعه خبر در اکونوا ↗
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <footer className="profile-footer">
         تمام مقادیر بر اساس اطلاعات فعلی و تاریخچه ذخیره‌شده در پایگاه داده Econova نمایش داده می‌شوند.
@@ -459,166 +464,48 @@ export default function ProfileClient({
         .profile-header,.profile-hero,.stats-grid,.history-card,.profile-footer{width:min(1100px,100%);margin-left:auto;margin-right:auto}
         .profile-header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:34px}
         .brand{color:#f3f6f1;font-size:23px;font-weight:900;letter-spacing:1px;text-decoration:none}.brand span{color:#b9f27c}
-        .back-link,.source-link{color:#b9f27c;text-decoration:none;font-size:13px}.back-link{border:1px solid #334a38;border-radius:999px;padding:10px 15px;background:#101812}
+        .back-link{color:#b9f27c;text-decoration:none;font-size:13px;border:1px solid #334a38;border-radius:999px;padding:10px 15px;background:#101812}
         .profile-hero{display:grid;grid-template-columns:240px minmax(0,1fr);gap:30px;align-items:center;padding:28px;margin-bottom:18px;border:1px solid #293b2e;border-radius:22px;background:linear-gradient(130deg,rgba(185,242,124,.075),#101812 42%,#0c120e);box-shadow:0 18px 50px #0004}
         .profile-photo{width:100%;aspect-ratio:1;object-fit:cover;border-radius:17px;border:1px solid #526b43;background:#14271d}
         .eyebrow{margin:0 0 10px;color:#b9f27c;font-size:10px;letter-spacing:2px;font-weight:800}.rank-pill{display:inline-block;padding:6px 11px;border:1px solid #40583b;border-radius:999px;color:#c8e6b4;background:#b9f27c0d;font-size:11px}
-        h1{margin:12px 0;font-size:clamp(30px,5vw,48px);line-height:1.2}.profile-meta{color:#d2ded3;font-size:14px}.profile-bio{color:#a7b4aa;line-height:2;white-space:pre-wrap}.source-link{display:inline-block;margin-top:8px}
+        h1{margin:12px 0;font-size:clamp(30px,5vw,48px);line-height:1.2}.profile-meta{color:#d2ded3;font-size:14px}.profile-bio{color:#a7b4aa;line-height:2;white-space:pre-wrap}
+        .hero-wealth{margin-top:22px;padding:20px;border:1px solid rgba(185,242,124,.3);border-radius:16px;background:linear-gradient(135deg,rgba(185,242,124,.12),rgba(16,24,18,.95));display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+        .hero-wealth>span{color:#aeb9b0;font-size:12px}
+        .hero-wealth>strong{color:#b9f27c;font-size:clamp(30px,4vw,42px);font-weight:900}
+        .hero-wealth>small,.hero-year-change>small{color:#9eafa2;font-size:11px;line-height:1.8}
+        .hero-year-change{width:100%;margin-top:10px;padding-top:14px;border-top:1px solid rgba(185,242,124,.16);display:flex;flex-direction:column;align-items:flex-start;gap:7px}
+        .hero-year-change>span{color:#dce6dd;font-size:13px;font-weight:700}
+        .hero-year-change>strong{font-size:23px}
+        .hero-year-change>b{font-size:17px}
         .stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px}
         .stat-card,.history-card{min-width:0;padding:21px;border:1px solid #293b2e;border-radius:17px;background:#101812}
-        .stat-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px}.stat-card>span{color:#a7b4aa;font-size:12px}.stat-card>strong{margin:4px 0;font-size:clamp(23px,3vw,32px);font-variant-numeric:tabular-nums}.stat-card>small{color:#9eafa2;font-size:11px;line-height:1.7}.stat-card>b{font-size:17px;font-variant-numeric:tabular-nums}
-        .lifetime-card{border-color:#536d3d;background:linear-gradient(145deg,#172218,#101812 70%)}.positive{color:#b9f27c}.negative{color:#ff8585}
+        .stat-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px}.stat-card>span{color:#a7b4aa;font-size:12px}.stat-card>strong{margin:4px 0;font-size:clamp(23px,3vw,32px);font-variant-numeric:tabular-nums}.stat-card>small{color:#9eafa2;font-size:11px;line-height:1.7}
+        .positive{color:#b9f27c}.negative{color:#ff8585}
         [dir="ltr"]{direction:ltr;unicode-bidi:isolate;text-align:left;font-variant-numeric:tabular-nums}
         .history-card{margin-top:0}.section-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.section-heading h2{margin:4px 0 8px;font-size:clamp(20px,3vw,27px)}.section-heading p:not(.eyebrow){margin:0;color:#93a197;font-size:12px;line-height:1.8}.record-count{white-space:nowrap;color:#b9f27c;font-size:12px}
-        .history-range {
-  display: flex;
-  direction: ltr;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 3px;
-
-  width: fit-content;
-  max-width: 100%;
-
-  margin: 20px auto 12px 0;
-  padding: 4px;
-
-  border: 1px solid #344a39;
-  border-radius: 999px;
-  background: #0b120d;
-}
-
-.history-range button {
-  min-width: 65px;
-  border: none;
-  border-radius: 999px;
-
-  padding: 9px 17px;
-
-  color: #aeb9b0;
-  background: transparent;
-
-  font-family: Arial, sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-
-  cursor: pointer;
-  transition: all .2s ease;
-}
-
-.history-range button:hover {
-  color: #ffffff;
-  background: #18231a;
-}
-
-.history-range button.active {
-  color: #10160e;
-  background: #b9f27c;
-  font-weight: 900;
-}
-
-@media(max-width:650px) {
-  .history-range {
-    margin: 18px auto 12px 0;
-  }
-
-  .history-range button {
-    min-width: 65px;
-    padding: 9px 16px;
-    font-size: 11px;
-  }
-}
+        .history-range{display:flex;direction:ltr;align-items:center;justify-content:flex-start;gap:3px;width:fit-content;max-width:100%;margin:20px auto 12px 0;padding:4px;border:1px solid #344a39;border-radius:999px;background:#0b120d}
+        .history-range button{min-width:65px;border:none;border-radius:999px;padding:9px 17px;color:#aeb9b0;background:transparent;font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s ease}
+        .history-range button:hover{color:#ffffff;background:#18231a}
+        .history-range button.active{color:#10160e;background:#b9f27c;font-weight:900}
+        @media(max-width:650px){.history-range{margin:18px auto 12px 0}.history-range button{min-width:65px;padding:9px 16px;font-size:11px}}
         .chart-wrap{padding:18px;border:1px solid #24372a;border-radius:14px;background:#0a110c}.wealth-chart{display:block;width:100%;height:230px;overflow:visible}.chart-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#9ba99e;font-size:10px}.chart-foot strong{color:#eaf2eb;font-size:13px}
-       .empty{padding:18px;color:#a7b4aa;line-height:1.9}.history-list{margin-top:20px}.history-list-heading{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;color:#dce6dd;font-size:12px}.history-list-heading span{color:#87968b;font-size:10px}.history-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid #25342a;color:#aab7ac;font-size:12px}.history-row strong{color:#e9f0e9;font-size:13px}.profile-footer{padding:22px 4px;color:#819087;font-size:11px;line-height:1.8}
-       .news-section{
-  width:min(1100px,100%);
-  margin:18px auto 0;
-  padding:22px;
-  border:1px solid #293b2e;
-  border-radius:17px;
-  background:#101812;
-}
-.news-heading{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  margin-bottom:18px;
-}
-.news-heading h2{
-  margin:5px 0;
-  font-size:25px;
-}
-.news-heading p:not(.eyebrow){
-  color:#93a197;
-  font-size:12px;
-}
-.news-count{
-  color:#b9f27c;
-  font-size:12px;
-}
-.news-grid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:14px;
-}
-.news-card{
-  overflow:hidden;
-  border:1px solid #293b2e;
-  border-radius:14px;
-  background:#0b120d;
-}
-.news-image{
-  width:100%;
-  height:190px;
-  object-fit:cover;
-}
-.news-content{
-  padding:16px;
-}
-.news-source{
-  color:#b9f27c;
-  font-size:11px;
-  font-weight:800;
-}
-.news-content h3{
-  margin:10px 0;
-  color:#f3f6f1;
-  font-size:16px;
-  line-height:1.8;
-}
-.news-content>p{
-  color:#a7b4aa;
-  font-size:12px;
-  line-height:1.9;
-}
-.news-bottom{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  margin-top:18px;
-  padding-top:12px;
-  border-top:1px solid #25342a;
-  font-size:11px;
-  color:#89988d;
-}
-.news-bottom a{
-  color:#b9f27c;
-  text-decoration:none;
-}
-.news-empty{
-  padding:24px;
-  text-align:center;
-  color:#9eafa2;
-  font-size:13px;
-}
-@media(max-width:650px){
-  .news-section{padding:16px}
-  .news-grid{grid-template-columns:1fr}
-  .news-image{height:180px}
-  .news-heading h2{font-size:20px}
-}
+        .empty{padding:18px;color:#a7b4aa;line-height:1.9}.history-list{margin-top:20px}.history-list-heading{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;color:#dce6dd;font-size:12px}.history-list-heading span{color:#87968b;font-size:10px}.history-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid #25342a;color:#aab7ac;font-size:12px}.history-row strong{color:#e9f0e9;font-size:13px}.profile-footer{padding:22px 4px;color:#819087;font-size:11px;line-height:1.8}
+        .news-section{width:min(1100px,100%);margin:18px auto 0;padding:22px;border:1px solid #293b2e;border-radius:17px;background:#101812}
+        .news-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+        .news-heading h2{margin:5px 0;font-size:25px}
+        .news-heading p:not(.eyebrow){color:#93a197;font-size:12px}
+        .news-count{color:#b9f27c;font-size:12px}
+        .news-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+        .news-card{overflow:hidden;border:1px solid #293b2e;border-radius:14px;background:#0b120d}
+        .news-image{width:100%;height:190px;object-fit:cover}
+        .news-content{padding:16px}
+        .news-source{color:#b9f27c;font-size:11px;font-weight:800}
+        .news-content h3{margin:10px 0;color:#f3f6f1;font-size:16px;line-height:1.8}
+        .news-content>p{color:#a7b4aa;font-size:12px;line-height:1.9}
+        .news-bottom{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding-top:12px;border-top:1px solid #25342a;font-size:11px;color:#89988d}
+        .news-bottom a{color:#b9f27c;text-decoration:none}
+        .news-empty{padding:24px;text-align:center;color:#9eafa2;font-size:13px}
+        @media(max-width:650px){.news-section{padding:16px}.news-grid{grid-template-columns:1fr}.news-image{height:180px}.news-heading h2{font-size:20px}}
         @media(max-width:650px){.profile-page{padding:14px}.profile-header{margin-bottom:20px}.profile-hero{grid-template-columns:1fr;padding:18px;gap:18px}.profile-photo{max-width:210px;margin:0 auto}.stats-grid{grid-template-columns:1fr;gap:10px}.stat-card,.history-card{padding:16px}.section-heading{flex-direction:column}.wealth-chart{height:190px}.history-row{font-size:11px}}
       `}</style>
     </main>
