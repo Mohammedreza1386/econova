@@ -56,6 +56,13 @@ type YearlyRanking = {
   people: YearlyRankingEntry[];
 };
 
+type ProfileNavPerson = {
+  id: string | number;
+  rank: number;
+  name: string;
+  image_url: string | null;
+};
+
 type PageProps = {
   params: Promise<{ id: string }>;
 };
