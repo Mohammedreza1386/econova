@@ -224,8 +224,9 @@ export default function ProfileClient({
       });
   };
 
-  return (
-    <main className="profile-page" dir="rtl">
+    return (
+    <>
+      <main className="profile-page" dir="rtl">
       <div className="profile-glow" />
 
       <header className="profile-header">
