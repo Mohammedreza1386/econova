@@ -64,6 +64,7 @@ type Props = {
   initialHistory: HistoryPoint[];
   initialNews: BillionaireNews[];
   yearlyRankings: YearlyRanking[];
+  profileNavigation: ProfileNavPerson[];
 };
 
 const money = (value: number | string | null | undefined) => {
