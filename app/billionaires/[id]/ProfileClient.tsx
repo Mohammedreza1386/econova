@@ -395,7 +395,7 @@ export default function ProfileClient({
           </div>
         )}
       </section>
-
+      
       <section className="news-section">
         <div className="news-heading">
           <div>
@@ -511,3 +511,6 @@ export default function ProfileClient({
     </main>
   );
 }
+
+
+    
