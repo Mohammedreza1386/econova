@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState } from "react";
@@ -62,10 +61,14 @@ type Props = {
 
 const money = (value: number | string | null | undefined) => {
   const number = Number(value);
-  return `$${(Number.isFinite(number) ? number : 0).toLocaleString("en-US", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 2,
-  })}B`;
+
+  return `$${(Number.isFinite(number) ? number : 0).toLocaleString(
+    "en-US",
+    {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 2,
+    }
+  )}B`;
 };
 
 const dateLabel = (value: string) =>
@@ -85,23 +88,26 @@ export default function ProfileClient({
     "all" | "week" | "month" | "year"
   >("all");
 
+  const [selectedRankingYear, setSelectedRankingYear] =
+    useState<number | null>(null);
+
   const history = initialHistory;
-  const availableYears = yearlyRankings.map((item) => item.year);
 
-const [selectedRankingYear, setSelectedRankingYear] =
-  useState<number | null>(null);
+  const availableYears = yearlyRankings.map(
+    (item) => item.year
+  );
 
-const activeRankingYear =
-  selectedRankingYear !== null &&
-  availableYears.includes(selectedRankingYear)
-    ? selectedRankingYear
-    : availableYears[0] ?? null;
+  const activeRankingYear =
+    selectedRankingYear !== null &&
+    availableYears.includes(selectedRankingYear)
+      ? selectedRankingYear
+      : availableYears[0] ?? null;
 
-const activeRanking = yearlyRankings.find(
-  (item) => item.year === activeRankingYear
-);
+  const activeRanking = yearlyRankings.find(
+    (item) => item.year === activeRankingYear
+  );
 
-const rankingPeople = activeRanking?.people ?? [];
+  const rankingPeople = activeRanking?.people ?? [];
 
   const firstHistoryRecord = history[0] ?? null;
 
@@ -117,7 +123,9 @@ const rankingPeople = activeRanking?.people ?? [];
   )
     ? currentYear
     : history.length > 0
-      ? new Date(history[history.length - 1].recorded_at).getFullYear()
+      ? new Date(
+          history[history.length - 1].recorded_at
+        ).getFullYear()
       : null;
 
   const activeYearRecords = activeYear
@@ -141,7 +149,9 @@ const rankingPeople = activeRanking?.people ?? [];
     yearDelta !== null &&
     yearBaseline &&
     Number(yearBaseline.net_worth_billions) > 0
-      ? (yearDelta / Number(yearBaseline.net_worth_billions)) * 100
+      ? (yearDelta /
+          Number(yearBaseline.net_worth_billions)) *
+        100
       : null;
 
   const chartHistory = useMemo(() => {
@@ -154,7 +164,8 @@ const rankingPeople = activeRanking?.people ?? [];
           ? 30
           : 365;
 
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const cutoff =
+      Date.now() - days * 24 * 60 * 60 * 1000;
 
     return history.filter(
       (point) => Date.parse(point.recorded_at) >= cutoff
@@ -176,19 +187,42 @@ const rankingPeople = activeRanking?.people ?? [];
       .map((value, index) => {
         const x =
           (index / (values.length - 1)) * 100;
+
         const y = 90 - ((value - min) / spread) * 75;
+
         return `${x},${y}`;
       })
       .join(" ");
   }, [chartHistory]);
 
-  const dailyChange = Number(person.daily_change_pct ?? 0);
+  const dailyChange = Number(
+    person.daily_change_pct ?? 0
+  );
 
   const image =
     person.image_url ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
       person.name
     )}&background=14271d&color=b9f27c&size=400&bold=true`;
+
+  const goToYearlyRanking = () => {
+    const thisYear = new Date().getFullYear();
+
+    const targetYear = availableYears.includes(thisYear)
+      ? thisYear
+      : availableYears[0];
+
+    if (targetYear !== undefined) {
+      setSelectedRankingYear(targetYear);
+    }
+
+    document
+      .getElementById("yearly-ranking-section")
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+  };
 
   return (
     <main className="profile-page" dir="rtl">
@@ -198,9 +232,23 @@ const rankingPeople = activeRanking?.people ?? [];
         <a className="brand" href="/">
           ECONOVA<span>.</span>
         </a>
-        <a className="back-link" href="/billionaires/rankings">
-          ← بازگشت به رتبه‌بندی
-        </a>
+
+        <div className="profile-header-actions">
+          <button
+            type="button"
+            className="profile-ranking-switch"
+            onClick={goToYearlyRanking}
+          >
+            مشاهده رتبه‌بندی اول سال
+          </button>
+
+          <a
+            className="back-link"
+            href="/billionaires/rankings"
+          >
+            رتبه‌بندی امروز ←
+          </a>
+        </div>
       </header>
 
       <section className="profile-hero">
@@ -241,13 +289,19 @@ const rankingPeople = activeRanking?.people ?? [];
             <small>میلیارد دلار آمریکا</small>
 
             <div className="hero-year-change">
-              <span>تغییر ثروت در سال {activeYear ?? "—"}</span>
+              <span>
+                تغییر ثروت در سال {activeYear ?? "—"}
+              </span>
 
-              {yearDelta !== null && yearPercent !== null && yearBaseline ? (
+              {yearDelta !== null &&
+              yearPercent !== null &&
+              yearBaseline ? (
                 <>
                   <strong
                     dir="ltr"
-                    className={yearDelta >= 0 ? "positive" : "negative"}
+                    className={
+                      yearDelta >= 0 ? "positive" : "negative"
+                    }
                   >
                     {yearDelta >= 0 ? "+" : "−"}
                     {money(Math.abs(yearDelta))}
@@ -255,18 +309,22 @@ const rankingPeople = activeRanking?.people ?? [];
 
                   <b
                     dir="ltr"
-                    className={yearDelta >= 0 ? "positive" : "negative"}
+                    className={
+                      yearDelta >= 0 ? "positive" : "negative"
+                    }
                   >
                     {yearPercent >= 0 ? "+" : ""}
                     {yearPercent.toFixed(2)}%
                   </b>
 
                   <small>
-                    ثروت مبنا: {money(yearBaseline.net_worth_billions)}
+                    ثروت مبنا:{" "}
+                    {money(yearBaseline.net_worth_billions)}
                   </small>
 
                   <small>
-                    تاریخ مبنا: {dateLabel(yearBaseline.recorded_at)}
+                    تاریخ مبنا:{" "}
+                    {dateLabel(yearBaseline.recorded_at)}
                   </small>
                 </>
               ) : (
@@ -282,77 +340,242 @@ const rankingPeople = activeRanking?.people ?? [];
       <section className="stats-grid">
         <article className="stat-card">
           <span>تغییر روزانه</span>
+
           <strong
             dir="ltr"
-            className={dailyChange >= 0 ? "positive" : "negative"}
+            className={
+              dailyChange >= 0 ? "positive" : "negative"
+            }
           >
             {dailyChange > 0 ? "+" : ""}
             {dailyChange.toFixed(2)}%
           </strong>
-          <small>بر اساس داده ثبت‌شده در اکونوا</small>
+
+          <small>
+            بر اساس داده ثبت‌شده در اکونوا
+          </small>
         </article>
 
         <article className="stat-card">
           <span>رتبه جهانی</span>
-          <strong dir="ltr">#{person.rank}</strong>
-          <small>رتبه فعلی در فهرست اکونوا</small>
+
+          <strong dir="ltr">
+            #{person.rank}
+          </strong>
+
+          <small>
+            رتبه فعلی در فهرست اکونوا
+          </small>
         </article>
       </section>
-
-            <section className="yearly-ranking-section">
-        <div className="yearly-ranking-heading">
+            <section className="history-section">
+        <div className="section-heading">
           <div>
-            <p className="eyebrow">ECONOVA · ANNUAL WEALTH RANKING</p>
-            <h2>رتبه‌بندی سالانه ثروتمندان</h2>
-            <p>
-              رتبه‌بندی همه افراد بر اساس ثروت مبنای ثبت‌شده در هر سال.
-              تغییرات، اختلاف ثروت فعلی با ثروت مبنا را نشان می‌دهد.
+            <p className="eyebrow">WEALTH HISTORY</p>
+            <h2>تاریخچه ثروت</h2>
+          </div>
+
+          <div className="range-switch">
+            <button
+              type="button"
+              className={historyRange === "week" ? "active" : ""}
+              onClick={() => setHistoryRange("week")}
+            >
+              هفته
+            </button>
+
+            <button
+              type="button"
+              className={historyRange === "month" ? "active" : ""}
+              onClick={() => setHistoryRange("month")}
+            >
+              ماه
+            </button>
+
+            <button
+              type="button"
+              className={historyRange === "year" ? "active" : ""}
+              onClick={() => setHistoryRange("year")}
+            >
+              سال
+            </button>
+
+            <button
+              type="button"
+              className={historyRange === "all" ? "active" : ""}
+              onClick={() => setHistoryRange("all")}
+            >
+              کل
+            </button>
+          </div>
+        </div>
+
+        <div className="chart-card">
+          {chartHistory.length > 1 ? (
+            <>
+              <div className="chart-value">
+                <span>آخرین ثروت ثبت‌شده</span>
+                <strong dir="ltr">
+                  {money(
+                    chartHistory[chartHistory.length - 1]
+                      .net_worth_billions
+                  )}
+                </strong>
+              </div>
+
+              <svg
+                className="wealth-chart"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient
+                    id="wealthGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="0%"
+                      stopColor="#b9f27c"
+                      stopOpacity=".35"
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="#b9f27c"
+                      stopOpacity="0"
+                    />
+                  </linearGradient>
+                </defs>
+
+                <polyline
+                  points={`0,100 ${chartPoints} 100,100`}
+                  fill="url(#wealthGradient)"
+                  stroke="none"
+                />
+
+                <polyline
+                  points={chartPoints}
+                  fill="none"
+                  stroke="#b9f27c"
+                  strokeWidth="1.5"
+                  vectorEffect="non-scaling-stroke"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+
+              <div className="chart-footer">
+                <span>
+                  {dateLabel(chartHistory[0].recorded_at)}
+                </span>
+
+                <span>
+                  {dateLabel(
+                    chartHistory[chartHistory.length - 1]
+                      .recorded_at
+                  )}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">
+              داده کافی برای نمایش نمودار این بازه وجود ندارد.
+            </div>
+          )}
+        </div>
+
+        <div className="history-summary">
+          <div>
+            <span>تعداد رکوردها</span>
+            <strong>{chartHistory.length}</strong>
+          </div>
+
+          <div>
+            <span>اولین ثبت</span>
+            <strong>
+              {chartHistory[0]
+                ? dateLabel(chartHistory[0].recorded_at)
+                : "—"}
+            </strong>
+          </div>
+
+          <div>
+            <span>آخرین ثبت</span>
+            <strong>
+              {chartHistory.length
+                ? dateLabel(
+                    chartHistory[chartHistory.length - 1]
+                      .recorded_at
+                  )
+                : "—"}
+            </strong>
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="yearly-ranking-section"
+        id="yearly-ranking-section"
+      >
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">ANNUAL WEALTH RANKING</p>
+            <h2>رتبه‌بندی ثروت در آغاز سال</h2>
+            <p className="section-description">
+              مقایسه جایگاه ثروتمندان بر اساس ثروت مبنا در ابتدای هر سال
             </p>
           </div>
 
-          <span className="yearly-ranking-count">
-            {rankingPeople.length.toLocaleString("fa-IR")} نفر
-          </span>
+          {availableYears.length > 0 && (
+            <select
+              className="year-select"
+              value={activeRankingYear ?? ""}
+              onChange={(event) =>
+                setSelectedRankingYear(
+                  Number(event.target.value)
+                )
+              }
+            >
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  سال {year}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
-        <div className="year-selector">
-          <label htmlFor="ranking-year">انتخاب سال</label>
-          <select
-            id="ranking-year"
-            value={activeRankingYear ?? ""}
-            onChange={(event) =>
-              setSelectedRankingYear(
-                event.target.value
-                  ? Number(event.target.value)
-                  : null
-              )
-            }
-            disabled={availableYears.length === 0}
-          >
-            {yearlyRankings.map((item) => (
-              <option key={item.year} value={item.year}>
-                {item.year}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {!activeRanking || rankingPeople.length === 0 ? (
-          <div className="yearly-ranking-empty">
-            برای این سال داده تاریخی کافی جهت رتبه‌بندی وجود ندارد.
-          </div>
-        ) : (
+        {rankingPeople.length > 0 ? (
           <>
-            <div className="yearly-ranking-summary">
-              <span>سال انتخاب‌شده</span>
-              <strong dir="ltr">{activeRanking.year}</strong>
-              <small>
-                مرتب‌شده بر اساس ثروت مبنا، از بیشترین به کمترین
-              </small>
+            <div className="ranking-highlight">
+              <div>
+                <span>سال انتخاب‌شده</span>
+                <strong>{activeRankingYear}</strong>
+              </div>
+
+              <div>
+                <span>تعداد افراد دارای رکورد مبنا</span>
+                <strong>{rankingPeople.length}</strong>
+              </div>
+
+              <div>
+                <span>رتبه این فرد در آغاز سال</span>
+                <strong>
+                  {rankingPeople.find(
+                    (item) => item.id === String(person.id)
+                  )?.rank
+                    ? `#${rankingPeople.find(
+                        (item) => item.id === String(person.id)
+                      )?.rank}`
+                    : "بدون رتبه"}
+                </strong>
+              </div>
             </div>
 
-            <div className="yearly-table-wrap">
-              <table className="yearly-table">
+            <div className="ranking-table-wrap">
+              <table className="ranking-table">
                 <thead>
                   <tr>
                     <th>رتبه</th>
@@ -365,249 +588,114 @@ const rankingPeople = activeRanking?.people ?? [];
                 </thead>
 
                 <tbody>
-                  {rankingPeople.map((entry) => (
-                    <tr
-                      key={entry.id}
-                      className={
-                        String(person.id) === entry.id
-                          ? "current-profile-row"
-                          : ""
-                      }
-                    >
-                      <td>
-                        <span className="yearly-rank-number">
-                          #{entry.rank}
-                        </span>
-                      </td>
+                  {rankingPeople.map((item) => {
+                    const isCurrent =
+                      item.id === String(person.id);
 
-                      <td>
-                        <div className="yearly-person">
-                          {entry.image_url ? (
-                            <img
-                              src={entry.image_url}
-                              alt={entry.name}
-                              loading="lazy"
-                            />
-                          ) : (
-                            <span className="yearly-avatar-fallback">
-                              {entry.name.slice(0, 1)}
-                            </span>
-                          )}
-
-                          <a
-                            href={`/billionaires/${encodeURIComponent(entry.id)}`}
-                          >
-                            {entry.name}
-                          </a>
-                        </div>
-                      </td>
-
-                      <td dir="ltr">
-                        {money(entry.baseline_net_worth)}
-                      </td>
-
-                      <td>
-                        {dateLabel(entry.baseline_date)}
-                      </td>
-
-                      <td
-                        dir="ltr"
+                    return (
+                      <tr
+                        key={item.id}
                         className={
-                          entry.change >= 0
-                            ? "positive"
-                            : "negative"
+                          isCurrent ? "current-person" : ""
                         }
                       >
-                        {entry.change >= 0 ? "+" : "−"}
-                        {money(Math.abs(entry.change))}
-                      </td>
+                        <td>
+                          <strong>#{item.rank}</strong>
+                        </td>
 
-                      <td
-                        dir="ltr"
-                        className={
-                          entry.change_pct === null
-                            ? ""
-                            : entry.change_pct >= 0
+                        <td>
+                          <div className="ranking-person">
+                            {item.image_url ? (
+                              <img
+                                src={item.image_url}
+                                alt={item.name}
+                              />
+                            ) : (
+                              <div className="ranking-avatar">
+                                {item.name.charAt(0)}
+                              </div>
+                            )}
+
+                            <span>{item.name}</span>
+
+                            {isCurrent && (
+                              <small>این پروفایل</small>
+                            )}
+                          </div>
+                        </td>
+
+                        <td dir="ltr">
+                          {money(item.baseline_net_worth)}
+                        </td>
+
+                        <td>
+                          {dateLabel(item.baseline_date)}
+                        </td>
+
+                        <td
+                          dir="ltr"
+                          className={
+                            item.change >= 0
                               ? "positive"
                               : "negative"
-                        }
-                      >
-                        {entry.change_pct === null
-                          ? "—"
-                          : `${entry.change_pct >= 0 ? "+" : ""}${entry.change_pct.toFixed(2)}%`}
-                      </td>
-                    </tr>
-                  ))}
+                          }
+                        >
+                          {item.change >= 0 ? "+" : "−"}
+                          {money(Math.abs(item.change))}
+                        </td>
+
+                        <td
+                          dir="ltr"
+                          className={
+                            (item.change_pct ?? 0) >= 0
+                              ? "positive"
+                              : "negative"
+                          }
+                        >
+                          {item.change_pct === null
+                            ? "—"
+                            : `${item.change_pct >= 0 ? "+" : ""}${item.change_pct.toFixed(2)}%`}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-
-            <p className="yearly-ranking-note">
-              مبنای سال اول هر فرد، پنجمین رکورد تاریخچه اوست.
-              مبنای سال‌های بعد، اولین رکورد همان سال است.
-              افرادی که رکورد مبنای کافی ندارند در جدول آن سال رتبه نمی‌گیرند.
-            </p>
           </>
+        ) : (
+          <div className="empty-state">
+            برای این سال هنوز رتبه‌بندی قابل نمایش نیست.
+          </div>
         )}
+
+        <p className="ranking-note">
+          مبنای سال اول هر فرد، پنجمین رکورد تاریخچه اوست.
+          مبنای سال‌های بعد، اولین رکورد همان سال است.
+          افرادی که رکورد مبنای کافی ندارند در جدول آن سال رتبه نمی‌گیرند.
+        </p>
       </section>
 
-      <section className="history-card">
+      <section className="news-section">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">WEALTH HISTORY</p>
-            <h2>تاریخچه تغییرات ثروت</h2>
-            <p>
-              نمودار بر اساس تاریخچه واقعی ذخیره‌شده در پایگاه داده اکونوا ساخته شده است.
-            </p>
+            <p className="eyebrow">LATEST UPDATES</p>
+            <h2>آخرین اخبار {person.name}</h2>
           </div>
-
-          <span className="record-count">
-            {history.length.toLocaleString("fa-IR")} رکورد
-          </span>
         </div>
 
-        <div
-          className="history-range"
-          role="group"
-          aria-label="بازه زمانی تاریخچه"
-        >
-          {(
-            [
-              ["all", "کل تاریخچه"],
-              ["week", "هفته"],
-              ["month", "ماه"],
-              ["year", "سال"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className={historyRange === value ? "active" : ""}
-              aria-pressed={historyRange === value}
-              onClick={() => setHistoryRange(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {history.length === 0 ? (
-          <p className="empty">
-            هنوز تاریخچه‌ای برای این فرد در اکونوا ثبت نشده است.
-          </p>
-        ) : chartHistory.length < 2 ? (
-          <p className="empty">
-            در این بازه برای رسم نمودار حداقل دو رکورد لازم است.
-          </p>
-        ) : (
-          <div className="chart-wrap">
-            <svg
-              className="wealth-chart"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              role="img"
-              aria-label={`نمودار تغییر ثروت ${person.name}`}
-            >
-              <line
-                x1="0"
-                y1="90"
-                x2="100"
-                y2="90"
-                stroke="#294033"
-                strokeWidth="0.5"
-              />
-
-              <line
-                x1="0"
-                y1="50"
-                x2="100"
-                y2="50"
-                stroke="#294033"
-                strokeWidth="0.35"
-                strokeDasharray="2 2"
-              />
-
-              <polyline
-                points={chartPoints}
-                fill="none"
-                stroke="#b9f27c"
-                strokeWidth="1.7"
-                vectorEffect="non-scaling-stroke"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-
-            <div className="chart-foot">
-              <span>{dateLabel(chartHistory[0].recorded_at)}</span>
-              <strong dir="ltr">
-                {money(
-                  chartHistory[chartHistory.length - 1]
-                    .net_worth_billions
-                )}
-              </strong>
-              <span>
-                {dateLabel(
-                  chartHistory[chartHistory.length - 1].recorded_at
-                )}
-              </span>
-            </div>
-          </div>
-        )}
-        
-        {history.length > 0 && (
-          <div className="history-list">
-            <div className="history-list-heading">
-              <strong>رکوردهای این بازه</strong>
-              <span>نمایش حداکثر ۱۰۰ رکورد اخیر</span>
-            </div>
-
-            {[...chartHistory]
-              .reverse()
-              .slice(0, 100)
-              .map((point) => (
-                <div className="history-row" key={point.id}>
-                  <span>{dateLabel(point.recorded_at)}</span>
-                  <strong dir="ltr">
-                    {money(point.net_worth_billions)}
-                  </strong>
-                </div>
-              ))}
-
-            {chartHistory.length === 0 && (
-              <p className="empty">
-                در بازه انتخاب‌شده رکوردی ثبت نشده است.
-              </p>
-            )}
-          </div>
-        )}
-      </section>
-      
-      <section className="news-section">
-        <div className="news-heading">
-          <div>
-            <p className="eyebrow">LATEST RELATED NEWS</p>
-            <h2>آخرین اخبار مرتبط</h2>
-            <p>جدیدترین خبرهای مرتبط با {person.name}</p>
-          </div>
-          <span className="news-count">
-            {initialNews.length.toLocaleString("fa-IR")} خبر
-          </span>
-        </div>
-
-        {initialNews.length === 0 ? (
-          <div className="news-empty">
-            هنوز خبری برای این شخص ثبت نشده است.
-          </div>
-        ) : (
+        {initialNews.length > 0 ? (
           <div className="news-grid">
             {initialNews.map((news) => (
-              <article className="news-card" key={news.id}>
+              <a
+                key={news.id}
+                className="news-card"
+                href={`/billionaires/news/${news.id}`}
+              >
                 {news.image_url && (
                   <img
                     src={news.image_url}
                     alt={news.title}
-                    loading="lazy"
                     className="news-image"
                   />
                 )}
@@ -623,247 +711,730 @@ const rankingPeople = activeRanking?.people ?? [];
                     <p>{news.summary}</p>
                   )}
 
-                  <div className="news-bottom">
-                    <span>
-                      {news.published_at
-                        ? dateLabel(news.published_at)
-                        : "تاریخ نامشخص"}
-                    </span>
+                  {news.published_at && (
+                    <small>
+                      {dateLabel(news.published_at)}
+                    </small>
+                  )}
 
-                    <a href={`/billionaires/news/${news.id}`}>
-                      مطالعه خبر در اکونوا ↗
-                    </a>
-                  </div>
+                  <span className="news-read">
+                    مطالعه خبر ←
+                  </span>
                 </div>
-              </article>
+              </a>
             ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            هنوز خبری برای این فرد ثبت نشده است.
           </div>
         )}
       </section>
 
       <footer className="profile-footer">
-        تمام مقادیر بر اساس اطلاعات فعلی و تاریخچه ذخیره‌شده در پایگاه داده Econova نمایش داده می‌شوند.
+        <a href="/">ECONOVA<span>.</span></a>
+        <p>داده‌ها و تحلیل‌های ثروت در اکونوا</p>
       </footer>
-
-              .yearly-ranking-section{
-          width:min(1100px,100%);
-          margin:18px auto;
-          padding:24px;
-          border:1px solid #293b2e;
-          border-radius:18px;
-          background:linear-gradient(145deg,#111b14,#0b120d);
-          box-shadow:0 18px 45px #0003;
-        }
-        .yearly-ranking-heading{
-          display:flex;
-          justify-content:space-between;
-          align-items:flex-start;
-          gap:14px;
-          margin-bottom:20px;
-        }
-        .yearly-ranking-heading h2{
-          margin:5px 0 9px;
-          font-size:clamp(21px,3vw,28px);
-        }
-        .yearly-ranking-heading p:not(.eyebrow){
-          color:#9eafa2;
-          font-size:12px;
-          line-height:1.9;
-        }
-        .yearly-ranking-count{
-          color:#b9f27c;
-          white-space:nowrap;
-          font-size:12px;
-        }
-        .year-selector{
-          display:flex;
-          align-items:center;
-          gap:12px;
-          margin:18px 0;
-        }
-        .year-selector label{
-          color:#b7c4b9;
-          font-size:12px;
-        }
-        .year-selector select{
-          min-width:120px;
-          padding:10px 14px;
-          border:1px solid #40583b;
-          border-radius:10px;
-          outline:none;
-          color:#b9f27c;
-          background:#0b120d;
-          font-size:14px;
-          font-weight:800;
-        }
-        .yearly-ranking-summary{
-          display:flex;
-          align-items:center;
-          flex-wrap:wrap;
-          gap:12px;
-          padding:15px;
-          margin-bottom:14px;
-          border:1px solid #293b2e;
-          border-radius:12px;
-          background:#0b120d;
-        }
-        .yearly-ranking-summary span{
-          color:#a7b4aa;
-          font-size:12px;
-        }
-        .yearly-ranking-summary strong{
-          color:#b9f27c;
-          font-size:22px;
-        }
-        .yearly-ranking-summary small{
-          color:#89988d;
-          font-size:11px;
-        }
-        .yearly-table-wrap{
-          width:100%;
-          overflow-x:auto;
-          border:1px solid #293b2e;
-          border-radius:13px;
-          background:#0a110c;
-        }
-        .yearly-table{
-          width:100%;
-          min-width:850px;
-          border-collapse:collapse;
-          text-align:right;
-          font-size:12px;
-        }
-        .yearly-table th{
-          padding:15px 13px;
-          color:#b9f27c;
-          background:#142019;
-          white-space:nowrap;
-          font-weight:800;
-        }
-        .yearly-table td{
-          padding:13px;
-          border-top:1px solid #25342a;
-          color:#dce6dd;
-          white-space:nowrap;
-        }
-        .yearly-table tbody tr:hover{
-          background:#17231a;
-        }
-        .yearly-table tbody tr.current-profile-row{
-          background:rgba(185,242,124,.09);
-        }
-        .yearly-rank-number{
-          color:#b9f27c;
-          font-weight:900;
-          font-size:14px;
-        }
-        .yearly-person{
-          display:flex;
-          align-items:center;
-          gap:10px;
-          min-width:160px;
-        }
-        .yearly-person img,
-        .yearly-avatar-fallback{
-          width:34px;
-          height:34px;
-          flex-shrink:0;
-          border-radius:50%;
-          object-fit:cover;
-          border:1px solid #40583b;
-          background:#14271d;
-        }
-        .yearly-avatar-fallback{
-          display:grid;
-          place-items:center;
-          color:#b9f27c;
-          font-weight:900;
-        }
-        .yearly-person a{
-          color:#f1f5ef;
-          text-decoration:none;
-          font-weight:700;
-        }
-        .yearly-person a:hover{
-          color:#b9f27c;
-        }
-        .yearly-ranking-note{
-          margin-top:15px;
-          color:#89988d;
-          font-size:11px;
-          line-height:2;
-        }
-        .yearly-ranking-empty{
-          padding:25px;
-          color:#a7b4aa;
-          text-align:center;
-          line-height:2;
-        }
-        @media(max-width:650px){
-          .yearly-ranking-section{
-            padding:16px;
-          }
-          .yearly-ranking-heading{
-            flex-direction:column;
-          }
-          .yearly-table{
-            min-width:800px;
-          }
-        }
-
-      <style jsx>{`
-        .profile-page{position:relative;isolation:isolate;min-height:100vh;overflow:hidden;padding:24px;background:#080d0a;color:#f3f6f1;font-family:Arial,sans-serif;direction:rtl}
-        .profile-glow{position:absolute;z-index:-1;top:-240px;right:8%;width:560px;height:560px;border-radius:50%;background:radial-gradient(circle,rgba(185,242,124,.11),transparent 68%);pointer-events:none}
-        .profile-header,.profile-hero,.stats-grid,.history-card,.profile-footer{width:min(1100px,100%);margin-left:auto;margin-right:auto}
-        .profile-header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:34px}
-        .brand{color:#f3f6f1;font-size:23px;font-weight:900;letter-spacing:1px;text-decoration:none}.brand span{color:#b9f27c}
-        .back-link{color:#b9f27c;text-decoration:none;font-size:13px;border:1px solid #334a38;border-radius:999px;padding:10px 15px;background:#101812}
-        .profile-hero{display:grid;grid-template-columns:240px minmax(0,1fr);gap:30px;align-items:center;padding:28px;margin-bottom:18px;border:1px solid #293b2e;border-radius:22px;background:linear-gradient(130deg,rgba(185,242,124,.075),#101812 42%,#0c120e);box-shadow:0 18px 50px #0004}
-        .profile-photo{width:100%;aspect-ratio:1;object-fit:cover;border-radius:17px;border:1px solid #526b43;background:#14271d}
-        .eyebrow{margin:0 0 10px;color:#b9f27c;font-size:10px;letter-spacing:2px;font-weight:800}.rank-pill{display:inline-block;padding:6px 11px;border:1px solid #40583b;border-radius:999px;color:#c8e6b4;background:#b9f27c0d;font-size:11px}
-        h1{margin:12px 0;font-size:clamp(30px,5vw,48px);line-height:1.2}.profile-meta{color:#d2ded3;font-size:14px}.profile-bio{color:#a7b4aa;line-height:2;white-space:pre-wrap}
-        .hero-wealth{margin-top:22px;padding:20px;border:1px solid rgba(185,242,124,.3);border-radius:16px;background:linear-gradient(135deg,rgba(185,242,124,.12),rgba(16,24,18,.95));display:flex;flex-direction:column;align-items:flex-start;gap:8px}
-        .hero-wealth>span{color:#aeb9b0;font-size:12px}
-        .hero-wealth>strong{color:#b9f27c;font-size:clamp(30px,4vw,42px);font-weight:900}
-        .hero-wealth>small,.hero-year-change>small{color:#9eafa2;font-size:11px;line-height:1.8}
-        .hero-year-change{width:100%;margin-top:10px;padding-top:14px;border-top:1px solid rgba(185,242,124,.16);display:flex;flex-direction:column;align-items:flex-start;gap:7px}
-        .hero-year-change>span{color:#dce6dd;font-size:13px;font-weight:700}
-        .hero-year-change>strong{font-size:23px}
-        .hero-year-change>b{font-size:17px}
-        .stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px}
-        .stat-card,.history-card{min-width:0;padding:21px;border:1px solid #293b2e;border-radius:17px;background:#101812}
-        .stat-card{display:flex;flex-direction:column;align-items:flex-start;gap:8px}.stat-card>span{color:#a7b4aa;font-size:12px}.stat-card>strong{margin:4px 0;font-size:clamp(23px,3vw,32px);font-variant-numeric:tabular-nums}.stat-card>small{color:#9eafa2;font-size:11px;line-height:1.7}
-        .positive{color:#b9f27c}.negative{color:#ff8585}
-        [dir="ltr"]{direction:ltr;unicode-bidi:isolate;text-align:left;font-variant-numeric:tabular-nums}
-        .history-card{margin-top:0}.section-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.section-heading h2{margin:4px 0 8px;font-size:clamp(20px,3vw,27px)}.section-heading p:not(.eyebrow){margin:0;color:#93a197;font-size:12px;line-height:1.8}.record-count{white-space:nowrap;color:#b9f27c;font-size:12px}
-        .history-range{display:flex;direction:ltr;align-items:center;justify-content:flex-start;gap:3px;width:fit-content;max-width:100%;margin:20px auto 12px 0;padding:4px;border:1px solid #344a39;border-radius:999px;background:#0b120d}
-        .history-range button{min-width:65px;border:none;border-radius:999px;padding:9px 17px;color:#aeb9b0;background:transparent;font-family:Arial,sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s ease}
-        .history-range button:hover{color:#ffffff;background:#18231a}
-        .history-range button.active{color:#10160e;background:#b9f27c;font-weight:900}
-        @media(max-width:650px){.history-range{margin:18px auto 12px 0}.history-range button{min-width:65px;padding:9px 16px;font-size:11px}}
-        .chart-wrap{padding:18px;border:1px solid #24372a;border-radius:14px;background:#0a110c}.wealth-chart{display:block;width:100%;height:230px;overflow:visible}.chart-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#9ba99e;font-size:10px}.chart-foot strong{color:#eaf2eb;font-size:13px}
-        .empty{padding:18px;color:#a7b4aa;line-height:1.9}.history-list{margin-top:20px}.history-list-heading{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;color:#dce6dd;font-size:12px}.history-list-heading span{color:#87968b;font-size:10px}.history-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid #25342a;color:#aab7ac;font-size:12px}.history-row strong{color:#e9f0e9;font-size:13px}.profile-footer{padding:22px 4px;color:#819087;font-size:11px;line-height:1.8}
-        .news-section{width:min(1100px,100%);margin:18px auto 0;padding:22px;border:1px solid #293b2e;border-radius:17px;background:#101812}
-        .news-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
-        .news-heading h2{margin:5px 0;font-size:25px}
-        .news-heading p:not(.eyebrow){color:#93a197;font-size:12px}
-        .news-count{color:#b9f27c;font-size:12px}
-        .news-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-        .news-card{overflow:hidden;border:1px solid #293b2e;border-radius:14px;background:#0b120d}
-        .news-image{width:100%;height:190px;object-fit:cover}
-        .news-content{padding:16px}
-        .news-source{color:#b9f27c;font-size:11px;font-weight:800}
-        .news-content h3{margin:10px 0;color:#f3f6f1;font-size:16px;line-height:1.8}
-        .news-content>p{color:#a7b4aa;font-size:12px;line-height:1.9}
-        .news-bottom{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding-top:12px;border-top:1px solid #25342a;font-size:11px;color:#89988d}
-        .news-bottom a{color:#b9f27c;text-decoration:none}
-        .news-empty{padding:24px;text-align:center;color:#9eafa2;font-size:13px}
-        @media(max-width:650px){.news-section{padding:16px}.news-grid{grid-template-columns:1fr}.news-image{height:180px}.news-heading h2{font-size:20px}}
-        @media(max-width:650px){.profile-page{padding:14px}.profile-header{margin-bottom:20px}.profile-hero{grid-template-columns:1fr;padding:18px;gap:18px}.profile-photo{max-width:210px;margin:0 auto}.stats-grid{grid-template-columns:1fr;gap:10px}.stat-card,.history-card{padding:16px}.section-heading{flex-direction:column}.wealth-chart{height:190px}.history-row{font-size:11px}}
-      `}</style>
     </main>
   );
 }
+      <style jsx>{`
+        .profile-page {
+          min-height: 100vh;
+          padding: 24px;
+          background: #080d0a;
+          color: #f2f5f1;
+          font-family: inherit;
+          position: relative;
+          overflow: hidden;
+        }
 
+        .profile-glow {
+          position: absolute;
+          width: 500px;
+          height: 500px;
+          top: -250px;
+          right: 15%;
+          background: #b9f27c;
+          opacity: 0.045;
+          filter: blur(120px);
+          pointer-events: none;
+        }
 
-    
+        .profile-header {
+          max-width: 1250px;
+          margin: 0 auto 35px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          position: relative;
+          z-index: 2;
+        }
+
+        .brand,
+        .profile-footer > a {
+          color: #f5f7f3;
+          text-decoration: none;
+          font-size: 23px;
+          font-weight: 900;
+          letter-spacing: 2px;
+        }
+
+        .brand span,
+        .profile-footer > a span {
+          color: #b9f27c;
+        }
+
+        .profile-header-actions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .profile-ranking-switch {
+          border: 1px solid #526b42;
+          background: linear-gradient(
+            135deg,
+            #b9f27c,
+            #91c65b
+          );
+          color: #10190d;
+          border-radius: 999px;
+          padding: 11px 17px;
+          font-size: 13px;
+          font-weight: 900;
+          cursor: pointer;
+          transition: 0.2s ease;
+        }
+
+        .profile-ranking-switch:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px #b9f27c25;
+        }
+
+        .back-link {
+          color: #b9f27c;
+          text-decoration: none;
+          font-size: 13px;
+          border: 1px solid #334a38;
+          border-radius: 999px;
+          padding: 10px 15px;
+          background: #101812;
+        }
+
+        .profile-hero {
+          max-width: 1250px;
+          margin: 0 auto;
+          display: grid;
+          grid-template-columns: 280px 1fr;
+          gap: 35px;
+          align-items: center;
+          padding: 35px;
+          border: 1px solid #25352a;
+          border-radius: 26px;
+          background: linear-gradient(
+            135deg,
+            #121d16,
+            #0c130f
+          );
+          position: relative;
+          z-index: 1;
+        }
+
+        .profile-photo {
+          width: 100%;
+          aspect-ratio: 1;
+          object-fit: cover;
+          border-radius: 22px;
+          border: 1px solid #526b42;
+          background: #152019;
+        }
+
+        .eyebrow {
+          color: #b9f27c;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 2px;
+          margin: 0 0 12px;
+        }
+
+        .rank-pill {
+          display: inline-flex;
+          padding: 7px 13px;
+          border: 1px solid #526b42;
+          border-radius: 999px;
+          color: #b9f27c;
+          background: #172519;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .profile-intro h1 {
+          margin: 15px 0 8px;
+          font-size: clamp(30px, 5vw, 52px);
+          font-weight: 900;
+          letter-spacing: -1px;
+        }
+
+        .profile-meta {
+          color: #a6b4a8;
+          font-size: 14px;
+          margin: 0 0 18px;
+        }
+
+        .profile-bio {
+          color: #c0c9c1;
+          line-height: 2;
+          font-size: 14px;
+          max-width: 750px;
+        }
+
+        .hero-wealth {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 7px;
+          margin-top: 25px;
+          padding: 20px;
+          border: 1px solid #344a36;
+          border-radius: 18px;
+          background: #0b130d;
+        }
+
+        .hero-wealth > span,
+        .hero-year-change > span {
+          color: #9cab9e;
+          font-size: 13px;
+        }
+
+        .hero-wealth > strong {
+          color: #b9f27c;
+          font-size: clamp(32px, 5vw, 48px);
+          font-weight: 900;
+        }
+
+        .hero-wealth > small,
+        .hero-year-change small {
+          color: #879589;
+          font-size: 12px;
+        }
+
+        .hero-year-change {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 10px;
+          margin-top: 12px;
+          padding-top: 14px;
+          border-top: 1px solid #26372a;
+          width: 100%;
+        }
+
+        .hero-year-change strong {
+          font-size: 17px;
+        }
+
+        .hero-year-change b {
+          font-size: 14px;
+        }
+
+        .positive {
+          color: #9ee878 !important;
+        }
+
+        .negative {
+          color: #ff8585 !important;
+        }
+
+        .stats-grid {
+          max-width: 1250px;
+          margin: 22px auto;
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 16px;
+        }
+
+        .stat-card {
+          padding: 22px;
+          border: 1px solid #26372a;
+          border-radius: 19px;
+          background: #101812;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .stat-card span {
+          color: #9cab9e;
+          font-size: 13px;
+        }
+
+        .stat-card strong {
+          font-size: 30px;
+          font-weight: 900;
+        }
+
+        .stat-card small {
+          color: #748477;
+          font-size: 11px;
+        }
+
+        .history-section,
+        .yearly-ranking-section,
+        .news-section {
+          max-width: 1250px;
+          margin: 35px auto;
+          padding: 27px;
+          border: 1px solid #26372a;
+          border-radius: 23px;
+          background: #101812;
+        }
+
+        .yearly-ranking-section {
+          scroll-margin-top: 25px;
+          border-color: #526b42;
+          background: linear-gradient(
+            145deg,
+            #111c14,
+            #0d140f
+          );
+        }
+
+        .section-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          margin-bottom: 22px;
+        }
+
+        .section-heading h2 {
+          margin: 0;
+          font-size: 22px;
+          font-weight: 900;
+        }
+
+        .section-description {
+          color: #8d9b90;
+          font-size: 12px;
+          line-height: 1.8;
+          margin: 8px 0 0;
+        }
+
+        .range-switch {
+          display: flex;
+          gap: 5px;
+          padding: 5px;
+          border: 1px solid #2b3b2f;
+          border-radius: 999px;
+          background: #09100b;
+        }
+
+        .range-switch button {
+          border: 0;
+          border-radius: 999px;
+          padding: 8px 13px;
+          background: transparent;
+          color: #9eaa9f;
+          font-size: 12px;
+          cursor: pointer;
+        }
+
+        .range-switch button.active {
+          color: #10190d;
+          background: #b9f27c;
+          font-weight: 900;
+        }
+
+        .chart-card {
+          padding: 22px;
+          border: 1px solid #283a2c;
+          border-radius: 18px;
+          background: #0a120d;
+        }
+
+        .chart-value {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .chart-value span {
+          color: #92a093;
+          font-size: 12px;
+        }
+
+        .chart-value strong {
+          color: #b9f27c;
+          font-size: 20px;
+        }
+
+        .wealth-chart {
+          display: block;
+          width: 100%;
+          height: 220px;
+          overflow: visible;
+        }
+
+        .chart-footer {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          color: #78867b;
+          font-size: 11px;
+          margin-top: 12px;
+        }
+
+        .history-summary {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-top: 15px;
+        }
+
+        .history-summary > div {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          padding: 15px;
+          border: 1px solid #283a2c;
+          border-radius: 14px;
+          background: #0b130e;
+        }
+
+        .history-summary span {
+          color: #839185;
+          font-size: 11px;
+        }
+
+        .history-summary strong {
+          color: #e5eee5;
+          font-size: 13px;
+        }
+
+        .year-select {
+          color: #b9f27c;
+          background: #0b130e;
+          border: 1px solid #526b42;
+          border-radius: 12px;
+          padding: 11px 15px;
+          font: inherit;
+          outline: none;
+        }
+
+        .year-select option {
+          background: #101812;
+          color: #fff;
+        }
+
+        .ranking-highlight {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .ranking-highlight > div {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          padding: 17px;
+          border: 1px solid #304333;
+          border-radius: 15px;
+          background: #0a130d;
+        }
+
+        .ranking-highlight span {
+          color: #879589;
+          font-size: 11px;
+        }
+
+        .ranking-highlight strong {
+          color: #b9f27c;
+          font-size: 22px;
+          font-weight: 900;
+        }
+
+        .ranking-table-wrap {
+          width: 100%;
+          overflow-x: auto;
+          border: 1px solid #29392d;
+          border-radius: 15px;
+        }
+
+        .ranking-table {
+          width: 100%;
+          min-width: 760px;
+          border-collapse: collapse;
+          text-align: right;
+          font-size: 12px;
+        }
+
+        .ranking-table th {
+          padding: 16px 13px;
+          color: #b9f27c;
+          background: #17241a;
+          white-space: nowrap;
+          font-weight: 800;
+        }
+
+        .ranking-table td {
+          padding: 14px 13px;
+          border-top: 1px solid #26352a;
+          color: #d5dfd6;
+          white-space: nowrap;
+        }
+
+        .ranking-table tbody tr {
+          transition: background 0.2s ease;
+        }
+
+        .ranking-table tbody tr:hover {
+          background: #17251a;
+        }
+
+        .ranking-table tbody tr.current-person {
+          background: #1b2b1c;
+          outline: 1px solid #718e4e;
+        }
+
+        .ranking-person {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          min-width: 180px;
+        }
+
+        .ranking-person img,
+        .ranking-avatar {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          object-fit: cover;
+          background: #25392a;
+          border: 1px solid #526b42;
+        }
+
+        .ranking-avatar {
+          display: grid;
+          place-items: center;
+          color: #b9f27c;
+          font-weight: 900;
+        }
+
+        .ranking-person small {
+          color: #b9f27c;
+          font-size: 10px;
+        }
+
+        .ranking-note {
+          color: #849287;
+          font-size: 11px;
+          line-height: 2;
+          margin: 17px 0 0;
+        }
+
+        .news-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .news-card {
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          border: 1px solid #2a3a2e;
+          border-radius: 17px;
+          background: #0b130e;
+          text-decoration: none;
+          color: inherit;
+          transition: 0.2s ease;
+        }
+
+        .news-card:hover {
+          border-color: #789c56;
+          transform: translateY(-3px);
+        }
+
+        .news-image {
+          width: 100%;
+          height: 190px;
+          object-fit: cover;
+          background: #17231a;
+        }
+
+        .news-content {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+          padding: 18px;
+        }
+
+        .news-source {
+          color: #b9f27c;
+          font-size: 11px;
+        }
+
+        .news-content h3 {
+          color: #edf3ed;
+          font-size: 16px;
+          line-height: 1.8;
+          margin: 0;
+        }
+
+        .news-content p {
+          color: #9ba99d;
+          font-size: 12px;
+          line-height: 1.9;
+          margin: 0;
+        }
+
+        .news-content small {
+          color: #748477;
+          font-size: 10px;
+        }
+
+        .news-read {
+          color: #b9f27c;
+          font-size: 12px;
+          font-weight: 800;
+          margin-top: 5px;
+        }
+
+        .empty-state {
+          padding: 35px 18px;
+          text-align: center;
+          color: #829085;
+          border: 1px dashed #344638;
+          border-radius: 15px;
+          font-size: 13px;
+          line-height: 2;
+        }
+
+        .profile-footer {
+          max-width: 1250px;
+          margin: 45px auto 10px;
+          padding-top: 22px;
+          border-top: 1px solid #26372a;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+        }
+
+        .profile-footer > a {
+          font-size: 18px;
+        }
+
+        .profile-footer p {
+          color: #718074;
+          font-size: 11px;
+        }
+
+        @media (max-width: 750px) {
+          .profile-page {
+            padding: 15px;
+          }
+
+          .profile-header {
+            align-items: flex-start;
+            flex-direction: column;
+            margin-bottom: 22px;
+          }
+
+          .profile-header-actions {
+            width: 100%;
+            justify-content: flex-start;
+          }
+
+          .profile-hero {
+            grid-template-columns: 1fr;
+            padding: 20px;
+            gap: 20px;
+          }
+
+          .profile-photo {
+            width: 180px;
+            margin: 0 auto;
+          }
+
+          .profile-intro h1 {
+            font-size: 32px;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .history-section,
+          .yearly-ranking-section,
+          .news-section {
+            padding: 18px;
+            margin: 22px auto;
+          }
+
+          .section-heading {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .ranking-highlight {
+            grid-template-columns: 1fr;
+          }
+
+          .news-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .profile-header-actions {
+            align-items: stretch;
+            flex-direction: column;
+          }
+
+          .profile-ranking-switch,
+          .back-link {
+            text-align: center;
+            width: 100%;
+          }
+
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .history-summary {
+            grid-template-columns: 1fr;
+          }
+
+          .range-switch {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          .range-switch button {
+            flex: 1;
+            padding: 8px 5px;
+          }
+
+          .chart-value {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .profile-footer {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+        }
+      `}</style>
+    </>
+  );
+}
