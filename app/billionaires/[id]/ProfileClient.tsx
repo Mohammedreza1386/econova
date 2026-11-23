@@ -36,6 +36,23 @@ type BillionaireNews = {
   published_at: string | null;
 };
 
+type YearlyRankingEntry = {
+  id: string;
+  name: string;
+  image_url: string | null;
+  current_net_worth: number;
+  baseline_net_worth: number;
+  baseline_date: string;
+  change: number;
+  change_pct: number | null;
+  rank: number;
+};
+
+type YearlyRanking = {
+  year: number;
+  people: YearlyRankingEntry[];
+};
+
 type Props = {
   person: Billionaire;
   initialHistory: HistoryPoint[];
