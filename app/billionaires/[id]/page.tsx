@@ -648,6 +648,7 @@ let profileNavigation: ProfileNavPerson[] = [];
         initialHistory={history}
         initialNews={news}
         yearlyRankings={yearlyRankings}
+        profileNavigation={profileNavigation}
       />
     </>
   );
