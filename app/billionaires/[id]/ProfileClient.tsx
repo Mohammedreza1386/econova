@@ -86,6 +86,22 @@ export default function ProfileClient({
   >("all");
 
   const history = initialHistory;
+  const availableYears = yearlyRankings.map((item) => item.year);
+
+const [selectedRankingYear, setSelectedRankingYear] =
+  useState<number | null>(null);
+
+const activeRankingYear =
+  selectedRankingYear !== null &&
+  availableYears.includes(selectedRankingYear)
+    ? selectedRankingYear
+    : availableYears[0] ?? null;
+
+const activeRanking = yearlyRankings.find(
+  (item) => item.year === activeRankingYear
+);
+
+const rankingPeople = activeRanking?.people ?? [];
 
   const firstHistoryRecord = history[0] ?? null;
 
