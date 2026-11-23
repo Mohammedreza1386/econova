@@ -645,6 +645,172 @@ const rankingPeople = activeRanking?.people ?? [];
         تمام مقادیر بر اساس اطلاعات فعلی و تاریخچه ذخیره‌شده در پایگاه داده Econova نمایش داده می‌شوند.
       </footer>
 
+              .yearly-ranking-section{
+          width:min(1100px,100%);
+          margin:18px auto;
+          padding:24px;
+          border:1px solid #293b2e;
+          border-radius:18px;
+          background:linear-gradient(145deg,#111b14,#0b120d);
+          box-shadow:0 18px 45px #0003;
+        }
+        .yearly-ranking-heading{
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-start;
+          gap:14px;
+          margin-bottom:20px;
+        }
+        .yearly-ranking-heading h2{
+          margin:5px 0 9px;
+          font-size:clamp(21px,3vw,28px);
+        }
+        .yearly-ranking-heading p:not(.eyebrow){
+          color:#9eafa2;
+          font-size:12px;
+          line-height:1.9;
+        }
+        .yearly-ranking-count{
+          color:#b9f27c;
+          white-space:nowrap;
+          font-size:12px;
+        }
+        .year-selector{
+          display:flex;
+          align-items:center;
+          gap:12px;
+          margin:18px 0;
+        }
+        .year-selector label{
+          color:#b7c4b9;
+          font-size:12px;
+        }
+        .year-selector select{
+          min-width:120px;
+          padding:10px 14px;
+          border:1px solid #40583b;
+          border-radius:10px;
+          outline:none;
+          color:#b9f27c;
+          background:#0b120d;
+          font-size:14px;
+          font-weight:800;
+        }
+        .yearly-ranking-summary{
+          display:flex;
+          align-items:center;
+          flex-wrap:wrap;
+          gap:12px;
+          padding:15px;
+          margin-bottom:14px;
+          border:1px solid #293b2e;
+          border-radius:12px;
+          background:#0b120d;
+        }
+        .yearly-ranking-summary span{
+          color:#a7b4aa;
+          font-size:12px;
+        }
+        .yearly-ranking-summary strong{
+          color:#b9f27c;
+          font-size:22px;
+        }
+        .yearly-ranking-summary small{
+          color:#89988d;
+          font-size:11px;
+        }
+        .yearly-table-wrap{
+          width:100%;
+          overflow-x:auto;
+          border:1px solid #293b2e;
+          border-radius:13px;
+          background:#0a110c;
+        }
+        .yearly-table{
+          width:100%;
+          min-width:850px;
+          border-collapse:collapse;
+          text-align:right;
+          font-size:12px;
+        }
+        .yearly-table th{
+          padding:15px 13px;
+          color:#b9f27c;
+          background:#142019;
+          white-space:nowrap;
+          font-weight:800;
+        }
+        .yearly-table td{
+          padding:13px;
+          border-top:1px solid #25342a;
+          color:#dce6dd;
+          white-space:nowrap;
+        }
+        .yearly-table tbody tr:hover{
+          background:#17231a;
+        }
+        .yearly-table tbody tr.current-profile-row{
+          background:rgba(185,242,124,.09);
+        }
+        .yearly-rank-number{
+          color:#b9f27c;
+          font-weight:900;
+          font-size:14px;
+        }
+        .yearly-person{
+          display:flex;
+          align-items:center;
+          gap:10px;
+          min-width:160px;
+        }
+        .yearly-person img,
+        .yearly-avatar-fallback{
+          width:34px;
+          height:34px;
+          flex-shrink:0;
+          border-radius:50%;
+          object-fit:cover;
+          border:1px solid #40583b;
+          background:#14271d;
+        }
+        .yearly-avatar-fallback{
+          display:grid;
+          place-items:center;
+          color:#b9f27c;
+          font-weight:900;
+        }
+        .yearly-person a{
+          color:#f1f5ef;
+          text-decoration:none;
+          font-weight:700;
+        }
+        .yearly-person a:hover{
+          color:#b9f27c;
+        }
+        .yearly-ranking-note{
+          margin-top:15px;
+          color:#89988d;
+          font-size:11px;
+          line-height:2;
+        }
+        .yearly-ranking-empty{
+          padding:25px;
+          color:#a7b4aa;
+          text-align:center;
+          line-height:2;
+        }
+        @media(max-width:650px){
+          .yearly-ranking-section{
+            padding:16px;
+          }
+          .yearly-ranking-heading{
+            flex-direction:column;
+          }
+          .yearly-table{
+            min-width:800px;
+          }
+        }
+
       <style jsx>{`
         .profile-page{position:relative;isolation:isolate;min-height:100vh;overflow:hidden;padding:24px;background:#080d0a;color:#f3f6f1;font-family:Arial,sans-serif;direction:rtl}
         .profile-glow{position:absolute;z-index:-1;top:-240px;right:8%;width:560px;height:560px;border-radius:50%;background:radial-gradient(circle,rgba(185,242,124,.11),transparent 68%);pointer-events:none}
