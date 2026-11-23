@@ -299,6 +299,158 @@ const rankingPeople = activeRanking?.people ?? [];
         </article>
       </section>
 
+            <section className="yearly-ranking-section">
+        <div className="yearly-ranking-heading">
+          <div>
+            <p className="eyebrow">ECONOVA · ANNUAL WEALTH RANKING</p>
+            <h2>رتبه‌بندی سالانه ثروتمندان</h2>
+            <p>
+              رتبه‌بندی همه افراد بر اساس ثروت مبنای ثبت‌شده در هر سال.
+              تغییرات، اختلاف ثروت فعلی با ثروت مبنا را نشان می‌دهد.
+            </p>
+          </div>
+
+          <span className="yearly-ranking-count">
+            {rankingPeople.length.toLocaleString("fa-IR")} نفر
+          </span>
+        </div>
+
+        <div className="year-selector">
+          <label htmlFor="ranking-year">انتخاب سال</label>
+          <select
+            id="ranking-year"
+            value={activeRankingYear ?? ""}
+            onChange={(event) =>
+              setSelectedRankingYear(
+                event.target.value
+                  ? Number(event.target.value)
+                  : null
+              )
+            }
+            disabled={availableYears.length === 0}
+          >
+            {yearlyRankings.map((item) => (
+              <option key={item.year} value={item.year}>
+                {item.year}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {!activeRanking || rankingPeople.length === 0 ? (
+          <div className="yearly-ranking-empty">
+            برای این سال داده تاریخی کافی جهت رتبه‌بندی وجود ندارد.
+          </div>
+        ) : (
+          <>
+            <div className="yearly-ranking-summary">
+              <span>سال انتخاب‌شده</span>
+              <strong dir="ltr">{activeRanking.year}</strong>
+              <small>
+                مرتب‌شده بر اساس ثروت مبنا، از بیشترین به کمترین
+              </small>
+            </div>
+
+            <div className="yearly-table-wrap">
+              <table className="yearly-table">
+                <thead>
+                  <tr>
+                    <th>رتبه</th>
+                    <th>نام</th>
+                    <th>ثروت مبنا</th>
+                    <th>تاریخ مبنا</th>
+                    <th>تغییر تا امروز</th>
+                    <th>درصد تغییر</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {rankingPeople.map((entry) => (
+                    <tr
+                      key={entry.id}
+                      className={
+                        String(person.id) === entry.id
+                          ? "current-profile-row"
+                          : ""
+                      }
+                    >
+                      <td>
+                        <span className="yearly-rank-number">
+                          #{entry.rank}
+                        </span>
+                      </td>
+
+                      <td>
+                        <div className="yearly-person">
+                          {entry.image_url ? (
+                            <img
+                              src={entry.image_url}
+                              alt={entry.name}
+                              loading="lazy"
+                            />
+                          ) : (
+                            <span className="yearly-avatar-fallback">
+                              {entry.name.slice(0, 1)}
+                            </span>
+                          )}
+
+                          <a
+                            href={`/billionaires/${encodeURIComponent(entry.id)}`}
+                          >
+                            {entry.name}
+                          </a>
+                        </div>
+                      </td>
+
+                      <td dir="ltr">
+                        {money(entry.baseline_net_worth)}
+                      </td>
+
+                      <td>
+                        {dateLabel(entry.baseline_date)}
+                      </td>
+
+                      <td
+                        dir="ltr"
+                        className={
+                          entry.change >= 0
+                            ? "positive"
+                            : "negative"
+                        }
+                      >
+                        {entry.change >= 0 ? "+" : "−"}
+                        {money(Math.abs(entry.change))}
+                      </td>
+
+                      <td
+                        dir="ltr"
+                        className={
+                          entry.change_pct === null
+                            ? ""
+                            : entry.change_pct >= 0
+                              ? "positive"
+                              : "negative"
+                        }
+                      >
+                        {entry.change_pct === null
+                          ? "—"
+                          : `${entry.change_pct >= 0 ? "+" : ""}${entry.change_pct.toFixed(2)}%`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="yearly-ranking-note">
+              مبنای سال اول هر فرد، پنجمین رکورد تاریخچه اوست.
+              مبنای سال‌های بعد، اولین رکورد همان سال است.
+              افرادی که رکورد مبنای کافی ندارند در جدول آن سال رتبه نمی‌گیرند.
+            </p>
+          </>
+        )}
+      </section>
+
       <section className="history-card">
         <div className="section-heading">
           <div>
