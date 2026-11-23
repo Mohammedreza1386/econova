@@ -736,8 +736,7 @@ export default function ProfileClient({
         <p>داده‌ها و تحلیل‌های ثروت در اکونوا</p>
       </footer>
     </main>
-  );
-}
+
       <style jsx>{`
         .profile-page {
           min-height: 100vh;
