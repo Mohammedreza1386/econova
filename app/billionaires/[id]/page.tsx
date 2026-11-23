@@ -578,6 +578,12 @@ let profileNavigation: ProfileNavPerson[] = [];
     console.error("Yearly rankings fetch failed:", error);
   }
 
+  try {
+  profileNavigation = await getProfileNavigation();
+} catch (error) {
+  console.error("Profile navigation fetch failed:", error);
+  }
+
   const canonical =
     `${SITE_URL}/billionaires/${encodeURIComponent(id)}`;
 
