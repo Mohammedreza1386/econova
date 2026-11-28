@@ -240,13 +240,14 @@ const currencyItems = currencyWanted
     );
 
     if (tether) {
-      currencyItems.push({
-        code: "USDT",
-        name: "تتر",
-        toman: tether.price,
-        updatedAt: tether.timestamp ?? null,
-      });
-    }
+  currencyItems.push({
+    code: "USDT",
+    name: "تتر",
+    toman: tether.price,
+    change24h: tether.change_pct ?? null,
+    updatedAt: tether.timestamp ?? null,
+  });
+}
 
     const goldAndCoinWanted = [
       { category: "gold", symbol: "GOLD_18K_IRR", code: "GOLD18", name: "طلای ۱۸ عیار (هر گرم)" },
