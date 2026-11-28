@@ -394,7 +394,7 @@ const [historyRange, setHistoryRange] =
 
   const gold18kPrice = gold18k?.toman ?? null;
 
-  const styles = \`
+  const styles = `
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; scroll-padding-top: 90px; }
@@ -488,7 +488,7 @@ const [historyRange, setHistoryRange] =
       border-radius: 50%;
       box-shadow:
         0 0 0 35px rgba(217,189,119,.018),
-        0 0 0 75px rgba(217,189,119,.014);
+                0 0 0 75px rgba(217,189,119,.014);
       pointer-events: none;
     }
     .hero-content { position: relative; z-index: 1; max-width: 800px; }
@@ -498,17 +498,6 @@ const [historyRange, setHistoryRange] =
       gap: 10px;
       margin: 0 0 14px;
       color: #d6b96d;
-      font-size: 10px;
-      letter-spacing: 2.7px;
-      font-weight: 800;
-    }
-    .eyebrow:before {
-      content: "";
-      width: 25px;
-      height: 1px;
-      background: #b99a55;
-    }
-          color: #d6b96d;
       font-size: 10px;
       letter-spacing: 2.7px;
       font-weight: 800;
@@ -961,7 +950,7 @@ const [historyRange, setHistoryRange] =
         </div>
       </header>
 
-      <section className="wrap section" id="exchange-feature">
+      <section className="wrap section" id="currencies">
   <div style={{
     padding: 20,
     borderRadius: 18,
@@ -993,7 +982,7 @@ const [historyRange, setHistoryRange] =
               fontWeight: 900,
               margin: "10px 0",
             }}>
-              {usd ? money(usd.toman) : "در انتظار دریافت نرخ"}
+                            {usd ? money(usd.toman) : "در انتظار دریافت نرخ"}
             </div>
             <div className="muted">آخرین بررسی: {lastUpdated ?? "—"}</div>
           </div>
@@ -1066,66 +1055,6 @@ const [historyRange, setHistoryRange] =
           </div>
         </div>
       </section>
-                      border: "1px solid rgba(180,190,199,.12)",
-                background: "rgba(255,255,255,.025)",
-              }}>
-                <div className="muted">{item.name}</div>
-                <div className="symbol">{item.code}</div>
-                <div style={{ color: "#b9f27c", fontWeight: 800, marginTop: 9 }}>
-                  {money(item.toman)}
-                </div>
-              </article>
-            ))}
-          </div>
-        </>
-      );
-    })()}
-  </div>
-</section>
-
-<section className="wrap hero" id="top">
-        <div className="hero-content">
-          <p className="eyebrow">ECONOMIC INTELLIGENCE · EST. ECONOVA</p>
-          <h1>
-  اکونوا؛ رصد بازارهای مالی
-  <br />
-  <span className="gold-text">
-    ارز دیجیتال، ارز و طلا
-  </span>
-</h1>       
-<p className="hero-desc">
-  Econova یک داشبورد اقتصادی برای بررسی بازارهای مالی،
-  قیمت ارزهای دیجیتال، نرخ ارزهای رایج، طلا و سکه است.
-  همچنین می‌توانی رتبه‌بندی ثروتمندان جهان و اطلاعات
-  اقتصادهای مختلف را در اکونوا دنبال کنی.
-</p>
-          <div className="hero-actions">
-            <a className="btn btn-primary" href="#markets">
-              مشاهده بازارها <span>↘</span>
-            </a>
-            <a className="btn btn-secondary" href="#parsian">
-              قیمت سکه پارسیان
-            </a>
-          </div>
-          <div className="stats">
-            <div className="stat">
-              <div className="stat-label">وضعیت دریافت داده</div>
-              <div className="stat-value">
-                {loading ? "در حال اتصال…" : error ? "نیازمند بررسی" : data ? "متصل" : "آماده"}
-              </div>
-            </div>
-            <div className="stat">
-              <div className="stat-label">آخرین بررسی در این صفحه</div>
-              <div className="stat-value">{lastUpdated ?? "—"}</div>
-            </div>
-            <div className="stat">
-              <div className="stat-label">بازهٔ به‌روزرسانی</div>
-              <div className="stat-value">۵ دقیقه</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
 
 <section className="wrap section" id="markets">
         <div className="section-head">
@@ -1276,40 +1205,6 @@ const [historyRange, setHistoryRange] =
           </a>
           . قیمت‌ها ممکن است با تأخیر همراه باشند و تضمین‌شده نیستند.
         </p>
-      </section>
-
-      <section className="wrap section" id="currencies">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">02 / CURRENCY MARKET</p>
-            <h2>ارزهای رایج</h2>
-            <p className="section-sub">نرخ‌های دریافت‌شده از منبع داده، به تومان</p>
-          </div>
-          <span className="tiny-label">CURRENCY WATCH</span>
-        </div>
-
-        {!data?.currencies?.length && !loading && (
-          <p className="status">قیمت ارزها در حال حاضر در دسترس نیست.</p>
-        )}
-
-        {data?.currencies && data.currencies.length > 0 && (
-          <div className="grid">
-            {data.currencies.map((currency) => (
-              <article className="card" key={currency.code}>
-                <div className="card-top">
-                  <div>
-                    <div className="name">{currency.name}</div>
-                    <div className="symbol">{currency.code}</div>
-                  </div>
-                  <div className="coin-mark">¤</div>
-                </div>
-                <div className="toman" style={{ fontSize: 20 }}>
-                  {money(currency.toman, 2)}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
       </section>
 
       <section className="wrap section" id="oil">
