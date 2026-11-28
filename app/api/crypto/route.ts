@@ -64,12 +64,18 @@ const arzhaamRateMap = new Map(
 );
     
 
-    const usdToman = currencies.find(
-      (item: any) =>
-        item.symbol === "USD_IRR_FREE" &&
-        !item.stale &&
-        item.price > 0
-    )?.price;
+    
+const legacyUsdToman = currencies.find(
+  (item: any) =>
+    item.symbol === "USD_IRR_FREE" &&
+    !item.stale &&
+    item.price > 0
+)?.price;
+
+const usdToman =
+  arzhaamRateMap.get("usd")?.price ??
+  legacyUsdToman;
+
 
     const wanted = [
       ["BTC", "بیت‌کوین"],
