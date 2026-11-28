@@ -325,7 +325,7 @@ export default function Home() {
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 const [historyRange, setHistoryRange] =
   useState<HistoryRange>(30);
-  
+
   useEffect(() => {
     let active = true;
 
@@ -394,7 +394,7 @@ const [historyRange, setHistoryRange] =
 
   const gold18kPrice = gold18k?.toman ?? null;
 
-  const styles = `
+  const styles = \`
     :root { color-scheme: dark; }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; scroll-padding-top: 90px; }
@@ -508,6 +508,17 @@ const [historyRange, setHistoryRange] =
       height: 1px;
       background: #b99a55;
     }
+          color: #d6b96d;
+      font-size: 10px;
+      letter-spacing: 2.7px;
+      font-weight: 800;
+    }
+    .eyebrow:before {
+      content: "";
+      width: 25px;
+      height: 1px;
+      background: #b99a55;
+    }
     h1 {
       max-width: 790px;
       margin: 0;
@@ -609,7 +620,7 @@ const [historyRange, setHistoryRange] =
       transform: translateY(-3px);
       border-color: rgba(217,189,119,.38);
     }
-    
+
 .crypto-card-link {
   display: block;
   min-width: 0;
@@ -810,7 +821,7 @@ const [historyRange, setHistoryRange] =
 .footer-links a:focus-visible {
   color: #e2c77f;
 }
-    
+
     .history-controls {
       display: flex;
       gap: 8px;
@@ -905,7 +916,7 @@ const [historyRange, setHistoryRange] =
         padding: 15px;
       }
     }
-    
+
     @media (max-width: 850px) {
       .nav { padding: 15px 0; align-items: flex-start; flex-direction: column; }
       .navlinks { gap: 14px; }
@@ -950,6 +961,69 @@ const [historyRange, setHistoryRange] =
         </div>
       </header>
 
+      <section className="wrap section" id="exchange-feature">
+  <div style={{
+    padding: 20,
+    borderRadius: 18,
+    border: "1px solid rgba(185,242,124,.18)",
+    background: "linear-gradient(135deg,#111d19,#0b1119)",
+  }}>
+    <div className="section-head">
+      <div>
+        <p className="eyebrow" style={{ color: "#b9f27c" }}>ECONOVA EXCHANGE</p>
+        <h2>بازار ارز</h2>
+        <p className="section-sub">نرخ بازار آزاد ایران · قیمت به تومان</p>
+      </div>
+      <span className="tiny-label">LIVE · 5 MIN</span>
+    </div>
+    {(() => {
+      const usd = data?.currencies?.find((item) => item.code === "USD");
+      return (
+        <>
+          <div style={{
+            padding: 20,
+            borderRadius: 14,
+            background: "rgba(185,242,124,.06)",
+            border: "1px solid rgba(185,242,124,.16)",
+          }}>
+            <div className="muted">دلار آمریکا · USD</div>
+            <div style={{
+              color: "#b9f27c",
+              fontSize: 30,
+              fontWeight: 900,
+              margin: "10px 0",
+            }}>
+              {usd ? money(usd.toman) : "در انتظار دریافت نرخ"}
+            </div>
+            <div className="muted">آخرین بررسی: {lastUpdated ?? "—"}</div>
+          </div>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit,minmax(145px,1fr))",
+            gap: 10,
+            marginTop: 12,
+          }}>
+            {data?.currencies?.filter((item) => item.code !== "USD").map((item) => (
+              <article key={item.code} style={{
+                padding: 14,
+                borderRadius: 12,
+                border: "1px solid rgba(180,190,199,.12)",
+                background: "rgba(255,255,255,.025)",
+              }}>
+                <div className="muted">{item.name}</div>
+                <div className="symbol">{item.code}</div>
+                <div style={{ color: "#b9f27c", fontWeight: 800, marginTop: 9 }}>
+                  {money(item.toman)}
+                </div>
+              </article>
+            ))}
+          </div>
+        </>
+      );
+    })()}
+  </div>
+</section>
+
       <section className="wrap hero" id="top">
         <div className="hero-content">
           <p className="eyebrow">ECONOMIC INTELLIGENCE · EST. ECONOVA</p>
@@ -992,58 +1066,68 @@ const [historyRange, setHistoryRange] =
           </div>
         </div>
       </section>
-
-      
-<section className="wrap section" id="exchange-feature">
-  <div className="news-panel">
-    <div className="section-head">
-      <div>
-        <p className="eyebrow">ECONOVA EXCHANGE</p>
-        <h2>قیمت دلار بازار آزاد</h2>
-        <p className="section-sub">
-          نرخ به تومان · به‌روزرسانی خودکار هر پنج دقیقه
-        </p>
-      </div>
-      <span className="tiny-label">LIVE CURRENCY</span>
-    </div>
-
-    {(() => {
-      const usd = data?.currencies?.find(
-        (item) => item.code === "USD"
-      );
-
-      return (
-        <>
-          <div className="stat">
-            <div className="stat-label">دلار آمریکا · USD / IRR</div>
-            <div className="stat-value" style={{fontSize: 30}}>
-              {usd ? money(usd.toman) : "در انتظار دریافت نرخ"}
-            </div>
-            <div className="muted">
-              آخرین بررسی: {lastUpdated ?? "—"}
-            </div>
-          </div>
-
-          <div className="grid" style={{marginTop: 16}}>
-            {data?.currencies
-              ?.filter((item) => item.code !== "USD")
-              .map((item) => (
-                <article className="card" key={item.code}>
-                  <div className="name">{item.name}</div>
-                  <div className="symbol">{item.code}</div>
-                  <div className="toman">
-                    {money(item.toman)}
-                  </div>
-                </article>
-              ))}
+                      border: "1px solid rgba(180,190,199,.12)",
+                background: "rgba(255,255,255,.025)",
+              }}>
+                <div className="muted">{item.name}</div>
+                <div className="symbol">{item.code}</div>
+                <div style={{ color: "#b9f27c", fontWeight: 800, marginTop: 9 }}>
+                  {money(item.toman)}
+                </div>
+              </article>
+            ))}
           </div>
         </>
       );
     })()}
   </div>
 </section>
-      
-            <section className="wrap section" id="markets">
+
+<section className="wrap hero" id="top">
+        <div className="hero-content">
+          <p className="eyebrow">ECONOMIC INTELLIGENCE · EST. ECONOVA</p>
+          <h1>
+  اکونوا؛ رصد بازارهای مالی
+  <br />
+  <span className="gold-text">
+    ارز دیجیتال، ارز و طلا
+  </span>
+</h1>       
+<p className="hero-desc">
+  Econova یک داشبورد اقتصادی برای بررسی بازارهای مالی،
+  قیمت ارزهای دیجیتال، نرخ ارزهای رایج، طلا و سکه است.
+  همچنین می‌توانی رتبه‌بندی ثروتمندان جهان و اطلاعات
+  اقتصادهای مختلف را در اکونوا دنبال کنی.
+</p>
+          <div className="hero-actions">
+            <a className="btn btn-primary" href="#markets">
+              مشاهده بازارها <span>↘</span>
+            </a>
+            <a className="btn btn-secondary" href="#parsian">
+              قیمت سکه پارسیان
+            </a>
+          </div>
+          <div className="stats">
+            <div className="stat">
+              <div className="stat-label">وضعیت دریافت داده</div>
+              <div className="stat-value">
+                {loading ? "در حال اتصال…" : error ? "نیازمند بررسی" : data ? "متصل" : "آماده"}
+              </div>
+            </div>
+            <div className="stat">
+              <div className="stat-label">آخرین بررسی در این صفحه</div>
+              <div className="stat-value">{lastUpdated ?? "—"}</div>
+            </div>
+            <div className="stat">
+              <div className="stat-label">بازهٔ به‌روزرسانی</div>
+              <div className="stat-value">۵ دقیقه</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+<section className="wrap section" id="markets">
         <div className="section-head">
           <div>
             <p className="eyebrow">01 / CRYPTO MARKET</p>
@@ -1064,7 +1148,7 @@ const [historyRange, setHistoryRange] =
         {data && data.items.length === 0 && (
           <p className="status">در حال حاضر قیمتی برای نمایش موجود نیست.</p>
         )}
-     
+
 {data && data.items.length > 0 && (
   <div className="grid">
     {data.items.map((coin) => (
