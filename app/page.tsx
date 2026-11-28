@@ -992,6 +992,57 @@ const [historyRange, setHistoryRange] =
           </div>
         </div>
       </section>
+
+      
+<section className="wrap section" id="exchange-feature">
+  <div className="news-panel">
+    <div className="section-head">
+      <div>
+        <p className="eyebrow">ECONOVA EXCHANGE</p>
+        <h2>قیمت دلار بازار آزاد</h2>
+        <p className="section-sub">
+          نرخ به تومان · به‌روزرسانی خودکار هر پنج دقیقه
+        </p>
+      </div>
+      <span className="tiny-label">LIVE CURRENCY</span>
+    </div>
+
+    {(() => {
+      const usd = data?.currencies?.find(
+        (item) => item.code === "USD"
+      );
+
+      return (
+        <>
+          <div className="stat">
+            <div className="stat-label">دلار آمریکا · USD / IRR</div>
+            <div className="stat-value" style={{fontSize: 30}}>
+              {usd ? money(usd.toman) : "در انتظار دریافت نرخ"}
+            </div>
+            <div className="muted">
+              آخرین بررسی: {lastUpdated ?? "—"}
+            </div>
+          </div>
+
+          <div className="grid" style={{marginTop: 16}}>
+            {data?.currencies
+              ?.filter((item) => item.code !== "USD")
+              .map((item) => (
+                <article className="card" key={item.code}>
+                  <div className="name">{item.name}</div>
+                  <div className="symbol">{item.code}</div>
+                  <div className="toman">
+                    {money(item.toman)}
+                  </div>
+                </article>
+              ))}
+          </div>
+        </>
+      );
+    })()}
+  </div>
+</section>
+      
             <section className="wrap section" id="markets">
         <div className="section-head">
           <div>
