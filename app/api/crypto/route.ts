@@ -196,38 +196,41 @@ const usdToman =
       (item) => item.usd !== null || item.toman !== null
     );
 
-    const currencyWanted = [
-      ["USD_IRR_FREE", "USD", "دلار آمریکا"],
-      ["EUR_IRR_FREE", "EUR", "یورو"],
-      ["GBP_IRR_FREE", "GBP", "پوند انگلیس"],
-      ["AED_IRR_FREE", "AED", "درهم امارات"],
-      ["KWD_IRR_FREE", "KWD", "دینار کویت"],
-      ["AFN_IRR_FREE", "AFN", "افغانی افغانستان"],
-      ["IQD_IRR_FREE", "IQD", "دینار عراق"],
-      ["TRY_IRR_FREE", "TRY", "لیر ترکیه"],
-      ["RUB_IRR_FREE", "RUB", "روبل روسیه"],
-      ["JPY_IRR_FREE", "JPY", "ین ژاپن (۱۰۰ ین)"],
-      ["KRW_IRR_FREE", "KRW", "وون کره جنوبی"],
-      ["CNY_IRR_FREE", "CNY", "یوان چین"],
-    ];
+    
+const currencyWanted = [
+  { id: "usd", code: "USD", name: "دلار آمریکا" },
+  { id: "eur", code: "EUR", name: "یورو" },
+  { id: "gbp", code: "GBP", name: "پوند انگلیس" },
+  { id: "jpy", code: "JPY", name: "ین ژاپن" },
+  { id: "chf", code: "CHF", name: "فرانک سوئیس" },
+  { id: "cny", code: "CNY", name: "یوان چین" },
+  { id: "cad", code: "CAD", name: "دلار کانادا" },
+  { id: "aud", code: "AUD", name: "دلار استرالیا" },
+  { id: "nzd", code: "NZD", name: "دلار نیوزیلند" },
+  { id: "sgd", code: "SGD", name: "دلار سنگاپور" },
+];
 
-    const currencyItems = currencyWanted
-      .map(([symbol, code, name]) => {
-        const item = currencies.find(
-          (entry: any) =>
-            entry.symbol === symbol &&
-            !entry.stale &&
-            entry.price > 0
-        );
+const currencyItems = currencyWanted
+  .map((wanted) => {
+    const live = arzhaamRateMap.get(wanted.id);
 
-        return {
-          code,
-          name,
-          toman: item?.price ?? null,
-          updatedAt: item?.timestamp ?? null,
-        };
-      })
-      .filter((item) => item.toman !== null);
+    const fallback = currencies.find(
+      (entry: any) =>
+        entry.symbol === `${wanted.code}_IRR_FREE` &&
+        !entry.stale &&
+        entry.price > 0
+    );
+
+    return {
+      code: wanted.code,
+      name: wanted.name,
+      toman: live?.price ?? fallback?.price ?? null,
+      change24h: live?.changePercent24h ?? fallback?.change_pct ?? null,
+      updatedAt: live?.updatedAt ?? fallback?.timestamp ?? null,
+    };
+  })
+  .filter((item) => item.toman !== null);
+
 
     const tether = crypto.find(
       (item: any) =>
