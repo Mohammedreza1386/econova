@@ -19,6 +19,50 @@ export async function GET() {
     const groups = json?.data?.categories ?? {};
     const crypto = groups.crypto ?? [];
     const currencies = groups.currency ?? [];
+    
+// Arzhaam API - Iranian free market currencies
+const arzhaamApiKey =
+  process.env.ARZHAM_API_KEY ||
+  process.env.ARZHAAM_API_KEY;
+
+let arzhaamRates: any[] = [];
+
+if (arzhaamApiKey) {
+  try {
+    const arzhaamResponse = await fetch(
+      "https://arzhaam.ir/api/rates/latest?assets=usd,eur,gbp,jpy,chf,cny,cad,aud,nzd,sgd",
+      {
+        cache: "no-store",
+        headers: {
+          "X-App-Key": arzhaamApiKey,
+          Accept: "application/json",
+        },
+      }
+    );
+
+    if (arzhaamResponse.ok) {
+      const result = await arzhaamResponse.json();
+
+      arzhaamRates = Array.isArray(result?.rates)
+        ? result.rates.filter(
+            (rate: any) =>
+              typeof rate?.price === "number" &&
+              rate.price > 0
+          )
+        : [];
+    }
+  } catch {
+    // Keep the existing market data as fallback.
+  }
+}
+
+const arzhaamRateMap = new Map(
+  arzhaamRates.map((rate: any) => [
+    String(rate.assetId).toLowerCase(),
+    rate,
+  ])
+);
+    
 
     const usdToman = currencies.find(
       (item: any) =>
